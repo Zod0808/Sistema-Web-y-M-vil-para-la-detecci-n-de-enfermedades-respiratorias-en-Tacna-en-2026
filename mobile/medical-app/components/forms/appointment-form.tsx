@@ -129,13 +129,6 @@ export function AppointmentForm({
       newErrors.notes = "Las notas no pueden exceder 2000 caracteres"
     }
 
-    if (locationType === 'virtual' && !meetingLink.trim()) {
-      newErrors.meetingLink = "El enlace de reunión es requerido para citas virtuales"
-    }
-
-    if (locationType === 'in_person' && !address.trim()) {
-      newErrors.address = "La dirección es requerida para citas presenciales"
-    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0

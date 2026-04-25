@@ -1110,43 +1110,65 @@ const normalizeArrayParam = (value) => {
     .filter(Boolean);
 };
 
-app.get('/api/v1/appointments', (req, res) => {
-  const { doctorId, patientId, status, from, to } = req.query;
+app.get('/api/v1/appointments', async (req, res) => {
+  const jwt = require('jsonwebtoken');
+  const mongoose = require('mongoose');
 
-  let results = [...SAMPLE_APPOINTMENTS];
-
-  if (doctorId) {
-    results = results.filter((appointment) => appointment.doctorId === String(doctorId));
+  // Authenticate
+  const authHeader = req.headers.authorization;
+  let userId = null;
+  let userRole = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(authHeader.substring(7), process.env.JWT_SECRET || 'dev-secret-key-change-in-production');
+      userId = decoded.userId || decoded.id || decoded._id;
+    } catch (e) {
+      return res.status(401).json({ success: false, message: 'Token inválido' });
+    }
+  } else {
+    return res.status(401).json({ success: false, message: 'Token requerido' });
   }
 
-  if (patientId) {
-    results = results.filter((appointment) => appointment.patientId === String(patientId));
-  }
+  // Get user role from DB
+  try {
+    const UserModel = mongoose.models.User;
+    if (UserModel && userId) {
+      const u = await UserModel.findById(userId).select('role');
+      if (u) userRole = u.role;
+    }
+  } catch (_) {}
 
-  const statusFilter = normalizeArrayParam(status);
-  if (statusFilter && statusFilter.length > 0) {
-    results = results.filter((appointment) => statusFilter.includes(appointment.status));
-  }
+  const { status, from, to } = req.query;
+  let { doctorId, patientId } = req.query;
 
-  if (from) {
-    const fromDate = new Date(String(from));
-    results = results.filter(
-      (appointment) => new Date(appointment.scheduledAt).getTime() >= fromDate.getTime(),
-    );
-  }
+  // Enforce ownership rules like the real route
+  if (userRole === 'patient') { patientId = userId; doctorId = undefined; }
+  else if (userRole === 'doctor') { doctorId = userId; }
 
-  if (to) {
-    const toDate = new Date(String(to));
-    results = results.filter(
-      (appointment) => new Date(appointment.scheduledAt).getTime() <= toDate.getTime(),
-    );
-  }
+  try {
+    const Appointment = mongoose.models.Appointment;
+    if (!Appointment) {
+      return res.json({ success: true, message: 'Listado de citas', data: [] });
+    }
 
-  res.json({
-    success: true,
-    message: 'Listado de citas (mock)',
-    data: results,
-  });
+    const query = {};
+    if (patientId) query.patientId = String(patientId);
+    if (doctorId) query.doctorId = String(doctorId);
+
+    const statusFilter = normalizeArrayParam(status);
+    if (statusFilter && statusFilter.length > 0) query.status = { $in: statusFilter };
+
+    if (from || to) {
+      query.scheduledAt = {};
+      if (from) query.scheduledAt.$gte = new Date(String(from));
+      if (to) query.scheduledAt.$lte = new Date(String(to));
+    }
+
+    const results = await Appointment.find(query).sort({ scheduledAt: 1 }).limit(200).lean();
+    res.json({ success: true, message: 'Listado de citas', data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al obtener citas', error: error.message });
+  }
 });
 
 // Ruta para obtener citas próximas del usuario autenticado

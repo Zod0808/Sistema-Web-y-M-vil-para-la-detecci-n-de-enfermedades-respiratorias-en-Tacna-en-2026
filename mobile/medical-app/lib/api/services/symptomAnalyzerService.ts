@@ -58,12 +58,23 @@ interface StatisticsResponse {
   }
 }
 
+const UI_TO_API_SEVERITY: Record<string, 'mild' | 'moderate' | 'severe'> = {
+  low: 'mild',
+  mild: 'mild',
+  moderate: 'moderate',
+  high: 'severe',
+  severe: 'severe',
+}
+
 export class SymptomAnalyzerService {
   async analyze(request: SymptomAnalysisRequest): Promise<SymptomAnalysisResult> {
     const response = await apiClient.post<AnalyzeResponse | SymptomAnalysisResult>(
       API_ENDPOINTS.symptomAnalyzer.analyze,
       {
-        symptoms: request.symptoms,
+        symptoms: request.symptoms.map(s => ({
+          ...s,
+          severity: UI_TO_API_SEVERITY[s.severity] ?? 'moderate',
+        })),
         context: request.context,
         metadata: request.metadata,
         patientId: request.patientId,

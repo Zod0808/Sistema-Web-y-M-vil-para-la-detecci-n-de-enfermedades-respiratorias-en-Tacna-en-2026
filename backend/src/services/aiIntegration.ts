@@ -226,18 +226,54 @@ class AIIntegrationService {
         }
       }
 
-      const response = await this.aiClient.post<SymptomAnalysisResponse>(
-        '/api/v1/symptom-analyzer/analyze',
-        request
-      );
+      // Map structured symptoms to the ML endpoint's string-array format
+      const symptomNames = request.symptoms.map(s => s.symptom);
+
+      const mlResponse = await this.aiClient.post<{
+        disease: string;
+        confidence: number;
+        urgency_level: string;
+        needs_medical_attention: boolean;
+        personalized_recommendations?: string[];
+        risk_level?: string;
+        top_3_predictions?: Array<Record<string, string>>;
+        timestamp: string;
+      }>('/api/v1/ml-analyze', { symptoms: symptomNames });
+
+      const ml = mlResponse.data;
+
+      // Map ML output → SymptomAnalysisResponse shape expected by the frontend
+      const urgencyScoreMap: Record<string, number> = {
+        critical: 0.9, high: 0.7, medium: 0.5, moderate: 0.5, low: 0.3
+      };
+      const severityScore = urgencyScoreMap[ml.urgency_level?.toLowerCase()] ?? 0.5;
+
+      const mapped: SymptomAnalysisResponse = {
+        patient_id: request.patient_id?.toString() ?? '',
+        analyzed_at: ml.timestamp ?? new Date().toISOString(),
+        urgency_level: ml.urgency_level ?? 'low',
+        severity_score: severityScore,
+        classification: {
+          urgency: ml.urgency_level ?? 'low',
+          severity_score: severityScore,
+          recommendation: ml.personalized_recommendations?.[0] ?? `Posible diagnóstico: ${ml.disease}`,
+          categories: ml.top_3_predictions?.map(p => p.disease ?? '').filter(Boolean) ?? [ml.disease],
+          confidence: ml.confidence ?? 0.5,
+        },
+        recommendations: ml.personalized_recommendations ?? [`Consulta a un médico para evaluar ${ml.disease}`],
+        warning_signs: ml.needs_medical_attention ? ['Requiere atención médica inmediata'] : [],
+        follow_up_required: ml.needs_medical_attention ?? false,
+        confidence_score: ml.confidence ?? 0.5,
+        processing_time_ms: 0,
+      };
 
       logger.info('Symptoms analyzed by AI', {
         patientId: request.patient_id,
-        urgencyLevel: response.data.urgency_level,
-        processingTime: response.data.processing_time_ms
+        urgencyLevel: mapped.urgency_level,
+        disease: ml.disease,
       });
 
-      return response.data;
+      return mapped;
     } catch (error: any) {
       logger.error('AI Symptom Analysis Failed', {
         patientId: request.patient_id,
