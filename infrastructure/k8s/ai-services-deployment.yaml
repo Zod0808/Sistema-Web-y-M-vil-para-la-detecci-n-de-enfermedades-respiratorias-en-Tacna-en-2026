@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-services
+  labels:
+    app: ai-services
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-services
+  template:
+    metadata:
+      labels:
+        app: ai-services
+    spec:
+      containers:
+        - name: ai-services
+          image: ghcr.io/your-org/ai-services:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AI_RATE_LIMIT_ENABLED
+              value: "1"
+            - name: AI_RATE_LIMIT_CAPACITY
+              value: "100"
+            - name: AI_RATE_LIMIT_REFILL_PER_SEC
+              value: "5"
+            - name: AI_MAX_BODY_BYTES
+              value: "2097152"
+            - name: AI_USE_REAL_MODELS
+              value: "0"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-services-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-services
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Percent
+          value: 33
+          periodSeconds: 120
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+        - type: Pods
+          value: 3
+          periodSeconds: 60
+      selectPolicy: Max
+

@@ -1,0 +1,12 @@
+version: "2"
+authtoken: 362CNKhwU0O1pxDWaGwDJzOzRec_NpxTqYPMF8fgK7gdpQ12
+tunnels:
+  backend:
+    addr: 3001
+    proto: http
+    bind_tls: true
+  ai-services:
+    addr: 8000
+    proto: http
+    bind_tls: true
+

@@ -1,0 +1,263 @@
+# Docker Compose for Production
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: respicare-mongodb-prod
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-respicare}
+    volumes:
+      - mongodb_prod_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+      - ./backups/mongodb:/backups
+    networks:
+      - respicare-prod-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: respicare-redis-prod
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - respicare-prod-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # AI Services
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile.prod
+    restart: always
+    # No exponer puerto directamente, solo a través de nginx
+    expose:
+      - "8000"
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      DATABASE_URL: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-respicare}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      MODEL_PATH: /app/models
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      # Configuración de rate limiting optimizada para producción
+      AI_RATE_LIMIT_ENABLED: ${AI_RATE_LIMIT_ENABLED:-1}
+      AI_RATE_LIMIT_CAPACITY: ${AI_RATE_LIMIT_CAPACITY:-500}
+      AI_RATE_LIMIT_REFILL_PER_SEC: ${AI_RATE_LIMIT_REFILL_PER_SEC:-20.0}
+      AI_MAX_BODY_BYTES: ${AI_MAX_BODY_BYTES:-4194304}
+    volumes:
+      - ai_models_prod:/app/models
+      - ai_cache_prod:/app/cache
+      - ai_logs_prod:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - respicare-prod-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: respicare-backend-prod
+    restart: always
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGO_DB: ${MONGO_DB:-respicare}
+      MONGODB_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-respicare}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-30d}
+      AI_SERVICE_URL: http://ai-services:8000
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@respicare.tacna}
+      PUSH_PROVIDER: ${PUSH_PROVIDER:-none}
+      PUSH_API_KEY: ${PUSH_API_KEY:-}
+      PUSH_PROJECT_ID: ${PUSH_PROJECT_ID:-}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - backend_logs_prod:/app/logs
+      - backend_uploads_prod:/app/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-services:
+        condition: service_healthy
+    networks:
+      - respicare-prod-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: respicare-nginx-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx_logs_prod:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - respicare-prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: respicare-certbot-prod
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    networks:
+      - respicare-prod-network
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # Backup Service
+  backup:
+    image: mongo:6.0
+    container_name: respicare-backup-prod
+    restart: unless-stopped
+    environment:
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB:-respicare}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    depends_on:
+      - mongodb
+    networks:
+      - respicare-prod-network
+    command: /bin/bash -c "while true; do /backup.sh; sleep 86400; done"
+
+volumes:
+  mongodb_prod_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  redis_prod_data:
+    driver: local
+  ai_models_prod:
+    driver: local
+  ai_cache_prod:
+    driver: local
+  ai_logs_prod:
+    driver: local
+  backend_logs_prod:
+    driver: local
+  backend_uploads_prod:
+    driver: local
+  nginx_logs_prod:
+    driver: local
+
+networks:
+  respicare-prod-network:
+    driver: bridge
+

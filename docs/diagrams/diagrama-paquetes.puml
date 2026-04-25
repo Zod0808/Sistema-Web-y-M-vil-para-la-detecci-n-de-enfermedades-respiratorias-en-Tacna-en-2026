@@ -1,0 +1,516 @@
+@startuml DiagramaPaquetes_RespiCare
+' ═══════════════════════════════════════════════════════════════════
+' Diagrama de Paquetes — Sistema RespiCare
+' Enfermedades Respiratorias
+' ═══════════════════════════════════════════════════════════════════
+
+!theme plain
+skinparam backgroundColor #F8FAFC
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageBorderColor #475569
+skinparam packageFontColor #0F172A
+skinparam packageFontSize 13
+skinparam packageFontStyle bold
+skinparam arrowColor #334155
+skinparam arrowThickness 1.8
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam noteBackgroundColor #FEF9C3
+skinparam noteBorderColor #CA8A04
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: CLIENTES / PRESENTACIÓN
+' ═══════════════════════════════════════════════════════════════════
+
+package "Clientes" <<Cloud>> #E0F2FE {
+
+  package "Web App\n(React + Next.js)" #BFDBFE {
+    [pages/Home]
+    [pages/Dashboard]
+    [pages/Analytics]
+    [pages/FhirPage]
+    [pages/HeatMapPage]
+    [components/ChatBot]
+    [components/AlertConsole]
+    [components/Charts]
+    [components/Forms]
+    [web/services/apiClient]
+    [web/theme]
+  }
+
+  package "Mobile App\n(Next.js + Capacitor)" #BAE6FD {
+    [tabs/Dashboard]
+    [tabs/ChatBot]
+    [tabs/SymptomAnalyzer]
+    [tabs/Appointments]
+    [tabs/Emergency]
+    [tabs/LabResults]
+    [tabs/Prescriptions]
+    [tabs/Referrals]
+    [tabs/Wearables]
+    [tabs/Alerts]
+    [views/Login]
+    [views/MedicalReport]
+    [views/Consent]
+    [hooks/useCapacitorApp]
+    [hooks/useNetworkStatus]
+    [hooks/useGeolocation]
+    [hooks/useBiometricAuth]
+    [lib/NativeStorage]
+    [lib/NotificationService]
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: GATEWAY / PROXY
+' ═══════════════════════════════════════════════════════════════════
+
+package "API Gateway\n(Nginx)" <<Rectangle>> #FEF3C7 {
+  [nginx/ReverseProxy]
+  [nginx/SSLTermination]
+  [nginx/RateLimiting]
+  [nginx/LoadBalancer]
+  [nginx/StaticFiles]
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: BACKEND — API REST
+' ═══════════════════════════════════════════════════════════════════
+
+package "Backend API\n(Node.js / Express / TypeScript)" <<Rectangle>> #F0FDF4 {
+
+  package "Interface Adapters" #DCFCE7 {
+    package "Routes" {
+      [routes/auth]
+      [routes/medicalHistory]
+      [routes/appointments]
+      [routes/prescriptions]
+      [routes/referrals]
+      [routes/alerts]
+      [routes/analytics]
+      [routes/emergency]
+      [routes/lab]
+      [routes/chat]
+      [routes/wearable]
+      [routes/fhir]
+      [routes/consent]
+      [routes/sms]
+      [routes/export]
+      [routes/mlOrchestration]
+    }
+
+    package "Controllers" {
+      [ctrl/authController]
+      [ctrl/medicalHistoryController]
+      [ctrl/alertController]
+      [ctrl/emergencyController]
+      [ctrl/labController]
+      [ctrl/symptomAnalyzerController]
+      [ctrl/wearableController]
+      [ctrl/fhirController]
+      [ctrl/smsMetricsController]
+      [ctrl/exportController]
+      [ctrl/dashboardController]
+      [ctrl/automaticReportController]
+    }
+
+    package "Middleware" {
+      [mw/auth]
+      [mw/rbac]
+      [mw/rateLimiter]
+      [mw/validation]
+      [mw/auditLogger]
+      [mw/errorHandler]
+      [mw/enforceHttps]
+      [mw/brotliCompression]
+    }
+  }
+
+  package "Application Layer" #BBF7D0 {
+    package "Domain — Use Cases" {
+      [uc/RegisterUser]
+      [uc/AuthenticateUser]
+      [uc/CreateMedicalHistory]
+      [uc/GetMedicalHistory]
+    }
+
+    package "Domain — Entities" {
+      [entity/User]
+      [entity/MedicalHistory]
+      [entity/AIAnalysis]
+    }
+
+    package "Domain — Value Objects" {
+      [vo/Symptom]
+      [vo/Vitals]
+      [vo/GeoPoint]
+    }
+  }
+
+  package "Business Services" #86EFAC {
+    [svc/alertService]
+    [svc/appointmentService]
+    [svc/prescriptionService]
+    [svc/referralService]
+    [svc/emergencyService]
+    [svc/labService]
+    [svc/consentService]
+    [svc/analyticsService]
+    [svc/fhirService]
+    [svc/exportService]
+    [svc/smsService]
+    [svc/notificationService]
+    [svc/reportService]
+    [svc/featureFlagService]
+    [svc/mlOrchestrationService]
+    [svc/epidemiologicalService]
+    [svc/ambulanceService]
+    [svc/hospitalCommunicationService]
+    [svc/drugInteractionService]
+    [svc/aiIntegrationService]
+  }
+
+  package "Data Models\n(Mongoose / MongoDB)" #4ADE80 {
+    [model/User]
+    [model/MedicalHistory]
+    [model/Alert]
+    [model/Appointment]
+    [model/Prescription]
+    [model/Referral]
+    [model/LabResult]
+    [model/WearableData]
+    [model/ChatConversation]
+    [model/SymptomReport]
+    [model/AIAnalysis]
+    [model/InformedConsent]
+    [model/AutomaticReport]
+    [model/ConsentLog]
+    [model/MLExperiment]
+    [model/AuditLog]
+  }
+
+  package "Scheduled Jobs\n(node-cron)" #22C55E {
+    [job/alertJobs]
+    [job/appointmentJobs]
+    [job/labImportJobs]
+    [job/reportJobs]
+    [job/mlMetricsJobs]
+  }
+
+  package "Observabilidad" #16A34A {
+    [obs/metrics]
+    [obs/telemetry]
+    [obs/mongodbMonitoring]
+    [obs/percentileMetrics]
+  }
+
+  package "Config / Infra Backend" #15803D {
+    [cfg/config]
+    [cfg/redisClient]
+    [cfg/swagger]
+    [cfg/containerDI]
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: AI SERVICES — FastAPI Python
+' ═══════════════════════════════════════════════════════════════════
+
+package "AI Services\n(Python / FastAPI)" <<Rectangle>> #FDF4FF {
+
+  package "API Endpoints\n(FastAPI Routers)" #F3E8FF {
+    [api/symptomAnalyzer]
+    [api/chatAnalyzer]
+    [api/medicalHistory]
+    [api/audioAnalyzer]
+    [api/advancedML]
+    [api/advancedNLP]
+    [api/autoML]
+    [api/rlAndFederated]
+    [api/modelCache]
+    [api/health]
+  }
+
+  package "AI Services Layer" #E9D5FF {
+    [ai/conversationalAI]
+    [ai/symptomAnalysis]
+    [ai/enhancedChatbot]
+    [ai/audioTranscription]
+    [ai/coughAnalysis]
+    [ai/medicalHistory]
+    [ai/patientExplainer]
+    [ai/aiServiceManager]
+    [ai/coreDomainsSupport]
+  }
+
+  package "Strategies\n(Strategy Pattern)" #D8B4FE {
+    [strategy/OpenAIStrategy]
+    [strategy/LocalModelStrategy]
+    [strategy/RuleBasedStrategy]
+    [strategy/AnalysisStrategy <<interface>>]
+  }
+
+  package "ML Models" #C4B5FD {
+    [ml/ensemblePredictor]
+    [ml/autoMLManager]
+    [ml/federatedLearning]
+    [ml/medicalBERT]
+    [ml/imageClassifier]
+    [ml/anomalyDetector]
+    [ml/rlReminderOptimizer]
+    [ml/retrainingPipeline]
+    [ml/predictionMonitor]
+    [ml/lazyLoader]
+    [ml/modelCache]
+  }
+
+  package "Factories & Patterns" #A78BFA {
+    [factory/ModelFactory]
+    [factory/ServiceFactory]
+    [factory/StrategyFactory]
+    [pattern/CircuitBreaker]
+    [pattern/Decorator]
+    [decorator/cache]
+    [decorator/retry]
+    [decorator/metrics]
+    [decorator/logging]
+  }
+
+  package "Repositories" #8B5CF6 {
+    [repo/BaseRepository]
+    [repo/PatientRepository]
+    [repo/AIResultRepository]
+  }
+
+  package "Core AI Infra" #7C3AED {
+    [core/cache]
+    [core/config]
+    [core/database]
+    [circuit/openAICircuitBreaker]
+    [circuit/externalServiceCB]
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: PERSISTENCIA
+' ═══════════════════════════════════════════════════════════════════
+
+package "Persistencia" <<Database>> #FEF2F2 {
+
+  package "MongoDB\n(Base de datos principal)" #FEE2E2 {
+    database "respicare-db" {
+      [collections/users]
+      [collections/medicalHistories]
+      [collections/alerts]
+      [collections/appointments]
+      [collections/prescriptions]
+      [collections/referrals]
+      [collections/labResults]
+      [collections/wearableData]
+      [collections/chatConversations]
+      [collections/symptomReports]
+      [collections/aiAnalyses]
+      [collections/informedConsents]
+      [collections/automaticReports]
+      [collections/auditLogs]
+      [collections/mlExperiments]
+    }
+  }
+
+  package "Redis\n(Caché y Sesiones)" #FECACA {
+    database "respicare-cache" {
+      [cache/sessions]
+      [cache/rateLimits]
+      [cache/analytics]
+      [cache/modelPredictions]
+      [cache/offlineQueue]
+    }
+  }
+
+  package "SQLite\n(Offline / Mobile)" #FCA5A5 {
+    database "respicare-local" {
+      [sqlite/medicalHistoryLocal]
+      [sqlite/appointmentsLocal]
+      [sqlite/offlineQueue]
+    }
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' CAPA: SERVICIOS EXTERNOS
+' ═══════════════════════════════════════════════════════════════════
+
+package "Servicios Externos" <<Cloud>> #F1F5F9 {
+
+  package "Integraciones" #E2E8F0 {
+    [ext/OpenAI GPT-4]
+    [ext/Firebase FCM]
+    [ext/Twilio SMS]
+    [ext/HL7 FHIR Server]
+    [ext/Laboratory LIMS]
+    [ext/Hospital HIS]
+    [ext/Ambulance CAD]
+    [ext/ngrok / Cloudflare Tunnel]
+  }
+
+  package "Observabilidad Externa" #CBD5E1 {
+    [ext/Prometheus]
+    [ext/Grafana]
+    [ext/Sentry]
+    [ext/OpenTelemetry]
+  }
+
+  package "Infraestructura Cloud" #94A3B8 {
+    [infra/Kubernetes]
+    [infra/ArgoCD]
+    [infra/Terraform]
+    [infra/CDN]
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' DEPENDENCIAS ENTRE CAPAS
+' ═══════════════════════════════════════════════════════════════════
+
+' Clientes → Gateway
+[web/services/apiClient]     --> [nginx/ReverseProxy] : HTTPS
+[lib/NativeStorage]          --> [nginx/ReverseProxy] : HTTPS
+
+' Gateway → Backend
+[nginx/ReverseProxy]         --> [routes/auth]              : /api/auth
+[nginx/ReverseProxy]         --> [routes/medicalHistory]     : /api/medical-histories
+[nginx/ReverseProxy]         --> [routes/appointments]       : /api/appointments
+[nginx/ReverseProxy]         --> [routes/alerts]             : /api/alerts
+[nginx/ReverseProxy]         --> [routes/emergency]          : /api/emergency
+[nginx/ReverseProxy]         --> [routes/analytics]          : /api/analytics
+[nginx/ReverseProxy]         --> [routes/chat]               : /api/chat
+[nginx/ReverseProxy]         --> [routes/mlOrchestration]    : /api/ml
+
+' Gateway → AI Services
+[nginx/ReverseProxy]         --> [api/symptomAnalyzer]  : /ai/analyze
+[nginx/ReverseProxy]         --> [api/chatAnalyzer]     : /ai/chat
+[nginx/ReverseProxy]         --> [api/audioAnalyzer]    : /ai/audio
+
+' Routes → Controllers
+[routes/auth]             --> [ctrl/authController]
+[routes/medicalHistory]   --> [ctrl/medicalHistoryController]
+[routes/alerts]           --> [ctrl/alertController]
+[routes/emergency]        --> [ctrl/emergencyController]
+[routes/lab]              --> [ctrl/labController]
+[routes/mlOrchestration]  --> [ctrl/automaticReportController]
+
+' Controllers → Services
+[ctrl/authController]           --> [svc/aiIntegrationService]
+[ctrl/medicalHistoryController] --> [svc/fhirService]
+[ctrl/alertController]          --> [svc/alertService]
+[ctrl/emergencyController]      --> [svc/emergencyService]
+[ctrl/labController]            --> [svc/labService]
+
+' Services → Models
+[svc/alertService]       --> [model/Alert]
+[svc/appointmentService] --> [model/Appointment]
+[svc/labService]         --> [model/LabResult]
+[svc/analyticsService]   --> [model/MedicalHistory]
+[svc/consentService]     --> [model/InformedConsent]
+
+' Backend → AI Services (HTTP interno)
+[svc/aiIntegrationService] --> [api/symptomAnalyzer] : HTTP :8001
+[svc/aiIntegrationService] --> [api/chatAnalyzer]    : HTTP :8001
+[svc/mlOrchestrationService] --> [api/advancedML]    : HTTP :8001
+
+' AI Services internos
+[api/symptomAnalyzer] --> [ai/symptomAnalysis]
+[api/chatAnalyzer]    --> [ai/conversationalAI]
+[api/audioAnalyzer]   --> [ai/audioTranscription]
+[api/advancedML]      --> [ml/ensemblePredictor]
+[api/autoML]          --> [ml/autoMLManager]
+[api/rlAndFederated]  --> [ml/federatedLearning]
+
+' Strategies
+[ai/conversationalAI] --> [strategy/OpenAIStrategy]
+[ai/conversationalAI] --> [strategy/LocalModelStrategy]
+[ai/conversationalAI] --> [strategy/RuleBasedStrategy]
+[ai/symptomAnalysis]  --> [strategy/OpenAIStrategy]
+
+' Backend → Persistencia
+[model/User]           --> [collections/users]
+[model/MedicalHistory] --> [collections/medicalHistories]
+[model/Alert]          --> [collections/alerts]
+[model/WearableData]   --> [collections/wearableData]
+[cfg/redisClient]      --> [cache/sessions]
+[cfg/redisClient]      --> [cache/rateLimits]
+
+' AI → Persistencia
+[core/database]     --> [collections/aiAnalyses]
+[core/cache]        --> [cache/modelPredictions]
+
+' Mobile → SQLite (offline)
+[lib/NotificationService] --> [sqlite/offlineQueue]
+
+' Jobs → Services
+[job/alertJobs]       --> [svc/alertService]
+[job/appointmentJobs] --> [svc/appointmentService]
+[job/labImportJobs]   --> [svc/labService]
+[job/reportJobs]      --> [svc/reportService]
+
+' Backend → Servicios externos
+[svc/smsService]                 --> [ext/Twilio SMS]
+[svc/notificationService]        --> [ext/Firebase FCM]
+[svc/fhirService]                --> [ext/HL7 FHIR Server]
+[svc/labService]                 --> [ext/Laboratory LIMS]
+[svc/hospitalCommunicationService] --> [ext/Hospital HIS]
+[svc/ambulanceService]           --> [ext/Ambulance CAD]
+
+' AI → Servicios externos
+[strategy/OpenAIStrategy] --> [ext/OpenAI GPT-4]
+[circuit/openAICircuitBreaker] --> [strategy/OpenAIStrategy]
+
+' Observabilidad
+[obs/telemetry]          --> [ext/OpenTelemetry]
+[obs/metrics]            --> [ext/Prometheus]
+[ext/Prometheus]         --> [ext/Grafana]
+[core/database]          --> [ext/Sentry]
+
+' Hooks mobile → hardware nativo
+[hooks/useGeolocation]   --> [tabs/Emergency]
+[hooks/useBiometricAuth] --> [views/Login]
+[hooks/useNetworkStatus] --> [lib/NativeStorage]
+
+' ═══════════════════════════════════════════════════════════════════
+' NOTAS ARQUITECTÓNICAS
+' ═══════════════════════════════════════════════════════════════════
+
+note top of "Backend API\n(Node.js / Express / TypeScript)"
+  Arquitectura en capas:
+  Interface Adapters → Application → Domain → Data
+  Patrón: Clean Architecture + DDD (ligero)
+  Puerto: 3001 (interno) / 443 (vía Nginx)
+end note
+
+note top of "AI Services\n(Python / FastAPI)"
+  Patrones: Strategy, Factory, Decorator,
+  Circuit Breaker, Repository
+  Puerto: 8001 (interno)
+  Fallback: LocalModel si OpenAI falla
+end note
+
+note bottom of "Persistencia"
+  MongoDB: datos clínicos principales
+  Redis: caché, rate-limiting, sesiones
+  SQLite: datos offline en el APK
+end note
+
+note right of "Clientes"
+  Web: React SPA (puerto 8080 via Nginx)
+  Mobile: Next.js → Capacitor → APK Android
+  APK Package: com.respicare.medicalapp
+end note
+
+@enduml

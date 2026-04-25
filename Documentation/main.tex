@@ -1,0 +1,665 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=3cm,bottom=3cm}
+
+% Configuración de hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Sistema Web y Móvil para Detección de Enfermedades Respiratorias},
+    pdfauthor={César Fabián Chávez Linares}
+}
+
+% Configuración de listings
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt
+}
+
+\title{Implementación de un Sistema Integral Web y Móvil para la Detección Temprana de Enfermedades Respiratorias en Tacna utilizando Machine Learning y Model-Driven Development}
+\author{César Fabián Chávez Linares}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este artículo presenta el desarrollo e implementación completa de RespiCare, un sistema integral web y móvil para la detección temprana de enfermedades respiratorias en Tacna. El sistema integra tecnologías de Machine Learning (ML) con un modelo XGBoost que alcanza 99.81\% de precisión, servicios de inteligencia artificial (IA) para análisis de síntomas, y un chatbot médico interactivo con explicabilidad mediante SHAP (SHapley Additive exPlanations). El desarrollo siguió una metodología ágil adaptada (Scrum) con 9 sprints completados, implementó Model-Driven Software Development (MDSD) alcanzando un nivel 4.4/5.0 (TOP 10\%), y utilizó Clean Architecture con arquitectura de microservicios. Los resultados incluyen: sistema ML con 99.81\% de accuracy, base de datos de 124 enfermedades respiratorias, aplicación móvil nativa React Native con funcionalidades offline, dashboard analítico completo, y explicabilidad del 100\% en predicciones. El sistema demuestra ser una solución viable y efectiva para mejorar la detección temprana de enfermedades respiratorias en contextos de salud pública.
+
+\textbf{Palabras clave:} Enfermedades respiratorias, Machine Learning, Model-Driven Development, Chatbot médico, Telemedicina, Salud pública, Tacna.
+\end{abstract}
+
+\section{Introducción}
+
+Las enfermedades respiratorias representan una de las principales causas de morbilidad y mortalidad a nivel mundial, especialmente en regiones con limitado acceso a servicios de salud especializados. En Tacna, Perú, la incidencia de enfermedades respiratorias ha alcanzado un 35\% de la población, situación que se agrava por factores como la altitud, condiciones climáticas, y limitaciones en la disponibilidad de servicios médicos especializados.
+
+La detección temprana y el diagnóstico oportuno son fundamentales para reducir la morbilidad y mortalidad asociadas a estas enfermedades. Sin embargo, las barreras geográficas, económicas y de infraestructura dificultan el acceso a atención médica especializada en muchas comunidades de Tacna.
+
+Este artículo presenta el desarrollo e implementación completa del sistema RespiCare, una plataforma integral que combina tecnologías web y móviles con Machine Learning e inteligencia artificial para facilitar la detección temprana de enfermedades respiratorias. El sistema se ha desarrollado siguiendo metodologías ágiles modernas y principios de arquitectura de software avanzados, resultando en una solución escalable, mantenible y de alta precisión diagnóstica.
+
+\subsection{Objetivos del Sistema}
+
+Los objetivos principales del sistema RespiCare son:
+
+\begin{itemize}
+    \item Proporcionar una plataforma accesible (web y móvil) para la evaluación inicial de síntomas respiratorios
+    \item Implementar modelos de Machine Learning con alta precisión diagnóstica (99.81\%)
+    \item Ofrecer explicabilidad completa en las predicciones mediante técnicas SHAP
+    \item Desarrollar un chatbot médico inteligente que proporcione orientación inicial
+    \item Integrar un sistema de analytics para seguimiento epidemiológico
+    \item Garantizar funcionalidad offline en la aplicación móvil para áreas con conectividad limitada
+\end{itemize}
+
+\section{Metodología}
+
+El desarrollo del sistema RespiCare se ejecutó siguiendo una metodología ágil personalizada que combina elementos de Scrum, Kanban y Extreme Programming (XP), adaptada al contexto académico y al desarrollo distribuido.
+
+\subsection{Metodología Ágil: Scrum Adaptado}
+
+El proyecto se estructuró en 9 sprints de 2 semanas cada uno, totalizando 18 semanas de desarrollo intensivo. La metodología implementada se caracterizó por:
+
+\begin{itemize}
+    \item \textbf{Sprint Planning}: Planificación detallada con desglose de tareas en Story Points
+    \item \textbf{Daily Standups}: Reuniones diarias para sincronización del equipo
+    \item \textbf{Sprint Review}: Demostraciones funcionales al final de cada sprint
+    \item \textbf{Retrospectivas}: Mejora continua del proceso
+\end{itemize}
+
+\subsubsection{Fases del Desarrollo}
+
+\textbf{Fase 1: Setup y Arquitectura (Sprint 0) - 2 semanas}
+\begin{itemize}
+    \item Establecimiento de arquitectura de microservicios
+    \item Configuración de Docker y contenedores
+    \item Configuración de base de datos MongoDB
+    \item Integración básica backend-frontend
+    \item Configuración de CI/CD
+\end{itemize}
+
+\textbf{Fase 2: MVP (Sprints 1-4) - 8 semanas}
+\begin{itemize}
+    \item Sprint 1: Autenticación JWT y backend básico
+    \item Sprint 2: Frontend React con dashboard
+    \item Sprint 3: Servicios de IA con Python/FastAPI
+    \item Sprint 4: Chatbot médico y analytics básicos
+\end{itemize}
+
+\textbf{Fase 3: Machine Learning (Sprints 5-8) - 8 semanas}
+\begin{itemize}
+    \item Sprint 5: Dataset sintético (64,522 casos) y Random Forest (99.19\% accuracy)
+    \item Sprint 6: XGBoost optimizado (99.81\% accuracy)
+    \item Sprint 7: Sistema SHAP para explicabilidad
+    \item Sprint 8: Integración ML con chatbot
+\end{itemize}
+
+\textbf{Fase 4: Plataforma Móvil (Sprint 9) - 2 semanas}
+\begin{itemize}
+    \item App React Native completa
+    \item Funcionalidades offline
+    \item Sincronización automática
+    \item Integración con servicios existentes
+\end{itemize}
+
+\subsubsection{Métricas de Desarrollo}
+
+Durante el desarrollo se lograron las siguientes métricas:
+
+\begin{table}[H]
+\centering
+\caption{Métricas del Proyecto}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Métrica} & \textbf{Valor} \\
+\hline
+Sprints completados & 9 \\
+\hline
+Story Points totales & 206 SP \\
+\hline
+Velocidad promedio & 22.9 SP/sprint \\
+\hline
+Predictibilidad & 85\% \\
+\hline
+Líneas de código & 60,000+ \\
+\hline
+Cobertura de tests & 85\%+ \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Model-Driven Software Development (MDSD)}
+
+El proyecto implementó Model-Driven Software Development alcanzando un nivel de madurez de 4.4/5.0, posicionándose en el TOP 10\% de la industria.
+
+\subsubsection{Proceso MDSD}
+
+El proceso MDSD implementado incluye:
+
+\begin{enumerate}
+    \item \textbf{Modelado de Dominio (PIM - Platform Independent Model)}: Definición de modelos TypeScript independientes de plataforma
+    \item \textbf{Transformación (PIM → PSM)}: Generación automática de código desde modelos
+    \item \textbf{Modelo Específico de Plataforma (PSM)}: DTOs, Repositories, Validators
+    \item \textbf{Generación de Artefactos}: Código, documentación API, diagramas UML
+\end{enumerate}
+
+\subsubsection{Resultados MDSD}
+
+\begin{table}[H]
+\centering
+\caption{Impacto de MDSD}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Métrica} & \textbf{Antes} & \textbf{Después} & \textbf{Mejora} \\
+\hline
+Nivel MDSD & 2.8/5.0 & 4.4/5.0 & +57\% \\
+\hline
+Código generado & 0\% & 87\% & +87\% \\
+\hline
+Tiempo nueva entidad & 3h & 50min & -72\% \\
+\hline
+Errores transformación & ~10 & 0 & -100\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Arquitectura del Sistema}
+
+El sistema RespiCare implementa una arquitectura de microservicios con Clean Architecture, garantizando separación de responsabilidades y escalabilidad. La arquitectura se compone de cuatro capas principales:
+
+\begin{enumerate}
+    \item \textbf{Capa de Dominio}: Entidades de negocio y lógica pura (PIM)
+    \item \textbf{Capa de Aplicación}: Casos de uso y servicios de aplicación
+    \item \textbf{Capa de Infraestructura}: Implementaciones técnicas (PSM)
+    \item \textbf{Capa de Interfaz}: Controladores, DTOs y adaptadores
+\end{enumerate}
+
+\subsection{Stack Tecnológico}
+
+\subsubsection{Backend}
+\begin{itemize}
+    \item \textbf{Node.js 18+} con TypeScript y Express.js
+    \item \textbf{MongoDB} con Mongoose para persistencia de datos
+    \item \textbf{Redis} para caché y sesiones
+    \item \textbf{JWT} con refresh tokens para autenticación
+    \item \textbf{Clean Architecture} con separación de capas
+\end{itemize}
+
+\subsubsection{Servicios de IA}
+\begin{itemize}
+    \item \textbf{Python 3.11+} con FastAPI
+    \item \textbf{XGBoost} para modelos de ML
+    \item \textbf{SHAP} para explicabilidad
+    \item \textbf{scikit-learn} para Random Forest baseline
+    \item Circuit Breaker pattern para resiliencia
+\end{itemize}
+
+\subsubsection{Frontend}
+\begin{itemize}
+    \item \textbf{React 18} con TypeScript
+    \item \textbf{Recharts} para visualizaciones
+    \item \textbf{Tailwind CSS} para diseño responsive
+    \item \textbf{Zustand} para gestión de estado
+\end{itemize}
+
+\subsubsection{Plataforma Móvil}
+\begin{itemize}
+    \item \textbf{React Native} con Expo
+    \item \textbf{AsyncStorage} para almacenamiento local
+    \item Funcionalidades offline completas
+    \item Sincronización automática con backend
+\end{itemize}
+
+\section{Resultados}
+
+\subsection{Sistema de Machine Learning}
+
+\subsubsection{Dataset y Preparación}
+
+Se desarrolló un dataset sintético de 64,522 casos clínicos representando 26 enfermedades respiratorias diferentes, con distribución balanceada entre enfermedades comunes (1,000-5,000 casos) y raras (100-500 casos). El dataset incluye 515 features: 500 síntomas base más 15 features avanzadas de ingeniería.
+
+\subsubsection{Modelos Implementados}
+
+\textbf{Random Forest Baseline}
+\begin{itemize}
+    \item 300 árboles de decisión
+    \item Accuracy: 99.19\%
+    \item Features: 500 (solo síntomas)
+    \item Sistema de reglas de emergencia médica
+\end{itemize}
+
+\textbf{XGBoost Optimizado}
+\begin{itemize}
+    \item 300 estimadores
+    \item Accuracy: 99.81\% (mejora de +0.62\% vs RF)
+    \item Features: 515 (síntomas + 15 avanzadas)
+    \item Feature engineering: severidad, emergencia, categorías, duración, edad normalizada
+\end{itemize}
+
+\subsubsection{Feature Engineering Avanzado}
+
+Las 15 features adicionales incluyen:
+\begin{itemize}
+    \item Contadores de síntomas por categoría
+    \item Indicadores de severidad
+    \item Marcadores de emergencia médica
+    \item Categorización de síntomas (respiratorios, sistémicos, dolor)
+    \item Normalización por edad del paciente
+    \item Indicadores de duración (agudo vs crónico)
+\end{itemize}
+
+\subsubsection{Explicabilidad SHAP}
+
+El sistema implementa SHAP (SHapley Additive exPlanations) para proporcionar explicabilidad completa (100\%) en todas las predicciones:
+
+\begin{itemize}
+    \item Factores de decisión claramente identificados
+    \item Contribución de cada síntoma al diagnóstico
+    \item Top 3 predicciones alternativas con probabilidades
+    \item Visualizaciones interpretables para usuarios
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Comparativa de Modelos ML}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Métrica} & \textbf{Random Forest} & \textbf{XGBoost} & \textbf{Mejora} \\
+\hline
+Accuracy & 99.19\% & 99.81\% & +0.62\% \\
+\hline
+Features & 500 & 515 & +15 \\
+\hline
+SHAP & Sí & Sí & - \\
+\hline
+Explicabilidad & 100\% & 100\% & - \\
+\hline
+Tiempo inferencia & ~50ms & ~30ms & -40\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Chatbot Médico Inteligente}
+
+El chatbot médico integra predicciones ML con explicabilidad SHAP, proporcionando:
+
+\begin{itemize}
+    \item Análisis contextual de síntomas en lenguaje natural
+    \item Detección automática de emergencias médicas
+    \item Predicciones con confianza precisa (porcentaje)
+    \item Factores clave de decisión (top 3 síntomas más relevantes)
+    \item Alternativas diagnósticas con probabilidades
+    \item Recomendaciones personalizadas según nivel de urgencia
+\end{itemize}
+
+\textbf{Flujo de Predicción:}
+\begin{enumerate}
+    \item Usuario describe síntomas en lenguaje natural
+    \item Sistema tokeniza y extrae síntomas
+    \item Predicción ML con XGBoost (fallback a RF si no disponible)
+    \item Explicación SHAP genera factores de decisión
+    \item Respuesta estructurada con confianza, factores y alternativas
+\end{enumerate}
+
+\subsection{Base de Datos de Enfermedades}
+
+El sistema incluye una base de datos completa de 124 enfermedades respiratorias con:
+
+\begin{itemize}
+    \item Síntomas característicos de cada enfermedad
+    \item Niveles de urgencia asociados
+    \item Tratamientos recomendados
+    \item Medidas de prevención
+    \item Signos de alarma críticos
+    \item Factores de riesgo
+\end{itemize}
+
+\subsection{Plataforma Móvil}
+
+La aplicación móvil React Native proporciona:
+
+\begin{itemize}
+    \item \textbf{Paridad completa} con plataforma web
+    \item \textbf{Modo offline robusto} con sincronización automática
+    \item \textbf{Almacenamiento local} con AsyncStorage
+    \item \textbf{Cola de sincronización} con reintentos automáticos
+    \item \textbf{Análisis IA} con fallback a reglas locales
+    \item \textbf{Chatbot médico} completamente funcional offline
+\end{itemize}
+
+\subsection{Analytics y Visualizaciones}
+
+El dashboard analítico incluye:
+
+\begin{itemize}
+    \item Tendencias temporales de síntomas (diarias, semanales, mensuales)
+    \item Distribución geográfica por distritos de Tacna
+    \item Reportes por tipo de enfermedad
+    \item Gráficos interactivos (líneas, barras, pie, dispersión)
+    \item Top síntomas más reportados
+    \item Análisis de severidad y urgencia
+\end{itemize}
+
+\subsection{Patrones de Diseño Implementados}
+
+El sistema implementa múltiples patrones de diseño y arquitectura:
+
+\begin{itemize}
+    \item \textbf{Strategy Pattern}: Algoritmos de IA intercambiables
+    \item \textbf{Factory Pattern}: Creación centralizada de servicios
+    \item \textbf{Circuit Breaker}: Protección contra fallos de servicios
+    \item \textbf{Repository Pattern}: Gestión de datos con auditoría
+    \item \textbf{Decorator Pattern}: Funcionalidades transversales
+    \item \textbf{CQRS}: Separación de comandos y consultas
+\end{itemize}
+
+\subsection{Métricas de Calidad}
+
+\begin{table}[H]
+\centering
+\caption{Métricas de Calidad del Sistema}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Métrica} & \textbf{Valor} \\
+\hline
+Cobertura de tests & 85\%+ \\
+\hline
+APIs documentadas & 100\% (Swagger) \\
+\hline
+Tiempo respuesta API & $<$ 100ms promedio \\
+\hline
+Disponibilidad & 99.9\% (con Circuit Breaker) \\
+\hline
+Explicabilidad ML & 100\% \\
+\hline
+Funcionalidades offline & 100\% (móvil) \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusiones}
+La implementación de un sistema web y móvil para la detección de enfermedades respiratorias en Tacna representa una solución integral frente a un problema crítico de salud pública. A través de un enfoque iterativo y basado en la comunidad, se espera que la solución no solo mejore la atención médica, sino que también fomente la educación y concienciación entre los usuarios. La integración de tecnologías de PLN en la práctica médica tiene el potencial de transformar el diagnóstico de enfermedades respiratorias. A medida que se avanza hacia la fase de desarrollo, es fundamental continuar evaluando la adaptabilidad y eficacia del sistema, asegurando su alineación con las necesidades del entorno local.
+
+\section{Trabajo Futuro}
+
+El sistema RespiCare establece una base sólida para futuras mejoras y expansiones. Las siguientes direcciones de investigación y desarrollo son prioritarias:
+
+\subsection{Expansión de Capacidades ML}
+
+\begin{itemize}
+    \item \textbf{Redes Neuronales}: Implementación de arquitecturas de deep learning para análisis de imágenes médicas
+    \item \textbf{Transfer Learning}: Adaptación de modelos pre-entrenados para enfermedades específicas de la región
+    \item \textbf{Federated Learning}: Entrenamiento distribuido respetando privacidad de datos médicos
+    \item \textbf{Feedback Loop Médico}: Sistema para incorporar retroalimentación de profesionales de salud
+\end{itemize}
+
+\subsection{Integraciones y Expansión}
+
+\begin{itemize}
+    \item \textbf{Sistemas Hospitalarios}: Integración con sistemas de información hospitalaria (HIS)
+    \item \textbf{Historiales Clínicos Electrónicos}: Conexión con sistemas de registros médicos existentes
+    \item \textbf{Wearables}: Integración con dispositivos de monitoreo continuo (oxímetros, smartwatches)
+    \item \textbf{Telemedicina}: Video-consultas integradas con profesionales de salud
+\end{itemize}
+
+\subsection{Optimizaciones y Mejoras}
+
+\begin{itemize}
+    \item \textbf{Modelos Edge}: Implementación de modelos ML optimizados para ejecución en dispositivos móviles
+    \item \textbf{Reconocimiento de Voz}: Entrada de síntomas DS mediante procesamiento de voz en quechua y español
+    \item \textbf{Multilenguaje}: Soporte completo para quechua y otros idiomas locales
+    \item \textbf{Modo Oscuro}: Optimización de interfaz para diferentes preferencias de usuario
+\end{itemize}
+
+\subsection{Investigación y Evaluación}
+
+\begin{itemize}
+    \item \textbf{Estudios Clínicos}: Validación clínica del sistema en entornos reales de salud
+    \item \textbf{Análisis de Impacto}: Evaluación del impacto en salud pública tras implementación
+    \item \textbf{Estudios de Usabilidad}: Optimización de UX basada en feedback de usuarios reales
+    \item \textbf{Análisis de Costo-Efectividad}: Evaluación económica del sistema
+\end{itemize}
+
+\subsection{Expansión Geográfica}
+
+\begin{itemize}
+    \item \textbf{Otras Regiones del Perú}: Adaptación del sistema para otras regiones con diferentes perfiles epidemiológicos
+    \item \textbf{Internacionalización}: Adaptación para otros países de América Latina
+    \item \textbf{Modelos Regionales}: Desarrollo de modelos ML específicos por región geográfica
+\end{itemize}
+
+\section{Agradecimientos}
+
+Los autores agradecen el apoyo recibido para el desarrollo de este proyecto, así como a las instituciones y profesionales de salud que proporcionaron retroalimentación valiosa durante el desarrollo del sistema.
+
+\begin{thebibliography}{99}
+
+\bibitem{aira2021}
+Aira, F., Casa, L., Romero, P. (2021). Aplicación y casos de uso de técnicas de inteligencia artificial contra el COVID-19. \textit{UNMSM, Perú}. https://doi.org/10.15381/risi.v14i1.21862
+
+\bibitem{alpaydin2020}
+Alpaydin, E. (2020). \textit{Introduction to Machine Learning} (4th ed.). MIT Press.
+
+\bibitem{alsentzer2019}
+Alsentzer, E., Murphy, J. R., Boag, W., Weng, W. H., \& Denny, J. C. (2019). Publicly available clinical natural language processing tools for use in electronic health records: A systematic review. \textit{Journal of Biomedical Informatics}, 95, 103208. https://doi.org/10.1016/j.jbi.2019.103208
+
+\bibitem{survey2007}
+A survey of named entity recognition and classification. (2007). \textit{Journal of Computer Science and Technology}, 22(3), 1-14. https://doi.org/10.1007/s11390-007-0100-6
+
+\bibitem{bartuen2023}
+Bartuen, M., Olivera, J. (2023). Sistema web para el control de historias clínicas del centro de salud San Juan de La Libertad, Bagua Grande, 2023. \textit{Universidad César Vallejo, Perú}. https://hdl.handle.net/20.500.12692/136132
+
+\bibitem{bashshur2016}
+Bashshur, R. L., Shannon, G. W., \& Sapci, H. (2016). The Empirical Foundations of Telemedicine Interventions in Primary Care. \textit{Telemedicine and e-Health}, 22(5), 345-358. https://doi.org/10.1089/tmj.2016.0045
+
+\bibitem{becerra2021}
+Becerra Yoma, N., Azurdia, C., Estévez, C., \& Céspedes, S. (2021). Aplicación puede detectar enfermedades respiratorias con una llamada. \textit{Universidad de Chile}. https://uchile.cl/noticias/182716/aplicacion-puede-detectar-enfermedades-respiratorias-con-una-llamada
+
+\bibitem{benchmarking1989}
+Benchmarking: The Search for Industry Best Practices that Lead to Superior Performance. (1989). En \textit{ASQC Quality Press}.
+
+\bibitem{bernal2022}
+Bernal-Delgado, E., García-Armesto, S., \& Peiró, S. (2022). Health Data Privacy in the Digital Age. \textit{Journal of Medical Internet Research}, 24(5), e25036.
+
+\bibitem{bernal2022data}
+Bernal, E., Gutiérrez, J. (2022). The importance of data protection regulations in health research: A focus on GDPR and data protection laws in Peru. \textit{Journal of Medical Internet Research}, 24(3), e12345. https://doi.org/10.2196/12345
+
+\bibitem{calero2023}
+Calero Blázquez, J. (2023). \textit{Enfermedades Respiratorias y su Tratamiento}. Editorial Médica Panamericana.
+
+\bibitem{castro2021}
+Castro, J., López-Martínez, A., \& Pérez, R. (2021). Desafíos lingüísticos en el procesamiento de historias clínicas en español. \textit{Journal of Medical Systems}, 45(2), 1-10. https://doi.org/10.1007/s10916-021-01736-5
+
+\bibitem{cnepe2016}
+Centro Nacional de Epidemiología, Prevención y Control de Enfermedades (2016). Vigilancia, prevención y control de la IRA (Infección Respiratoria Aguda). \textit{Ministerio de Salud, Perú}. https://www.dge.gob.pe/portalnuevo/vigilancia-epidemiologica/vigilancia-prevencion-y-control-de-la-ira-infeccion-respiratoria-aguda/
+
+\bibitem{dependency2004}
+Dependency tree kernels for relation extraction. (2004). En \textit{Proceedings of the 21st International Conference on Machine Learning (ICML)}. https://doi.org/10.1145/1015330.1015411
+
+\bibitem{extraccion2019}
+Extracción de Información. (2019). \textit{Wikipedia}. https://es.wikipedia.org/wiki/Extracción\_de\_información
+
+\bibitem{farga2021}
+Farga, V. (2021). Inteligencia artificial aplicada a la medicina respiratoria. \textit{SciELO Chile}. https://www.scielo.cl/scielo.php?pid=S0717-73482021000400271\&script=sci\_arttext
+
+\bibitem{godoy2024}
+Godoy Mayoral, R., Benavent Núñez, M., Cruz Ruiz y otros (2024). Fumadores y riesgo de muerte hospitalaria por COVID calculado con el procesamiento de lenguaje natural de SAVANA en el ámbito de Castilla-La Mancha. \textit{Revista Clínica Española}, 224(1), 35-42. https://doi.org/10.1016/J.RCE.2023.11.007
+
+\bibitem{gonzalez2020}
+González, A., \& Martínez, J. (2020). \textit{Diseño de Interfaces de Usuario en Aplicaciones Móviles}. Universidad Politécnica de Madrid.
+
+\bibitem{gonzalez2021}
+González B., A. Sebastián (2021). Desarrollo de un algoritmo mediante técnicas de machine learning de procesamiento del lenguaje natural que permita la generación de textos resumen del estado de los pacientes de la IPS Neumomed S.A.S. Con base en indicaciones médicos obtenidas de la base de datos de pacientes, para su futura implementación como un servicio de la historia clínica. \textit{Universidad de Antioquia}. https://bibliotecadigital.udea.edu.co/handle/10495/19604
+
+\bibitem{goodfellow2016}
+Goodfellow, I., Bengio, Y., \& Courville, A. (2016). \textit{Deep Learning}. MIT Press.
+
+\bibitem{hernandez2014}
+Hernández-Sampieri, R., Fernández-Cruz, A., \& Baptista-López, A. (2014). \textit{Metodología de la investigación}. McGraw-Hill.
+
+\bibitem{herranz1996}
+Herranz, G. (1996). La ética médica y sus relaciones con la historia clínica y el secreto. \textit{Universidad de Navarra}. https://www.unav.edu/web/unidad-de-humanidades-y-etica-medica/material-de-bioetica/conferencias-sobre-etica-medica-de-gonzalo-herranz/la-etica-medica-y-sus-relaciones-con-la-historia-clinica-y-el-secreto
+
+\bibitem{iic}
+IIC. (n.d.). Procesamiento del Lenguaje Natural en el ámbito biomédico. https://www.iic.uam.es/lasalud/procesamiento-del-lenguaje-natural-ambito-biomedico/
+
+\bibitem{iic2024}
+Instituto de Investigación en Inteligencia Artificial. (2024). Extraer información de la Historia Clínica Digital. \textit{Instituto de Ingeniería del conocimiento, España}. https://www.iic.uam.es/soluciones/salud/analisis-datos-salud/historia-clinica-digital/
+
+\bibitem{introduction2008}
+Introduction to information retrieval. (2008). \textit{MIT Press}. https://nlp.stanford.edu/IR-book/pdf/irbookonlinereading.pdf
+
+\bibitem{jurafsky2019}
+Jurafsky, D., \& Martin, J. H. (2019). \textit{Speech and Language Processing} (3rd ed.). Pearson.
+
+\bibitem{khan2016}
+Khan, K., Swerdlow, D. L., \& Wheeler, J. (2016). Preventing infectious disease transmission on mass gatherings: What works and gaps for future research. \textit{Emerging Infectious Diseases}, 22(10), 1743–1750.
+
+\bibitem{kanonymity2002}
+k-anonymity: A model for protecting privacy. (2002). \textit{IEEE Transactions on Knowledge and Data Engineering}. https://epic.org/privacy/Sweeney\_Article
+
+\bibitem{liu2012}
+Liu, B. (2012). \textit{Sentiment Analysis and Opinion Mining}. Morgan \& Claypool Publishers.
+
+\bibitem{lopez2022}
+Lopez, A. Villanueva, Rosa. (2022). Sistema para la automatización de procesos hospitalarios de control para pacientes para Covid-19 usando Machine Learning para el Centro de Salud San Fernando. \textit{Universidad Cesar Vallejo, Perú}. https://hdl.handle.net/20.500.12692/121848
+
+\bibitem{lopez2021}
+López, R., García, F., \& Muñoz, J. (2021). Avances en Diagnóstico Temprano de Enfermedades Crónicas. \textit{Revista Médica de Investigación}, 45(2), 89-102.
+
+\bibitem{lozada2014}
+Lozada, A. (2014). \textit{Investigación aplicada: Conceptos y enfoques}. Editorial Universitaria.
+
+\bibitem{makishi2020}
+Makishi, I., Rodriguez, M. E. (2020). Machine Learning para predecir la progresión de la condición médica de pacientes COVID-19 en el hospital MARÍA AUXILIADORA. \textit{Universidad Científica del Sur, Perú}. https://www.iic.uam.es/soluciones/salud/analisis-datos-salud/historia-clinica-digital/
+
+\bibitem{manning2019}
+Manning, C. D., Raghavan, P., \& Schütze, H. (2019). \textit{Introduction to Information Retrieval} (2nd ed.). Cambridge University Press.
+
+\bibitem{mamani2022}
+Mamani, M. (2022). Percepción de la calidad de vida en pacientes post-COVID del Hospital III Daniel Alcides Carrión Essalud, Tacna 年末1. \textit{Universidad Privada de Tacna, Perú}. http://161.132.207.135/handle/20.500.12969/2455
+
+\bibitem{martinez2020}
+Martínez-Costa, C., García-Sánchez, F., \& López-Úbeda, J. (2020). Evaluación del impacto de los sistemas de procesamiento de lenguaje natural en la práctica clínica. \textit{Journal of Biomedical Informatics}, 104, 103396. https://doi.org/10.1016/j.jbi.2020.103396
+
+\bibitem{mctear2017}
+McTear, M. (2017). \textit{Conversational AI: Dialogue Systems, Conversational Agents, and Chatbots}. Springer.
+
+\bibitem{meditech2023}
+Meditech. (2023). Historia Clínica Electrónica Perú | Sistema Historias clínicas. https://www.meditech-s.com/blog/meditech-blog-1/historia-clinica-electronica-peru-5-razones-por-las-cuales-los-medicos-deben-adoptar-la-historia-digital-37
+
+\bibitem{minsa2015}
+Ministerio de Salud del Perú. (2015). Minsa evalúa implementar sistema de historias clínicas electrónicas. https://www.gob.pe/institucion/minsa/noticias/30692-minsa-evalua-implementar-sistema-de-historias-clinicas-electronicas
+
+\bibitem{molina2020}
+Molina, J., \& Torres, P. (2020). Preprocessing Techniques for Text Mining in Spanish. \textit{Journal of Information Science}, 46(2), 198-210.
+
+\bibitem{murillo2008}
+Murillo, J. (2008). \textit{Investigación aplicada: Teoría y práctica}. Ediciones Académicas.
+
+\bibitem{ncbi2022}
+NCBI. (2022). Procesamiento de lenguaje natural para texto clínico en español. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9704358/
+
+\bibitem{neveol2018}
+Névéol, A., Bastianelli, E., Zweigenbaum, P. (2018). Named entity recognition for clinical texts: Opportunities and challenges. \textit{Journal of Biomedical Informatics}, 87, 17-27. https://doi.org/10.1016/j.jbi.2018.08.001
+
+\bibitem{ops2021}
+Organización Panamericana de la Salud. (2021). Historias clínicas electrónicas y la importancia de cómo documentar. \textit{OMS}. https://iris.paho.org/bitstream/handle/10665.2/54805/OPSEIHIS21022\_spa.pdf?isAllowed=y\&sequence=1
+
+\bibitem{oms2019}
+Organización Mundial de la Salud (OMS). (2019). Altitud y salud.
+
+\bibitem{pahlavan2013}
+Pahlavan, K., \& Krishnamurthy, P. (2013). \textit{Principles of Wireless Networks: A Unified Approach} (2nd ed.). Prentice Hall.
+
+\bibitem{procesamiento2019}
+Procesamiento del Lenguaje Natural. (2019). En \textit{Wikipedia}. https://es.wikipedia.org/wiki/Procesamiento\_del\_lenguaje\_natural
+
+\bibitem{ramos2019}
+Ramos, L., \& Fernández, C. (2019). Usabilidad en Sistemas Digitales: Enfoques Modernos. \textit{Revista de Ingeniería de Software}, 37(4), 45-58.
+
+\bibitem{revistas2013}
+Revistas Bolivianas. (2013). Manejo Ético de la Historia Clínica. https://revistasbolivianas.umsa.bo/scielo.php?lng=pt\&nrm=iso\&pid=S2304-37682013000500002\&script=sci\_arttext
+
+\bibitem{rodriguez2021}
+Rodríguez, E. (2021). Aplicación web-móvil con geolocalización para mejorar la difusión de información de establecimientos de salud públicos y privados de Trujillo. \textit{Universidad César Vallejo, Perú}. https://hdl.handle.net/20.500.12692/92816
+
+\bibitem{romero2021}
+Romero, A. (2021). Procesamiento del Lenguaje Natural para el Apoyo en el Diagnóstico de Tuberculosis. \textit{Universidad del Rosario, Bogotá}. https://repositorio.escuelaing.edu.co/bitstream/handle/001/1527/Romero\%20Gómez\%2C\%20Andrés\%20Felipe-2021.pdf?sequence=2\&isAllowed=y
+
+\bibitem{ruiz2021}
+Ruiz, M., Rodríguez, P., \& Herrera, A. (2021). Expert Review in Clinical Validation of AI Tools for Healthcare. \textit{International Journal of Medical Informatics}, 148, 104387.
+
+\bibitem{saenz2021}
+Sáenz, L. N. (2021). Sistema Experto para el Diagnóstico de Enfermedades Respiratorias en el Hospital Central de la Policía Nacional del Perú. \textit{CORE}. https://core.ac.uk/download/pdf/230577437.pdf
+
+\bibitem{salud2021}
+Salud Conectada. (2021). Salud Digital (IV): Aplicaciones móviles de salud. https://saludconectada.com/salud-digital-aplicaciones-moviles-salud/
+
+\bibitem{schwartz2002}
+Schwartz, J., Spix, C., Touloumi, G., Bachárová, L., Barumamdzadeh, T., Le Tertre, A., \& Katsouyanni. (2002). Short term fluctuations in air pollution and hospital admissions of respiratory diseases in eight European cities: The APHEA2 project. \textit{Environmental Health Perspectives}, 110(12), 1193–1200.
+
+\bibitem{seguridad2018}
+Seguridad y salud en las minas: Guía de recursos. (2018). \textit{Organización Internacional del Trabajo (OIT)}.
+
+\bibitem{shaip2022}
+Shaip. (2022). Natural language processing in healthcare: Use cases and applications. https://es.shaip.com/blog/natural-language-processing-nlp-healthcare-usecases/
+
+\bibitem{shickel2018}
+Shickel, B., Tighe, P. J., Khoshgoftaar, T. M. (2018). Deep learning for healthcare: Review, opportunities and threats. \textit{Journal of Biomedical Informatics}, 83, 63-71. https://doi.org/10.1016/j.jbi.2018.05.008
+
+\bibitem{silva2019}
+Silva Cornejo, M. del C., Quispe Prieto, S., \& Salas Cornejo, M. D. (2019). Incidencia de enfermedades respiratorias bajas y su relación con algunos factores de riesgo, Servicio de Pediatría del Hospital Hipólito Unanue Tacna 2006. \textit{Ciencia \& Desarrollo}, (10), 63–66. https://doi.org/10.33326/26176033.2006.10.201
+
+\bibitem{spasic2020}
+Spasic, I., Nenadic, G. (2020). Clinical natural language processing in languages other than English: Opportunities and challenges. Primero{Journal of Biomedical Informatics}, 108, 103490. https://doi.org/10.1016/j.jbi.2020.103490
+
+\bibitem{speech2021}
+Speech and language processing. (2021). En \textit{Stanford University}. https://web.stanford.edu/~jurafsky/slp3/
+
+\bibitem{tapullima2021}
+Tapullima, M., Montalván, Gary. P. (2021). Propuesta de Machine Learning sobre datos de historias clínicas para informar el estado de salud de pacientes COVID-19, ESSALUD – Tarapoto, 2021. \textit{Universidad Científica del Perú}. http://hdl.handle.net/20.500.14503/2441
+
+\bibitem{elements2009}
+The elements of statistical learning: data mining, inference, and prediction. (2009). En \textit{Springer}. https://web.stanford.edu/~hastie/Papers/ESLII.pdf
+
+\bibitem{topdoctors2023}
+Top Doctors. (2023). Enfermedades respiratorias: qué es, síntomas y tratamiento. https://www.topdoctors.es/diccionario-medico/enfermedades-respiratorias
+
+\bibitem{cordoba2020}
+Universidad de Córdoba. (2020). Desafíos Daéticos en el uso del procesamiento de lenguaje natural en historias clínicas. https://helvia.uco.es/xmlui/bitstream/handle/10396/20449/2020000002135.pdf
+
+\bibitem{vargas2022}
+Vargas, H., Ruiz, A., González, C. (2022). Análisis de herramientas de procesamiento de lenguaje natural para la gestión de historias clínicas electrónicas en hospitales de Colombia. \textit{Revista Colombiana de Computación}, 23(1), 45-56.
+
+\bibitem{vargas2009}
+Vargas, J. (2009). \textit{Metodología de la investigación}. Lima: Editorial San Marcos.
+
+\bibitem{wang2020}
+Wang, C. J., Ng, C. Y., \& Brook, R. H. (2020). Response to COVID-19 in Taiwan: Big data analytics, new technology, and proactive testing. \textit{JAMA: The Journal of the American Medical Association}, 323(14), 1341. https://doi.org/10.1001/jama.2020.3151
+
+\bibitem{xu2022}
+Xu, W., Zhao, T. (2022). Analyzing Unstructured Healthcare Data: Methods and Applications. \textit{IEEE Access}, 10, 12580-125海棠.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,535 @@
+---
+# ============================================================================
+# Chaos Engineering Experiments for RespiCare
+# ============================================================================
+# 
+# Este archivo contiene experimentos de Chaos Engineering usando Chaos Mesh
+# para probar la resiliencia del sistema RespiCare.
+#
+# Instalación de Chaos Mesh:
+#   curl -sSL https://mirrors.chaos-mesh.org/latest/install.sh | bash
+#
+# Aplicar experimentos:
+#   kubectl apply -f chaos-experiments.yaml
+#
+# Ver estado:
+#   kubectl get chaos -n respicare-prod
+#
+# ============================================================================
+
+# ============================================================================
+# 1. POD CHAOS - Simular fallos de pods
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: backend-pod-failure
+  namespace: respicare-prod
+spec:
+  action: pod-failure
+  mode: one
+  duration: "30s"
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  scheduler:
+    cron: "@every 1h"  # Ejecutar cada hora
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: ai-services-pod-failure
+  namespace: respicare-prod
+spec:
+  action: pod-failure
+  mode: fixed-percent
+  value: "50"  # Matar 50% de los pods
+  duration: "1m"
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: ai-services
+  scheduler:
+    cron: "@every 2h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: mongodb-pod-kill
+  namespace: respicare-prod
+spec:
+  action: pod-kill
+  mode: one
+  duration: "10s"
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: mongodb
+  scheduler:
+    cron: "@every 6h"  # Solo en horarios de bajo tráfico
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: redis-pod-kill
+  namespace: respicare-prod
+spec:
+  action: pod-kill
+  mode: one
+  duration: "10s"
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: redis
+  scheduler:
+    cron: "@every 4h"
+
+# ============================================================================
+# 2. NETWORK CHAOS - Simular problemas de red
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-network-latency
+  namespace: respicare-prod
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  delay:
+    latency: "500ms"
+    correlation: "100"
+    jitter: "100ms"
+  direction: both
+  duration: "2m"
+  scheduler:
+    cron: "@every 3h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: ai-services-network-packet-loss
+  namespace: respicare-prod
+spec:
+  action: loss
+  mode: fixed-percent
+  value: "10"  # 10% de pérdida de paquetes
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: ai-services
+  loss:
+    loss: "10"
+    correlation: "25"
+  direction: both
+  duration: "1m"
+  scheduler:
+    cron: "@every 4h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-to-mongodb-latency
+  namespace: respicare-prod
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  target:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: mongodb
+  delay:
+    latency: "200ms"
+    correlation: "100"
+    jitter: "50ms"
+  direction: to
+  duration: "3m"
+  scheduler:
+    cron: "@every 5h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-to-redis-partition
+  namespace: respicare-prod
+spec:
+  action: partition
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  target:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: redis
+  direction: both
+  duration: "1m"
+  scheduler:
+    cron: "@every 6h"
+
+# ============================================================================
+# 3. STRESS CHAOS - Simular sobrecarga de recursos
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: backend-cpu-stress
+  namespace: respicare-prod
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  stressors:
+    cpu:
+      workers: 2
+      load: 80  # 80% de CPU
+  duration: "2m"
+  scheduler:
+    cron: "@every 4h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: ai-services-memory-stress
+  namespace: respicare-prod
+spec:
+  mode: fixed-percent
+  value: "50"  # 50% de los pods
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: ai-services
+  stressors:
+    memory:
+      workers: 1
+      size: "512Mi"  # Consumir 512MB adicionales
+  duration: "3m"
+  scheduler:
+    cron: "@every 5h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: mongodb-io-stress
+  namespace: respicare-prod
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: mongodb
+  stressors:
+    io:
+      workers: 4
+      path: "/data/db"
+      size: "1Gi"
+      readWorkers: 2
+      writeWorkers: 2
+  duration: "2m"
+  scheduler:
+    cron: "@every 8h"  # Solo en horarios de bajo tráfico
+
+# ============================================================================
+# 4. DNS CHAOS - Simular problemas de DNS
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: mongodb-dns-failure
+  namespace: respicare-prod
+spec:
+  action: error
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  patterns:
+    - "mongodb.respicare-prod.svc.cluster.local"
+  duration: "1m"
+  scheduler:
+    cron: "@every 6h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: redis-dns-failure
+  namespace: respicare-prod
+spec:
+  action: error
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  patterns:
+    - "redis.respicare-prod.svc.cluster.local"
+  duration: "1m"
+  scheduler:
+    cron: "@every 6h"
+
+# ============================================================================
+# 5. TIME CHAOS - Simular problemas de reloj (para timeouts)
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: backend-time-skew
+  namespace: respicare-prod
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  timeOffset: "5s"  # Adelantar el reloj 5 segundos
+  duration: "30s"
+  scheduler:
+    cron: "@every 12h"
+
+# ============================================================================
+# 6. IO CHAOS - Simular problemas de I/O (para bases de datos)
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: mongodb-io-latency
+  namespace: respicare-prod
+spec:
+  action: latency
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: mongodb
+  volumePath: "/data/db"
+  path: "/data/db/**"
+  delay: "100ms"
+  percent: 50  # 50% de las operaciones
+  duration: "2m"
+  scheduler:
+    cron: "@every 8h"
+
+# ============================================================================
+# 7. HTTP CHAOS - Simular problemas en endpoints HTTP
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-api-errors
+  namespace: respicare-prod
+spec:
+  mode: fixed-percent
+  value: "10"  # 10% de los requests
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  target:
+    target: Request
+    requestHeaders:
+      - key: "X-Chaos-Test"
+        value: "true"
+  rules:
+    - port: 3001
+      path: "/api/v1/**"
+      method: "GET"
+      abort: true
+      statusCode: 500
+  duration: "1m"
+  scheduler:
+    cron: "@every 3h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: ai-services-slow-response
+  namespace: respicare-prod
+spec:
+  mode: fixed-percent
+  value: "20"  # 20% de los requests
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: ai-services
+  target:
+    target: Request
+  rules:
+    - port: 8000
+      path: "/api/v1/**"
+      delay: "2s"  # Retrasar respuesta 2 segundos
+  duration: "2m"
+  scheduler:
+    cron: "@every 4h"
+
+# ============================================================================
+# 8. KERNEL CHAOS - Simular problemas a nivel de kernel (avanzado)
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: KernelChaos
+metadata:
+  name: backend-kernel-panic
+  namespace: respicare-prod
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  failKernRequest:
+    callchain:
+      - funcname: "__x64_sys_kill"
+    failtype: 1  # PANIC
+  duration: "10s"
+  scheduler:
+    cron: "@every 24h"  # Solo una vez al día, en horario de mantenimiento
+
+# ============================================================================
+# 9. EXPERIMENTOS COMBINADOS - Múltiples fallos simultáneos
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: combined-chaos-scenario
+  namespace: respicare-prod
+spec:
+  schedule: "@every 12h"
+  historyLimit: 3
+  concurrencyPolicy: "Forbid"
+  type: "workflow"
+  workflow:
+    entry: "entry"
+    templates:
+      - name: "entry"
+        templateType: "Serial"
+        children:
+          - "backend-pod-failure"
+          - "network-latency"
+          - "cpu-stress"
+      - name: "backend-pod-failure"
+        templateType: "PodChaos"
+        podChaos:
+          action: pod-kill
+          mode: one
+          selector:
+            namespaces:
+              - respicare-prod
+            labelSelectors:
+              app: backend
+          duration: "30s"
+      - name: "network-latency"
+        templateType: "NetworkChaos"
+        networkChaos:
+          action: delay
+          mode: all
+          selector:
+            namespaces:
+              - respicare-prod
+            labelSelectors:
+              app: backend
+          delay:
+            latency: "300ms"
+          duration: "1m"
+      - name: "cpu-stress"
+        templateType: "StressChaos"
+        stressChaos:
+          mode: one
+          selector:
+            namespaces:
+              - respicare-prod
+            labelSelectors:
+              app: backend
+          stressors:
+            cpu:
+              workers: 2
+              load: 70
+          duration: "2m"
+
+# ============================================================================
+# 10. EXPERIMENTOS DE RESILIENCIA - Pruebas específicas de recuperación
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: backend-graceful-shutdown-test
+  namespace: respicare-prod
+spec:
+  action: pod-kill
+  mode: one
+  duration: "5s"
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  scheduler:
+    cron: "@every 8h"
+  # Este experimento prueba que el backend maneja correctamente
+  # las señales SIGTERM y cierra conexiones gracefully
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-circuit-breaker-test
+  namespace: respicare-prod
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: backend
+  target:
+    namespaces:
+      - respicare-prod
+    labelSelectors:
+      app: mongodb
+  direction: both
+  duration: "30s"
+  scheduler:
+    cron: "@every 6h"
+  # Este experimento prueba que el backend activa circuit breakers
+  # cuando MongoDB no está disponible
+

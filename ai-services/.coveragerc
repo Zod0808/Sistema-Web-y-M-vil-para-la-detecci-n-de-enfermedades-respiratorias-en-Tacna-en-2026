@@ -1,0 +1,43 @@
+[run]
+source = .
+omit = 
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */migrations/*
+    */node_modules/*
+    # Excluir módulos con dependencias pesadas o no críticos
+    ml_models/lazy_loader.py
+    ml_models/medical_bert.py
+    ml_models/image_classifier.py
+    ml_models/synthetic_*.py
+    ml_models/train_*.py
+    ml_models/time_series_predictor.py
+    models/model_manager.py
+    models/__init__.py
+    medical-history-processor/*
+    symptom-analyzer/*
+    data/disease_parser.py
+    data/synthetic_*.py
+    services/conversational_ai_service.py
+    services/patient_friendly_explainer.py
+    services/cough_analysis_service.py
+    # Excluir tests de performance y security que requieren dependencias pesadas
+    tests/performance/*
+    tests/security/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+

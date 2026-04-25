@@ -1,0 +1,26 @@
+.heatmap-page {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.heatmap-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  font-size: 1.1rem;
+  color: #1565c0;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .heatmap-page {
+    height: 100vh;
+  }
+}

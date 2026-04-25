@@ -1,0 +1,323 @@
+name: MDSD Model Validation
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'backend/src/domain/**'
+      - 'backend/src/models/**'
+      - 'backend/openapi/**'
+      - 'docs/diagrams/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'backend/src/domain/**'
+      - 'backend/src/models/**'
+      - 'backend/openapi/**'
+
+jobs:
+  validate-models:
+    name: Validate Domain Models
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    
+    - name: 📦 Install dependencies
+      working-directory: ./backend
+      run: npm ci
+    
+    - name: 🔍 Validate TypeScript Models
+      working-directory: ./backend
+      run: npm run validate:models
+      
+    - name: 📋 Check for model inconsistencies
+      working-directory: ./backend
+      run: |
+        echo "Checking for model definition inconsistencies..."
+        # Check if domain entities match persistence models
+        node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          const domainDir = 'src/domain/entities';
+          const modelsDir = 'src/models';
+          
+          const domainFiles = fs.readdirSync(domainDir).filter(f => f.endsWith('.ts'));
+          const modelFiles = fs.readdirSync(modelsDir).filter(f => f.endsWith('.ts'));
+          
+          console.log('Domain entities:', domainFiles.length);
+          console.log('Model definitions:', modelFiles.length);
+          
+          const domainNames = domainFiles.map(f => f.replace('.ts', ''));
+          const modelNames = modelFiles.map(f => f.replace('.ts', ''));
+          
+          const missingModels = domainNames.filter(name => !modelNames.includes(name));
+          
+          if (missingModels.length > 0) {
+            console.warn('⚠️  Warning: Domain entities without corresponding models:', missingModels);
+          } else {
+            console.log('✅ All domain entities have corresponding models');
+          }
+        "
+  
+  validate-openapi:
+    name: Validate OpenAPI Schema
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: 📦 Install OpenAPI tools
+      run: |
+        npm install -g @openapitools/openapi-generator-cli
+        npm install -g swagger-cli
+    
+    - name: 🔍 Validate OpenAPI specification
+      run: |
+        echo "Validating OpenAPI schema..."
+        swagger-cli validate backend/openapi/respicare-api.yaml
+        
+    - name: 📊 Generate OpenAPI report
+      run: |
+        echo "Generating OpenAPI analysis..."
+        npx @openapitools/openapi-generator-cli validate -i backend/openapi/respicare-api.yaml
+        
+    - name: ✅ OpenAPI validation passed
+      run: echo "OpenAPI schema is valid!"
+
+  generate-code:
+    name: Code Generation Status (Disabled)
+    runs-on: ubuntu-latest
+    needs: [validate-models, validate-openapi]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    
+    - name: 📦 Install dependencies
+      working-directory: ./backend
+      run: npm ci
+    
+    - name: ⚠️ Code Generation Skipped
+      run: |
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "⚠️  CODE GENERATION IS CURRENTLY DISABLED"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Los generadores de código están en fase experimental y"
+        echo "producen código TypeScript con errores de compilación."
+        echo ""
+        echo "Problemas conocidos:"
+        echo "  ❌ Rutas de importación incorrectas (@domain/...)"
+        echo "  ❌ Módulo class-validator no configurado"
+        echo "  ❌ Propiedades sin inicializadores"
+        echo "  ❌ Tipos no importados (Symptom, Location)"
+        echo ""
+        echo "📋 Ver documentación completa:"
+        echo "   backend/src/generators/README.md"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ Los generadores se habilitarán cuando estén corregidos"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+    # - name: 🔧 Generate DTOs
+    #   working-directory: ./backend
+    #   run: npm run generate:dtos
+    #   
+    # - name: 🔧 Generate Repositories
+    #   working-directory: ./backend
+    #   run: npm run generate:repositories
+    #   
+    # - name: 🔍 Validate generated code
+    #   working-directory: ./backend
+    #   run: npm run validate:models
+        
+    # - name: 📤 Upload generated artifacts
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: generated-code
+    #     path: |
+    #       backend/src/interface-adapters/dtos/generated/
+    #       backend/src/infrastructure/repositories/generated/
+    #     retention-days: 7
+    #     if-no-files-found: warn
+
+  generate-diagrams:
+    name: Generate UML Diagrams
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Validate PlantUML syntax
+      run: |
+        cd docs/diagrams
+        chmod +x validate-puml.sh
+        ./validate-puml.sh
+    
+    - name: 🎨 Setup PlantUML
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y plantuml graphviz default-jre
+        
+    - name: 📊 Generate diagrams
+      run: |
+        echo "Generating UML diagrams..."
+        cd docs/diagrams
+        mkdir -p output
+        
+        echo "Testing PlantUML installation..."
+        plantuml -version
+        
+        echo "Testing each .puml file individually..."
+        for file in *.puml; do
+          echo "Processing $file..."
+          plantuml "$file" -tpng -o output && echo "  ✅ $file generated successfully" || echo "  ⚠️  $file failed"
+        done
+        
+        echo ""
+        echo "Listing generated files:"
+        ls -la output/ || echo "Output directory is empty"
+        
+        # Count generated files
+        file_count=$(ls -1 output/*.png 2>/dev/null | wc -l || echo "0")
+        echo "Total PNG files generated: $file_count"
+        
+    - name: 📤 Upload diagrams
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: uml-diagrams
+        path: docs/diagrams/output/
+        retention-days: 30
+        if-no-files-found: warn
+
+  mdsd-quality-check:
+    name: MDSD Quality Metrics
+    runs-on: ubuntu-latest
+    needs: [validate-models, validate-openapi]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: 📊 Calculate MDSD Metrics
+      run: |
+        echo "==================================="
+        echo "MDSD Quality Metrics"
+        echo "==================================="
+        
+        # Count domain models
+        DOMAIN_ENTITIES=$(find backend/src/domain/entities -name "*.ts" | wc -l)
+        echo "Domain Entities (PIM): $DOMAIN_ENTITIES"
+        
+        # Count persistence models
+        PERSISTENCE_MODELS=$(find backend/src/models -name "*.ts" | wc -l)
+        echo "Persistence Models (PSM): $PERSISTENCE_MODELS"
+        
+        # Count DTOs
+        DTOS=$(find backend/src/interface-adapters/dtos -name "*.ts" 2>/dev/null | wc -l)
+        echo "DTOs (PSM): $DTOS"
+        
+        # Count repositories
+        REPOS=$(find backend/src/infrastructure/repositories -name "*.ts" 2>/dev/null | wc -l)
+        echo "Repositories: $REPOS"
+        
+        # Count generated files
+        GENERATED=$(find backend/src -name "*.generated.ts" 2>/dev/null | wc -l)
+        echo "Generated Files: $GENERATED"
+        
+        # Calculate automation percentage
+        TOTAL_TRANSFORMERS=$((DTOS + REPOS))
+        if [ $TOTAL_TRANSFORMERS -gt 0 ]; then
+          AUTOMATION_PERCENT=$((GENERATED * 100 / TOTAL_TRANSFORMERS))
+          echo "Automation Level: ${AUTOMATION_PERCENT}%"
+        fi
+        
+        echo "==================================="
+        
+        # Check if models are in sync
+        if [ $DOMAIN_ENTITIES -ne $PERSISTENCE_MODELS ]; then
+          echo "⚠️  Warning: Domain entities and persistence models count mismatch!"
+        else
+          echo "✅ Domain and persistence models are in sync"
+        fi
+        
+    - name: 📝 Generate MDSD Report
+      run: |
+        cat > mdsd-report.md << 'EOF'
+        # MDSD Quality Report
+        
+        ## Model Statistics
+        - Domain Entities: $(find backend/src/domain/entities -name "*.ts" | wc -l)
+        - Persistence Models: $(find backend/src/models -name "*.ts" | wc -l)
+        - DTOs: $(find backend/src/interface-adapters/dtos -name "*.ts" 2>/dev/null | wc -l)
+        - Repositories: $(find backend/src/infrastructure/repositories -name "*.ts" 2>/dev/null | wc -l)
+        
+        ## Automation Level
+        - Generated Files: $(find backend/src -name "*.generated.ts" 2>/dev/null | wc -l)
+        - Manual Files: Still present
+        
+        ## Recommendations
+        - Continue increasing automation
+        - Maintain model consistency
+        - Keep OpenAPI schema updated
+        EOF
+        
+    - name: 📤 Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: mdsd-report
+        path: mdsd-report.md
+
+  notify-on-failure:
+    name: Notify on Validation Failure
+    runs-on: ubuntu-latest
+    needs: [validate-models, validate-openapi]
+    if: failure()
+    
+    steps:
+    - name: 🚨 Model validation failed
+      run: |
+        echo "❌ MDSD validation failed!"
+        echo "Please check:"
+        echo "1. Domain models compile correctly"
+        echo "2. OpenAPI schema is valid"
+        echo "3. Generated code is consistent"
+        echo ""
+        echo "Run locally: npm run generate && npm run validate:models"
+

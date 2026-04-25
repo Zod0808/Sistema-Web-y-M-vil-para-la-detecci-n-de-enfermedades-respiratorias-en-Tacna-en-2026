@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-load-balancer-config
+  namespace: ingress-nginx
+  labels:
+    app: nginx-ingress
+data:
+  # Configuración global de load balancing para nginx ingress controller
+  # Esta configuración se aplica a nivel del ingress controller
+  upstream-keepalive-connections: "100"
+  upstream-keepalive-requests: "1000"
+  upstream-keepalive-timeout: "60"
+  
+  # Configuración de algoritmos de balanceo disponibles
+  # least_conn: Distribuye conexiones al servidor con menos conexiones activas
+  # ip_hash: Mantiene sesión basada en IP del cliente
+  # round_robin: Distribución round-robin (default)
+  load-balance: "least_conn"
+  
+  # Configuración de health checks
+  upstream-max-fails: "3"
+  upstream-fail-timeout: "30"
+  
+  # Configuración de timeouts
+  proxy-connect-timeout: "60"
+  proxy-send-timeout: "60"
+  proxy-read-timeout: "60"
+  
+  # Configuración de buffering
+  proxy-buffering: "on"
+  proxy-buffer-size: "4k"
+  proxy-buffers-number: "8"
+  proxy-busy-buffers-size: "8k"
+  
+  # Configuración de retries
+  proxy-next-upstream: "error timeout invalid_header http_500 http_502 http_503 http_504"
+  proxy-next-upstream-timeout: "10"
+  proxy-next-upstream-tries: "3"
+  
+  # Configuración de keep-alive
+  keepalive-timeout: "65"
+  keepalive-requests: "100"
+

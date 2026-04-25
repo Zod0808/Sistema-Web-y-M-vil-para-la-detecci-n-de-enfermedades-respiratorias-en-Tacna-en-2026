@@ -1,0 +1,59 @@
+name: AI Services - Benchmarks (p95/p99)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL del servicio (por defecto http://localhost:8000)"
+        required: false
+        default: "http://localhost:8000"
+      endpoints:
+        description: "Endpoints separados por comas"
+        required: false
+        default: "/api/v1/health,/api/v1/nlp/advanced/process,/api/v1/ml/advanced/text"
+      concurrency:
+        description: "Concurrencia"
+        required: false
+        default: "20"
+      requests:
+        description: "Requests por endpoint"
+        required: false
+        default: "200"
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-services
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install httpx==0.25.2
+
+      - name: Run benchmarks
+        run: |
+          python benchmark_endpoints.py \
+            --base-url "${{ github.event.inputs.base_url }}" \
+            --endpoints "${{ github.event.inputs.endpoints }}" \
+            --concurrency ${{ github.event.inputs.concurrency }} \
+            --requests ${{ github.event.inputs.requests }} \
+            --output benchmark_report.md
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-benchmark-report
+          path: ai-services/benchmark_report.md
+
+

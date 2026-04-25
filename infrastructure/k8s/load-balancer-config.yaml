@@ -1,0 +1,427 @@
+---
+# Load Balancer Configuration for RespiCare
+# Configuración avanzada de Ingress Controller con múltiples algoritmos de load balancing
+# y health checks avanzados
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-load-balancer-config
+  namespace: ingress-nginx
+  labels:
+    app: nginx-ingress
+    component: load-balancer
+data:
+  # Configuración global de nginx
+  enable-ssl-passthrough: "true"
+  enable-brotli: "true"
+  brotli-level: "6"
+  brotli-types: "application/xml+rss application/atom+xml application/javascript application/json application/rss+xml application/vnd.ms-fontobject application/x-font-ttf application/x-web-app-manifest+json application/xhtml+xml application/xml font/opentype image/svg+xml image/x-icon text/css text/plain text/x-component"
+  
+  # Configuración de worker processes
+  worker-processes: "auto"
+  worker-connections: "16384"
+  
+  # Timeouts
+  proxy-connect-timeout: "60"
+  proxy-send-timeout: "60"
+  proxy-read-timeout: "60"
+  keepalive-timeout: "75"
+  keepalive-requests: "100"
+  
+  # Buffer sizes
+  proxy-buffer-size: "8k"
+  proxy-buffers-number: "8"
+  proxy-busy-buffers-size: "16k"
+  
+  # Logging
+  log-format-upstream: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_length $request_time [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id'
+  enable-access-log: "true"
+  access-log-path: "/var/log/nginx/access.log"
+  error-log-path: "/var/log/nginx/error.log"
+  log-format-escape-json: "true"
+  
+  # Rate limiting
+  limit-connections: "100"
+  limit-rps: "100"
+  limit-connections-zone: "limit_conn_zone"
+  limit-rps-zone: "limit_req_zone"
+  
+  # Health checks avanzados
+  enable-health-check: "true"
+  health-check-interval: "10s"
+  health-check-timeout: "5s"
+  health-check-failures: "3"
+  health-check-successes: "2"
+  
+  # Load balancing algorithms
+  # Opciones: round_robin, least_conn, ip_hash, hash, consistent_hash
+  default-load-balance-algorithm: "least_conn"
+  
+  # Upstream keepalive
+  upstream-keepalive-connections: "64"
+  upstream-keepalive-requests: "100"
+  upstream-keepalive-timeout: "60"
+  
+  # SSL/TLS
+  ssl-protocols: "TLSv1.2 TLSv1.3"
+  ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+  ssl-prefer-server-ciphers: "true"
+  ssl-session-cache: "shared:SSL:10m"
+  ssl-session-timeout: "10m"
+  
+  # Gzip compression
+  enable-gzip: "true"
+  gzip-level: "6"
+  gzip-types: "application/atom+xml application/geo+json application/javascript application/x-javascript application/json application/ld+json application/manifest+json application/rdf+xml application/rss+xml application/xhtml+xml application/xml font/eot font/opentype font/ttf image/svg+xml text/css text/javascript text/plain text/xml"
+  
+  # Security headers
+  add-headers: "ingress-nginx/custom-headers"
+  server-tokens: "false"
+  hide-headers: "Server,X-Powered-By"
+  
+  # Performance
+  max-worker-open-files: "65535"
+  worker-cpu-affinity: "auto"
+  enable-metrics: "true"
+  metrics-port: "10254"
+  
+---
+# Ingress Class para diferentes algoritmos de load balancing
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-least-conn
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "false"
+spec:
+  controller: k8s.io/ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-round-robin
+spec:
+  controller: k8s.io/ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-ip-hash
+spec:
+  controller: k8s.io/ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-consistent-hash
+spec:
+  controller: k8s.io/ingress-nginx
+---
+# Ingress con algoritmo Least Connections (recomendado para APIs)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-least-conn
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx-least-conn
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Load Balancing Algorithm
+    nginx.ingress.kubernetes.io/upstream-hash-by: ""  # Deshabilitar hash para usar least_conn
+    nginx.ingress.kubernetes.io/load-balance: "least_conn"
+    # Health Checks Avanzados
+    nginx.ingress.kubernetes.io/upstream-max-fails: "3"
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "30s"
+    nginx.ingress.kubernetes.io/upstream-keepalive-connections: "64"
+    nginx.ingress.kubernetes.io/upstream-keepalive-requests: "100"
+    nginx.ingress.kubernetes.io/upstream-keepalive-timeout: "60s"
+    # Active Health Checks (requiere nginx-plus o módulo nginx-module-healthcheck)
+    nginx.ingress.kubernetes.io/health-check-enabled: "true"
+    nginx.ingress.kubernetes.io/health-check-path: "/health"
+    nginx.ingress.kubernetes.io/health-check-interval: "10s"
+    nginx.ingress.kubernetes.io/health-check-timeout: "5s"
+    nginx.ingress.kubernetes.io/health-check-failures: "3"
+    nginx.ingress.kubernetes.io/health-check-successes: "2"
+    # Retry Configuration
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "error timeout invalid_header http_500 http_502 http_503 http_504"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: "10s"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-tries: "3"
+    # Circuit Breaker Pattern
+    nginx.ingress.kubernetes.io/upstream-circuit-breaker: "on"
+    nginx.ingress.kubernetes.io/upstream-circuit-breaker-threshold: "5"
+    nginx.ingress.kubernetes.io/upstream-circuit-breaker-timeout: "60s"
+    # SSL/TLS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/hsts-preload: "true"
+    # Proxy Configuration
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "100"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+    # Custom Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Upstream: $upstream_addr";
+      more_set_headers "X-Request-ID: $request_id";
+      more_set_headers "X-Load-Balancer-Algorithm: least_conn";
+      more_set_headers "X-Upstream-Response-Time: $upstream_response_time";
+spec:
+  ingressClassName: nginx-least-conn
+  tls:
+    - hosts:
+        - api.respicare.example.com
+      secretName: backend-tls
+  rules:
+    - host: api.respicare.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80
+---
+# Ingress con algoritmo Round Robin (para carga balanceada uniforme)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-round-robin
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx-round-robin
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Load Balancing Algorithm
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+    # Health Checks
+    nginx.ingress.kubernetes.io/upstream-max-fails: "3"
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "30s"
+    nginx.ingress.kubernetes.io/health-check-enabled: "true"
+    nginx.ingress.kubernetes.io/health-check-path: "/health"
+    nginx.ingress.kubernetes.io/health-check-interval: "10s"
+    nginx.ingress.kubernetes.io/health-check-timeout: "5s"
+    nginx.ingress.kubernetes.io/health-check-failures: "3"
+    nginx.ingress.kubernetes.io/health-check-successes: "2"
+    # SSL/TLS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Custom Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Load-Balancer-Algorithm: round_robin";
+spec:
+  ingressClassName: nginx-round-robin
+  tls:
+    - hosts:
+        - api-rr.respicare.example.com
+      secretName: backend-tls
+  rules:
+    - host: api-rr.respicare.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80
+---
+# Ingress con algoritmo IP Hash (para session affinity)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ip-hash
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx-ip-hash
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Load Balancing Algorithm - IP Hash para session affinity
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$binary_remote_addr"
+    # Health Checks
+    nginx.ingress.kubernetes.io/upstream-max-fails: "3"
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "30s"
+    nginx.ingress.kubernetes.io/health-check-enabled: "true"
+    nginx.ingress.kubernetes.io/health-check-path: "/health"
+    nginx.ingress.kubernetes.io/health-check-interval: "10s"
+    nginx.ingress.kubernetes.io/health-check-timeout: "5s"
+    # SSL/TLS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Custom Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Load-Balancer-Algorithm: ip_hash";
+      more_set_headers "X-Client-IP: $remote_addr";
+spec:
+  ingressClassName: nginx-ip-hash
+  tls:
+    - hosts:
+        - api-session.respicare.example.com
+      secretName: backend-tls
+  rules:
+    - host: api-session.respicare.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80
+---
+# Ingress con algoritmo Consistent Hash (para distribución basada en clave)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-consistent-hash
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx-consistent-hash
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Load Balancing Algorithm - Consistent Hash
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
+    nginx.ingress.kubernetes.io/load-balance: "hash"
+    # Health Checks
+    nginx.ingress.kubernetes.io/upstream-max-fails: "3"
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "30s"
+    nginx.ingress.kubernetes.io/health-check-enabled: "true"
+    nginx.ingress.kubernetes.io/health-check-path: "/health"
+    nginx.ingress.kubernetes.io/health-check-interval: "10s"
+    nginx.ingress.kubernetes.io/health-check-timeout: "5s"
+    # SSL/TLS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Custom Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Load-Balancer-Algorithm: consistent_hash";
+spec:
+  ingressClassName: nginx-consistent-hash
+  tls:
+    - hosts:
+        - api-cache.respicare.example.com
+      secretName: backend-tls
+  rules:
+    - host: api-cache.respicare.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80
+---
+# Service con configuración avanzada de health checks
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-lb
+  namespace: default
+  annotations:
+    # Health check configuration
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "3"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/health"
+    # Connection draining
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout: "60"
+    # Cross-zone load balancing
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    # Idle timeout
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "60"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3001
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: 3001
+      protocol: TCP
+      name: https
+  selector:
+    app: backend
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 horas
+---
+# PodDisruptionBudget para alta disponibilidad durante actualizaciones
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: default
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: backend
+---
+# HorizontalPodAutoscaler con métricas de load balancer
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa-lb
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Pods
+      pods:
+        metric:
+          name: nginx_ingress_controller_requests
+        target:
+          type: AverageValue
+          averageValue: "100"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max
+

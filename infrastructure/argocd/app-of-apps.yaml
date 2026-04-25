@@ -1,0 +1,315 @@
+---
+# ArgoCD App of Apps Pattern
+# Este patrón permite gestionar múltiples aplicaciones de ArgoCD de forma centralizada
+# La aplicación raíz gestiona todas las aplicaciones hijas
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: respicare-root
+  namespace: argocd
+  labels:
+    app: respicare
+    component: root
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/respicare.git
+    targetRevision: main
+    path: infrastructure/argocd
+    directory:
+      recurse: true
+      include: |
+        application.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+---
+# ApplicationSet para gestión dinámica de aplicaciones por ambiente
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: respicare-environments
+  namespace: argocd
+  labels:
+    app: respicare
+    component: applicationset
+spec:
+  generators:
+    # Generador de lista para múltiples ambientes
+    - list:
+        elements:
+          - environment: development
+            namespace: respicare-dev
+            branch: develop
+            replicas: "1"
+          - environment: staging
+            namespace: respicare-staging
+            branch: staging
+            replicas: "2"
+          - environment: production
+            namespace: respicare-prod
+            branch: main
+            replicas: "3"
+  template:
+    metadata:
+      name: 'respicare-backend-{{environment}}'
+      namespace: argocd
+      labels:
+        app: respicare
+        component: backend
+        environment: '{{environment}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/your-org/respicare.git
+        targetRevision: '{{branch}}'
+        path: infrastructure/k8s
+        directory:
+          recurse: false
+          include: |
+            backend-*.yaml
+        kustomize:
+          commonLabels:
+            environment: '{{environment}}'
+          replicas:
+            - name: backend
+              count: '{{replicas}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+---
+# ApplicationSet para componentes de infraestructura
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: respicare-infrastructure-components
+  namespace: argocd
+  labels:
+    app: respicare
+    component: infrastructure
+spec:
+  generators:
+    - list:
+        elements:
+          - name: monitoring
+            path: infrastructure/k8s
+            include: |
+              prometheus-*.yaml
+              grafana-*.yaml
+              alertmanager-*.yaml
+            namespace: monitoring
+          - name: logging
+            path: infrastructure/k8s
+            include: |
+              elasticsearch-*.yaml
+              kibana-*.yaml
+              logstash-*.yaml
+            namespace: logging
+          - name: observability
+            path: infrastructure/k8s
+            include: |
+              jaeger-*.yaml
+              otel-*.yaml
+            namespace: observability
+          - name: security
+            path: infrastructure/k8s
+            include: |
+              security-*.yaml
+              backend-networkpolicies.yaml
+            namespace: respicare-prod
+  template:
+    metadata:
+      name: 'respicare-{{name}}'
+      namespace: argocd
+      labels:
+        app: respicare
+        component: '{{name}}'
+        environment: production
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/your-org/respicare.git
+        targetRevision: main
+        path: '{{path}}'
+        directory:
+          recurse: false
+          include: '{{include}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+---
+# ArgoCD Project para organización y permisos
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: respicare
+  namespace: argocd
+  labels:
+    app: respicare
+spec:
+  description: RespiCare Application Project
+  sourceRepos:
+    - 'https://github.com/your-org/respicare.git'
+    - '*'  # Permitir todos los repositorios (ajustar según necesidades de seguridad)
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+    - namespace: respicare-*
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+    - namespace: logging
+      server: https://kubernetes.default.svc
+    - namespace: observability
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    # Rol para desarrolladores (solo lectura)
+    - name: developer
+      description: Developer role with read-only access
+      policies:
+        - p, proj:respicare:developer, applications, get, respicare/*, allow
+        - p, proj:respicare:developer, applications, sync, respicare/*, allow
+      groups:
+        - developers
+    # Rol para DevOps (acceso completo)
+    - name: devops
+      description: DevOps role with full access
+      policies:
+        - p, proj:respicare:devops, applications, *, respicare/*, allow
+        - p, proj:respicare:devops, repositories, get, *, allow
+        - p, proj:respicare:devops, repositories, create, *, allow
+        - p, proj:respicare:devops, certificates, create, *, allow
+        - p, proj:respicare:devops, certificates, get, *, allow
+      groups:
+        - devops
+    # Rol para administradores
+    - name: admin
+      description: Admin role with full project access
+      policies:
+        - p, proj:respicare:admin, applications, *, respicare/*, allow
+        - p, proj:respicare:admin, repositories, *, *, allow
+        - p, proj:respicare:admin, certificates, *, *, allow
+        - p, proj:respicare:admin, accounts, *, *, allow
+      groups:
+        - admins
+---
+# ConfigMap para configuración de ArgoCD
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Configuración de repositorios
+  repositories: |
+    - type: git
+      url: https://github.com/your-org/respicare.git
+      name: respicare-main
+      username: git-username
+      password: $GIT_PASSWORD
+  # Configuración de aplicaciones
+  application.instanceLabelKey: argocd.argoproj.io/instance
+  # Timeout para operaciones
+  timeout.reconciliation: 180s
+  # Configuración de UI
+  ui.bannerContent: |
+    <div style="background-color: #1976d2; color: white; padding: 10px; text-align: center;">
+      <strong>RespiCare GitOps Environment</strong>
+    </div>
+  # Configuración de notificaciones
+  notifications.controllers.enabled: "true"
+  notifications.triggers.on-sync-succeeded.enabled: "true"
+  notifications.triggers.on-sync-failed.enabled: "true"
+  notifications.triggers.on-health-degraded.enabled: "true"
+---
+# Secret para credenciales de Git (usar External Secrets Operator en producción)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-repo-credentials
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-secret
+    app.kubernetes.io/part-of: argocd
+type: Opaque
+stringData:
+  # NOTA: En producción, usar External Secrets Operator o Sealed Secrets
+  # Estos valores deben ser reemplazados con valores reales
+  url: https://github.com/your-org/respicare.git
+  username: git-username
+  password: git-password-or-token
+  # Para SSH
+  sshPrivateKey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    # Reemplazar con clave SSH real
+    -----END OPENSSH PRIVATE KEY-----
+

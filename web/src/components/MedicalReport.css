@@ -1,0 +1,144 @@
+.medical-report {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e3f2fd;
+  padding: 24px;
+  margin-bottom: 40px;
+  box-shadow: 0 20px 50px rgba(33, 150, 243, 0.15);
+}
+
+.medical-report header h3 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #0d47a1;
+}
+
+.medical-report header p {
+  margin: 4px 0 20px;
+  color: #607d8b;
+}
+
+.report-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.report-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #0d47a1;
+  font-size: 0.95rem;
+}
+
+.report-form input,
+.report-form textarea,
+.report-form select {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #bbdefb;
+  background: #f5faff;
+  transition: border 0.2s, box-shadow 0.2s;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.report-form input:focus,
+.report-form textarea:focus,
+.report-form select:focus {
+  border-color: #2196f3;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+.report-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.report-actions button {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(33, 150, 243, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.report-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(33, 150, 243, 0.4);
+}
+
+.report-message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.report-message.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+}
+
+.report-message.error {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.report-history {
+  margin-top: 24px;
+}
+
+.report-history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-history th,
+.report-history td {
+  padding: 10px;
+  border-bottom: 1px solid #e3f2fd;
+  font-size: 0.9rem;
+}
+
+.report-history th {
+  background: #e3f2fd;
+  color: #0d47a1;
+  font-weight: 700;
+}
+
+.report-history a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.report-history a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .report-form {
+    grid-template-columns: 1fr;
+  }
+
+  .report-actions {
+    flex-direction: column;
+  }
+
+  .report-actions button {
+    width: 100%;
+  }
+}
+

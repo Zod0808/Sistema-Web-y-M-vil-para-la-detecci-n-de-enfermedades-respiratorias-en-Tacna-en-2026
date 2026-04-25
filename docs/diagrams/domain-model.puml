@@ -1,0 +1,168 @@
+@startuml Domain Model - RespiCare
+
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title RespiCare - Domain Model (Platform Independent Models)
+
+package "Domain Layer - PIM" {
+  
+  package "Entities" <<Rectangle>> {
+    class UserEntity {
+      - id: string
+      - name: string
+      - email: string
+      - password: string
+      - role: UserRole
+      - avatar?: string
+      - isActive: boolean
+      - lastLogin?: Date
+      - createdAt: Date
+      - updatedAt: Date
+      --
+      + isAdmin(): boolean
+      + isDoctor(): boolean
+      + isPatient(): boolean
+      + canAccessMedicalData(): boolean
+      + canManageUsers(): boolean
+      + updateLastLogin(): UserEntity
+      + deactivate(): UserEntity
+      + updateProfile(name, avatar): UserEntity
+      + validateEmail(): boolean
+      + validatePassword(): boolean
+      + isValid(): boolean
+    }
+
+    class MedicalHistoryEntity {
+      - id: string
+      - patientId: string
+      - doctorId: string
+      - patientName: string
+      - age: number
+      - diagnosis: string
+      - symptoms: Symptom[]
+      - description?: string
+      - date: Date
+      - location?: Location
+      - images?: string[]
+      - audioNotes?: string
+      - isOffline: boolean
+      - syncStatus: SyncStatus
+      - createdAt: Date
+      - updatedAt: Date
+      --
+      + isUrgent(): boolean
+      + hasLocation(): boolean
+      + isSynced(): boolean
+      + needsSync(): boolean
+      + canBeEdited(): boolean
+      + markAsSynced(): MedicalHistoryEntity
+      + markAsError(): MedicalHistoryEntity
+      + addSymptom(symptom): MedicalHistoryEntity
+      + updateDiagnosis(diagnosis): MedicalHistoryEntity
+      + addImage(imageUrl): MedicalHistoryEntity
+      + setLocation(location): MedicalHistoryEntity
+      + validateAge(): boolean
+      + validateDiagnosis(): boolean
+      + isValid(): boolean
+    }
+  }
+
+  package "Value Objects" <<Rectangle>> {
+    class SymptomValueObject <<ValueObject>> {
+      - name: string
+      - severity: SymptomSeverity
+      - duration: string
+      - description?: string
+      --
+      + isSevere(): boolean
+      + isModerate(): boolean
+      + isMild(): boolean
+      + requiresImmediateAttention(): boolean
+      + getSeverityWeight(): number
+      + equals(other): boolean
+      + toString(): string
+    }
+
+    class LocationValueObject <<ValueObject>> {
+      - latitude: number
+      - longitude: number
+      - address?: string
+      --
+      + isValid(): boolean
+      + distanceTo(other): number
+      + equals(other): boolean
+      + toString(): string
+    }
+  }
+
+  package "Enumerations" <<Rectangle>> {
+    enum UserRole {
+      PATIENT
+      DOCTOR
+      ADMIN
+    }
+
+    enum SymptomSeverity {
+      MILD
+      MODERATE
+      SEVERE
+    }
+
+    enum SyncStatus {
+      PENDING
+      SYNCED
+      ERROR
+    }
+  }
+}
+
+' Relationships
+UserEntity "1" --> "0..*" MedicalHistoryEntity : creates/manages
+UserEntity --> UserRole : has
+MedicalHistoryEntity "1" *--> "1..*" SymptomValueObject : contains
+MedicalHistoryEntity "1" *--> "0..1" LocationValueObject : recorded at
+MedicalHistoryEntity --> SyncStatus : has
+SymptomValueObject --> SymptomSeverity : has
+
+' Aggregates
+package "Aggregates" <<Cloud>> {
+  note as N1
+    MedicalHistory is an Aggregate Root
+    - Controls access to Symptoms
+    - Ensures consistency
+    - Max 20 symptoms per history
+  end note
+}
+
+MedicalHistoryEntity .. N1
+
+' Business Rules
+note bottom of MedicalHistoryEntity
+  <b>Business Rules:</b>
+  • Max 20 symptoms per history
+  • Age must be 0-150
+  • Diagnosis is required (max 200 chars)
+  • Urgent if any symptom is SEVERE
+  • Immutable (methods return new instances)
+end note
+
+note bottom of UserEntity
+  <b>Business Rules:</b>
+  • Email must be unique and valid
+  • Password min 8 characters
+  • Only DOCTOR and ADMIN can access medical data
+  • Only ADMIN can manage users
+end note
+
+note bottom of SymptomValueObject
+  <b>Value Object Properties:</b>
+  • Immutable
+  • Validated in constructor
+  • Equality by value
+  • No identity
+end note
+
+@enduml
+

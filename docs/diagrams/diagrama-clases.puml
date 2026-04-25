@@ -1,0 +1,1036 @@
+@startuml DiagramaClases_RespiCare
+' ═══════════════════════════════════════════════════════════════════
+' Diagrama de Clases — Sistema RespiCare
+' Enfermedades Respiratorias
+' ═══════════════════════════════════════════════════════════════════
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #374151
+skinparam classFontColor #111827
+skinparam classHeaderBackgroundColor #1E3A5F
+skinparam classHeaderFontColor #FFFFFF
+skinparam classHeaderFontSize 13
+skinparam classFontSize 11
+skinparam arrowColor #374151
+skinparam arrowThickness 1.5
+skinparam noteBackgroundColor #FEF3C7
+skinparam noteBorderColor #D97706
+skinparam packageBackgroundColor #F3F4F6
+skinparam packageBorderColor #9CA3AF
+skinparam linetype ortho
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: USUARIOS Y AUTENTICACIÓN
+' ═══════════════════════════════════════════════════════════════════
+
+package "Usuarios y Autenticación" #EFF6FF {
+
+  enum RolUsuario {
+    PATIENT
+    DOCTOR
+    ADMIN
+  }
+
+  abstract class Usuario {
+    # _id : ObjectId
+    # name : String
+    # email : String
+    # password : String {hashed}
+    # role : RolUsuario
+    # phone : String
+    # avatar : String
+    # isActive : Boolean
+    # lastLogin : Date
+    # createdAt : Date
+    # updatedAt : Date
+    --
+    + comparePassword(candidate) : Boolean
+    + toJSON() : Object
+    {static} findByEmail(email) : Usuario
+    {static} findActive() : Usuario[]
+    {static} findByRole(role) : Usuario[]
+  }
+
+  class Paciente {
+    + medicalHistories : MedicalHistory[]
+    + appointments : Appointment[]
+    + wearableDevices : WearableData[]
+    + emergencyContacts : EmergencyContact[]
+    --
+    + getLatestVitals() : WearableData
+    + getActiveAlerts() : Alert[]
+  }
+
+  class Doctor {
+    + specialization : String
+    + licenseNumber : String
+    + department : String
+    + consultationFee : Number
+    --
+    + getPatients() : Paciente[]
+    + getPendingReferrals() : Referral[]
+    + getAppointmentsToday() : Appointment[]
+  }
+
+  class Administrador {
+    + canManageUsers : Boolean
+    + canGenerateReports : Boolean
+    + canDeleteData : Boolean
+    --
+    + generateSystemReport() : AutomaticReport
+    + manageFeatureFlags() : void
+  }
+
+  class AuditLog {
+    + _id : ObjectId
+    + userId : String
+    + action : String
+    + resource : String
+    + resourceId : String
+    + method : String
+    + endpoint : String
+    + statusCode : Number
+    + ipAddress : String
+    + userAgent : String
+    + requestBody : Object
+    + responseTime : Number
+    + timestamp : Date
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: HISTORIAL CLÍNICO
+' ═══════════════════════════════════════════════════════════════════
+
+package "Historial Clínico" #F0FDF4 {
+
+  class MedicalHistory {
+    + _id : ObjectId
+    + patientId : String
+    + doctorId : String
+    + patientName : String
+    + diagnosis : String
+    + symptoms : Symptom[]
+    + date : Date
+    + notes : String
+    + icd10Code : String
+    + severity : String
+    + isRespiratory : Boolean
+    + vitals : Vitals
+    + treatment : String
+    + followUpDate : Date
+    + location : GeoPoint
+    + createdAt : Date
+    --
+    + getRespiratoryHistory() : MedicalHistory[]
+    {static} findByPatient(patientId) : MedicalHistory[]
+    {static} findByDoctor(doctorId) : MedicalHistory[]
+  }
+
+  class Symptom {
+    + name : String
+    + severity : String
+    + duration : String
+    + onset : String
+    + location : String
+    + character : String
+  }
+
+  class Vitals {
+    + heartRate : Number
+    + bloodPressureSystolic : Number
+    + bloodPressureDiastolic : Number
+    + temperature : Number
+    + oxygenSaturation : Number
+    + respiratoryRate : Number
+  }
+
+  class LabResult {
+    + _id : ObjectId
+    + patientId : String
+    + testName : String
+    + testCode : String
+    + value : String | Number
+    + unit : String
+    + referenceRange : ReferenceRange
+    + status : LabStatus
+    + date : Date
+    + reviewedBy : String
+    + reviewedAt : Date
+    + labName : String
+    + notes : String
+    + createdAt : Date
+    --
+    + isAbnormal() : Boolean
+    + isCritical() : Boolean
+    + markAsReviewed(doctorId) : void
+    {static} findByPatient(patientId) : LabResult[]
+    {static} findCritical(patientId) : LabResult[]
+  }
+
+  enum LabStatus {
+    NORMAL
+    ABNORMAL
+    CRITICAL
+  }
+
+  class ReferenceRange {
+    + min : Number
+    + max : Number
+    + unit : String
+    + description : String
+  }
+
+  class Prescription {
+    + _id : ObjectId
+    + patientId : String
+    + doctorId : String
+    + medications : Medication[]
+    + startDate : Date
+    + endDate : Date
+    + status : PrescriptionStatus
+    + instructions : String
+    + diagnosis : String
+    + interactions : DrugInteraction[]
+    + createdAt : Date
+    --
+    + checkInteractions() : DrugInteraction[]
+    + isActive() : Boolean
+  }
+
+  class Medication {
+    + name : String
+    + dosage : String
+    + unit : String
+    + frequencyPerDay : Number
+    + durationDays : Number
+    + route : String
+    + instructions : String[]
+  }
+
+  class DrugInteraction {
+    + medicationA : String
+    + medicationB : String
+    + severity : String
+    + description : String
+  }
+
+  enum PrescriptionStatus {
+    ACTIVE
+    COMPLETED
+    CANCELLED
+    SUSPENDED
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: CITAS Y DERIVACIONES
+' ═══════════════════════════════════════════════════════════════════
+
+package "Citas y Derivaciones" #FFF7ED {
+
+  class Appointment {
+    + _id : ObjectId
+    + patientId : String
+    + doctorId : String
+    + patientName : String
+    + doctorName : String
+    + specialty : String
+    + date : Date
+    + duration : Number
+    + status : AppointmentStatus
+    + type : AppointmentType
+    + mode : ConsultMode
+    + reason : String
+    + notes : String
+    + diagnosis : String
+    + location : Location
+    + videoCallUrl : String
+    + reminderSent : Boolean
+    + followUp : Date
+    + createdAt : Date
+    --
+    + confirm() : void
+    + cancel(reason) : void
+    + reschedule(newDate) : void
+    {static} getAvailableSlots(doctorId, date) : Date[]
+  }
+
+  enum AppointmentStatus {
+    SCHEDULED
+    CONFIRMED
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+    RESCHEDULED
+    NO_SHOW
+  }
+
+  enum ConsultMode {
+    IN_PERSON
+    TELEMEDICINE
+    HOME_VISIT
+  }
+
+  class Referral {
+    + _id : ObjectId
+    + patientId : String
+    + patientName : String
+    + referringDoctorId : String
+    + referringDoctorName : String
+    + referredToDoctorId : String
+    + referredToDoctorName : String
+    + referredToSpecialty : String
+    + referralType : ReferralType
+    + priority : ReferralPriority
+    + status : ReferralStatus
+    + reason : String
+    + clinicalSummary : String
+    + attachments : String[]
+    + scheduledDate : Date
+    + completedDate : Date
+    + notes : String
+    + createdAt : Date
+    --
+    + accept() : void
+    + reject(reason) : void
+    + complete() : void
+  }
+
+  enum ReferralPriority {
+    LOW
+    NORMAL
+    HIGH
+    URGENT
+  }
+
+  enum ReferralStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+    COMPLETED
+    CANCELLED
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: ANÁLISIS IA Y SÍNTOMAS
+' ═══════════════════════════════════════════════════════════════════
+
+package "Análisis IA y Síntomas" #FDF4FF {
+
+  class SymptomReport {
+    + _id : ObjectId
+    + patientId : String
+    + symptoms : ReportedSymptom[]
+    + duration : String
+    + severity : String
+    + additionalNotes : String
+    + urgencyScore : Number
+    + urgencyLevel : UrgencyLevel
+    + aiAnalyzed : Boolean
+    + followUpRequired : Boolean
+    + status : String
+    + createdAt : Date
+    --
+    + analyze() : AIAnalysis
+    + requestFollowUp() : void
+  }
+
+  class ReportedSymptom {
+    + name : String
+    + severity : SeverityLevel
+    + duration : String
+    + onset : String
+    + frequency : String
+  }
+
+  enum UrgencyLevel {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+  }
+
+  enum SeverityLevel {
+    MILD
+    MODERATE
+    SEVERE
+  }
+
+  class AIAnalysis {
+    + _id : ObjectId
+    + patientId : String
+    + doctorId : String
+    + symptoms : Symptom[]
+    + possibleDiagnoses : PossibleDiagnosis[]
+    + urgency : UrgencyLevel
+    + urgencyScore : Number
+    + confidence : Number
+    + recommendations : String[]
+    + modelVersion : String
+    + modelName : String
+    + processingTime : Number
+    + status : String
+    + analyzedAt : Date
+    + createdAt : Date
+    --
+    + getTopDiagnosis() : PossibleDiagnosis
+    + needsUrgentAttention() : Boolean
+    {static} findByPatient(patientId) : AIAnalysis[]
+    {static} findCritical() : AIAnalysis[]
+  }
+
+  class PossibleDiagnosis {
+    + disease : String
+    + icd10Code : String
+    + probability : Number
+    + confidence : Number
+    + reasoning : String
+  }
+
+  class MLExperiment {
+    + _id : ObjectId
+    + name : String
+    + type : ExperimentType
+    + status : ExperimentStatus
+    + modelId : String
+    + config : Object
+    + metrics : Object
+    + results : Object
+    + logs : ExperimentLog[]
+    + startedAt : Date
+    + completedAt : Date
+    + createdAt : Date
+    --
+    + start() : void
+    + stop() : void
+    + getMetrics() : Object
+  }
+
+  enum ExperimentType {
+    RL_SESSION
+    FL_ROUND
+    AUTOML_PIPELINE
+    PREDICTION
+    TRAINING
+    EVALUATION
+  }
+
+  enum ExperimentStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+    CANCELLED
+  }
+
+  class ExperimentLog {
+    + timestamp : Date
+    + level : LogLevel
+    + message : String
+    + data : Object
+  }
+
+  enum LogLevel {
+    INFO
+    WARNING
+    ERROR
+    DEBUG
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: ALERTAS Y NOTIFICACIONES
+' ═══════════════════════════════════════════════════════════════════
+
+package "Alertas y Notificaciones" #FFF1F2 {
+
+  class Alert {
+    + _id : ObjectId
+    + patientId : String
+    + doctorId : String
+    + title : String
+    + message : String
+    + level : AlertLevel
+    + type : AlertType
+    + status : AlertStatus
+    + channels : NotificationChannel[]
+    + referenceId : String
+    + referenceModel : String
+    + metadata : Object
+    + trigger : AlertTrigger
+    + acknowledgedAt : Date
+    + resolvedAt : Date
+    + expiresAt : Date
+    + retryCount : Number
+    + createdAt : Date
+    --
+    + acknowledge(userId) : void
+    + resolve(userId) : void
+    + retry() : void
+    + isExpired() : Boolean
+  }
+
+  enum AlertLevel {
+    INFO
+    WARNING
+    HIGH
+    CRITICAL
+  }
+
+  enum AlertStatus {
+    PENDING
+    SENT
+    ACKNOWLEDGED
+    RESOLVED
+    EXPIRED
+    FAILED
+  }
+
+  enum NotificationChannel {
+    EMAIL
+    SMS
+    PUSH
+    IN_APP
+    WHATSAPP
+  }
+
+  class AlertTrigger {
+    + type : String
+    + threshold : Number
+    + condition : String
+    + metric : String
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: WEARABLES Y MONITOREO
+' ═══════════════════════════════════════════════════════════════════
+
+package "Wearables y Monitoreo" #F0FDFA {
+
+  class WearableData {
+    + _id : ObjectId
+    + patientId : ObjectId
+    + deviceId : String
+    + deviceType : String
+    + heartRate : Number
+    + oxygenSaturation : Number
+    + steps : Number
+    + calories : Number
+    + sleepHours : Number
+    + respiratoryRate : Number
+    + skinTemperature : Number
+    + timestamp : Date
+    + syncedAt : Date
+    + createdAt : Date
+    --
+    + isAbnormal() : Boolean
+    + triggerAlertIfNeeded() : Alert
+    {static} getLatestByPatient(patientId) : WearableData
+    {static} getAverages(patientId, days) : Object
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: CHAT Y CONVERSACIONES IA
+' ═══════════════════════════════════════════════════════════════════
+
+package "Chat e IA Conversacional" #F5F3FF {
+
+  class ChatConversation {
+    + _id : ObjectId
+    + patientId : String
+    + sessionId : String
+    + title : String
+    + messages : ChatMessage[]
+    + status : ConversationStatus
+    + summary : ConversationSummary
+    + isArchived : Boolean
+    + startedAt : Date
+    + endedAt : Date
+    + createdAt : Date
+    --
+    + addMessage(role, content) : void
+    + getMessageCount() : Number
+    + generateSummary() : ConversationSummary
+    + close() : void
+  }
+
+  class ChatMessage {
+    + role : MessageRole
+    + content : String
+    + timestamp : Date
+    + metadata : Object
+  }
+
+  class ConversationSummary {
+    + urgencyScore : Number
+    + symptomCount : Number
+    + mentionedDiseases : Number
+    + highestUrgency : UrgencyLevel
+    + keySymptoms : String[]
+    + recommendation : String
+  }
+
+  enum MessageRole {
+    USER
+    ASSISTANT
+    SYSTEM
+  }
+
+  enum ConversationStatus {
+    ACTIVE
+    CLOSED
+    ARCHIVED
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: CONSENTIMIENTO INFORMADO
+' ═══════════════════════════════════════════════════════════════════
+
+package "Consentimiento Informado" #FEFCE8 {
+
+  class InformedConsent {
+    + _id : ObjectId
+    + patientId : String
+    + patientName : String
+    + doctorId : String
+    + doctorName : String
+    + consentType : ConsentType
+    + title : String
+    + content : String
+    + status : ConsentStatus
+    + version : String
+    + signatures : ConsentSignature[]
+    + procedureDate : Date
+    + expiryDate : Date
+    + revokedAt : Date
+    + revokeReason : String
+    + createdAt : Date
+    --
+    + sign(userId, role) : void
+    + revoke(reason) : void
+    + isValid() : Boolean
+    + isExpired() : Boolean
+  }
+
+  class ConsentSignature {
+    + signerRole : SignerRole
+    + signerId : String
+    + signerName : String
+    + signatureType : SignatureType
+    + signedAt : Date
+    + ipAddress : String
+    + deviceInfo : String
+  }
+
+  class ConsentLog {
+    + _id : ObjectId
+    + userId : String
+    + consentVersion : String
+    + action : String
+    + ipAddress : String
+    + timestamp : Date
+  }
+
+  enum ConsentType {
+    TREATMENT
+    DATA_PROCESSING
+    TELEMEDICINE
+    RESEARCH
+    SURGERY
+    ANESTHESIA
+  }
+
+  enum ConsentStatus {
+    PENDING
+    SIGNED
+    REJECTED
+    REVOKED
+    EXPIRED
+  }
+
+  enum SignerRole {
+    PATIENT
+    DOCTOR
+    WITNESS
+    GUARDIAN
+  }
+
+  enum SignatureType {
+    DIGITAL
+    BIOMETRIC
+    CLICK_TO_SIGN
+    TYPED
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: REPORTES Y ANALÍTICA
+' ═══════════════════════════════════════════════════════════════════
+
+package "Reportes y Analítica" #F8FAFC {
+
+  class AutomaticReport {
+    + _id : ObjectId
+    + generatedBy : String
+    + type : ReportType
+    + period : ReportPeriod
+    + status : ReportStatus
+    + riskLevel : RiskLevel
+    + dateRange : DateRange
+    + metrics : Object
+    + data : Object
+    + format : ReportFormat
+    + filePath : String
+    + exportedAt : Date
+    + createdAt : Date
+    --
+    + generate() : void
+    + export(format) : String
+    + getMetrics() : Object
+    {static} findByType(type) : AutomaticReport[]
+    {static} getStats() : Object
+  }
+
+  enum ReportType {
+    PATIENT_SUMMARY
+    EPIDEMIOLOGICAL
+    ML_PERFORMANCE
+    CLINICAL
+    ALERT_SUMMARY
+    LAB_RESULTS
+  }
+
+  enum ReportPeriod {
+    DAILY
+    WEEKLY
+    MONTHLY
+  }
+
+  enum ReportStatus {
+    PENDING
+    GENERATING
+    COMPLETED
+    FAILED
+    EXPORTED
+  }
+
+  enum ReportFormat {
+    PDF
+    CSV
+    JSON
+  }
+
+  enum RiskLevel {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+  }
+
+  class DateRange {
+    + startDate : Date
+    + endDate : Date
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: SERVICIOS DE BACKEND (capa de servicio)
+' ═══════════════════════════════════════════════════════════════════
+
+package "Servicios de Backend" #F1F5F9 {
+
+  class AlertService {
+    + createAlert(data) : Alert
+    + getAlerts(filters) : Alert[]
+    + acknowledgeAlert(id, userId) : Alert
+    + resolveAlert(id, userId) : Alert
+    + sendNotification(alert, channels) : void
+  }
+
+  class AIIntegrationService {
+    + analyzeSymptoms(symptoms) : AIAnalysis
+    + getChatResponse(message, history) : String
+    + predictDisease(vitals, symptoms) : PossibleDiagnosis[]
+    + getUrgencyScore(symptoms) : Number
+  }
+
+  class EmergencyService {
+    + createEmergency(patientId, location) : Emergency
+    + dispatchAmbulance(emergencyId) : void
+    + notifyDoctor(emergencyId, doctorId) : void
+    + getStatus(emergencyId) : String
+  }
+
+  class LabService {
+    + importResults(data) : LabResult[]
+    + getResults(patientId) : LabResult[]
+    + detectAbnormal(patientId) : LabResult[]
+    + syncWithExternal() : void
+  }
+
+  class SMSService {
+    + send(to, message) : void
+    + sendBulk(recipients, message) : void
+    + getDeliveryStatus(messageId) : String
+  }
+
+  class FHIRService {
+    + exportPatient(patientId) : FHIRBundle
+    + importResource(resource) : void
+    + validateResource(resource) : Boolean
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' PAQUETE: CAPACITOR / MOBILE
+' ═══════════════════════════════════════════════════════════════════
+
+package "Capa Mobile (Capacitor)" #E0F2FE {
+
+  class NativeStorage {
+    {static} setItem(key, value) : void
+    {static} getItem(key) : String
+    {static} removeItem(key) : void
+    {static} clear() : void
+    {static} setJSON(key, value) : void
+    {static} getJSON(key) : Object
+    {static} setBool(key, value) : void
+    {static} getBool(key) : Boolean
+  }
+
+  class NotificationService {
+    + init() : Boolean
+    + sendAlert(options) : Number
+    + scheduleReminder(options) : Number
+    + scheduleMedicationReminder(med, hour, min) : Number
+    + scheduleAppointmentReminder(doctor, date) : Number
+    + cancelNotification(id) : void
+    + cancelAll() : void
+  }
+
+  class BiometricAuthHook {
+    + isAvailable : Boolean
+    + biometryType : BiometryType
+    + isEnabled : Boolean
+    + loading : Boolean
+    + error : String
+    --
+    + authenticate(options) : Boolean
+    + toggleBiometric(enable) : Boolean
+  }
+
+  class GeolocationHook {
+    + location : GeoLocation
+    + error : String
+    + loading : Boolean
+    + permissionGranted : Boolean
+    --
+    + getCurrentLocation() : GeoLocation
+    + startWatching() : void
+    + stopWatching() : void
+    + requestPermission() : Boolean
+    + getEmergencyLocationUrl() : String
+  }
+
+  class NetworkStatusHook {
+    + isOnline : Boolean
+    + connectionType : ConnectionType
+  }
+
+  class GeoLocation {
+    + latitude : Number
+    + longitude : Number
+    + accuracy : Number
+    + altitude : Number
+    + speed : Number
+    + timestamp : Number
+  }
+
+  enum ConnectionType {
+    WIFI
+    FOUR_G
+    THREE_G
+    TWO_G
+    NONE
+    UNKNOWN
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES DE HERENCIA
+' ═══════════════════════════════════════════════════════════════════
+
+Usuario <|-- Paciente
+Usuario <|-- Doctor
+Usuario <|-- Administrador
+Usuario "1" --> "0..*" AuditLog : genera >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES DE COMPOSICIÓN / AGREGACIÓN — Historial Clínico
+' ═══════════════════════════════════════════════════════════════════
+
+MedicalHistory "1" *-- "0..*" Symptom : contiene >
+MedicalHistory "1" *-- "1" Vitals : registra >
+LabResult "1" *-- "0..1" ReferenceRange : tiene >
+Prescription "1" *-- "1..*" Medication : incluye >
+Prescription "1" *-- "0..*" DrugInteraction : detecta >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES ENTRE ENTIDADES PRINCIPALES (asociaciones)
+' ═══════════════════════════════════════════════════════════════════
+
+Paciente "1" --> "0..*" MedicalHistory : tiene >
+Paciente "1" --> "0..*" Appointment : agenda >
+Paciente "1" --> "0..*" Prescription : recibe >
+Paciente "1" --> "0..*" LabResult : genera >
+Paciente "1" --> "0..*" Alert : recibe >
+Paciente "1" --> "0..*" WearableData : sincroniza >
+Paciente "1" --> "0..*" ChatConversation : inicia >
+Paciente "1" --> "0..*" SymptomReport : reporta >
+Paciente "1" --> "0..*" InformedConsent : firma >
+
+Doctor "1" --> "0..*" MedicalHistory : registra >
+Doctor "1" --> "0..*" Appointment : atiende >
+Doctor "1" --> "0..*" Prescription : emite >
+Doctor "1" --> "0..*" LabResult : revisa >
+Doctor "1" --> "0..*" Referral : emite >
+Doctor "1" --> "0..*" AIAnalysis : consulta >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — IA y Análisis
+' ═══════════════════════════════════════════════════════════════════
+
+SymptomReport "1" --> "0..1" AIAnalysis : origina >
+SymptomReport "1" *-- "1..*" ReportedSymptom : contiene >
+AIAnalysis "1" *-- "0..*" PossibleDiagnosis : produce >
+AIAnalysis "1" *-- "0..*" Symptom : analiza >
+MLExperiment "1" *-- "0..*" ExperimentLog : registra >
+WearableData "1" --> "0..1" Alert : puede generar >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Derivaciones y Citas
+' ═══════════════════════════════════════════════════════════════════
+
+Referral "1" --> "0..1" Appointment : puede generar >
+MedicalHistory "1" --> "0..*" Referral : puede originar >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Chat
+' ═══════════════════════════════════════════════════════════════════
+
+ChatConversation "1" *-- "1..*" ChatMessage : contiene >
+ChatConversation "1" *-- "0..1" ConversationSummary : resume >
+ChatConversation "1" --> "0..1" AIAnalysis : puede generar >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Consentimiento
+' ═══════════════════════════════════════════════════════════════════
+
+InformedConsent "1" *-- "1..*" ConsentSignature : requiere >
+InformedConsent "1" --> "0..*" ConsentLog : registra >
+Appointment "1" --> "0..1" InformedConsent : requiere >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Reportes
+' ═══════════════════════════════════════════════════════════════════
+
+Administrador "1" --> "0..*" AutomaticReport : genera >
+AutomaticReport "1" *-- "1" DateRange : abarca >
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Servicios Backend
+' ═══════════════════════════════════════════════════════════════════
+
+AlertService ..> Alert : <<crea / gestiona>>
+AlertService ..> SMSService : <<usa>>
+AIIntegrationService ..> AIAnalysis : <<produce>>
+AIIntegrationService ..> SymptomReport : <<procesa>>
+EmergencyService ..> Alert : <<genera>>
+EmergencyService ..> GeolocationHook : <<usa>>
+LabService ..> LabResult : <<importa / gestiona>>
+FHIRService ..> MedicalHistory : <<exporta>>
+
+' ═══════════════════════════════════════════════════════════════════
+' RELACIONES — Capa Mobile
+' ═══════════════════════════════════════════════════════════════════
+
+NotificationService ..> Alert : <<sincroniza>>
+GeolocationHook *-- GeoLocation : retorna >
+NetworkStatusHook --> ConnectionType : reporta >
+
+' ═══════════════════════════════════════════════════════════════════
+' ENUMS COMPARTIDOS (uso en múltiples clases)
+' ═══════════════════════════════════════════════════════════════════
+
+Usuario --> RolUsuario : tiene >
+Alert --> AlertLevel : clasifica >
+Alert --> AlertStatus : tiene >
+Alert --> NotificationChannel : usa >
+AIAnalysis --> UrgencyLevel : determina >
+SymptomReport --> UrgencyLevel : calcula >
+Appointment --> AppointmentStatus : tiene >
+Appointment --> ConsultMode : modo >
+Referral --> ReferralPriority : prioridad >
+Referral --> ReferralStatus : estado >
+Prescription --> PrescriptionStatus : estado >
+LabResult --> LabStatus : resultado >
+MLExperiment --> ExperimentType : tipo >
+MLExperiment --> ExperimentStatus : estado >
+InformedConsent --> ConsentStatus : estado >
+InformedConsent --> ConsentType : tipo >
+ChatConversation --> ConversationStatus : estado >
+AutomaticReport --> ReportType : tipo >
+AutomaticReport --> ReportStatus : estado >
+AutomaticReport --> RiskLevel : riesgo >
+BiometricAuthHook --> BiometryType : detecta >
+
+' ═══════════════════════════════════════════════════════════════════
+' NOTAS ACLARATORIAS
+' ═══════════════════════════════════════════════════════════════════
+
+note top of AIIntegrationService
+  Comunica con FastAPI (Python)
+  vía HTTP interno en puerto 8001.
+  Usa OpenAI GPT + modelos locales
+  con circuit breaker y fallback.
+end note
+
+note right of NativeStorage
+  En APK (nativo): usa @capacitor/preferences
+  (SharedPreferences de Android).
+  En web: usa localStorage con fallback
+  ante Safari Private Mode.
+end note
+
+note bottom of WearableData
+  Soporta: Fitbit, Apple Watch,
+  Garmin, Polar, dispositivos BLE.
+  Alertas automáticas si SpO2 < 90%
+  o FC > 120 / < 40 BPM.
+end note
+
+note right of InformedConsent
+  Cumple con Ley 29733 (Perú)
+  y GDPR para datos de salud.
+  Firma biométrica soportada.
+end note
+
+@enduml

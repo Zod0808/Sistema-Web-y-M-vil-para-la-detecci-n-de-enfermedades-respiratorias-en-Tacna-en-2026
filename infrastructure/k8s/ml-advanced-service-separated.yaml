@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-advanced-service
+  namespace: respicare-prod
+  labels:
+    app: ml-advanced
+    service: ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-advanced
+  template:
+    metadata:
+      labels:
+        app: ml-advanced
+        version: v1
+    spec:
+      # Node selector para nodos con GPU
+      nodeSelector:
+        accelerator: nvidia-tesla-t4
+        # O usar: cloud.google.com/gke-accelerator: nvidia-tesla-t4
+      containers:
+      - name: ml-advanced
+        image: respicare/ml-advanced:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: MODEL_CACHE_SIZE
+          value: "4"
+        - name: GPU_ENABLED
+          value: "true"
+        - name: BERT_MODEL_PATH
+          value: "/models/bert-medical"
+        - name: CV_MODEL_PATH
+          value: "/models/resnet50-medical"
+        resources:
+          requests:
+            cpu: "4000m"
+            memory: "8Gi"
+            nvidia.com/gpu: 1
+          limits:
+            cpu: "8000m"
+            memory: "16Gi"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-advanced-service
+  namespace: respicare-prod
+  labels:
+    app: ml-advanced
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: ml-advanced
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-models-pvc
+  namespace: respicare-prod
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ml-advanced-pdb
+  namespace: respicare-prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ml-advanced
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-advanced-hpa
+  namespace: respicare-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-advanced-service
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+  - type: Pods
+    pods:
+      metric:
+        name: gpu_utilization
+      target:
+        type: AverageValue
+        averageValue: "70"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+

@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongo-backup-restic
+spec:
+  schedule: "0 2 * * *" # diario 02:00
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: restic/restic:0.16.4
+              env:
+                - name: RESTIC_REPOSITORY
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongo-backup-secrets
+                      key: restic_repository
+                - name: RESTIC_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongo-backup-secrets
+                      key: restic_password
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongo-backup-secrets
+                      key: aws_access_key_id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongo-backup-secrets
+                      key: aws_secret_access_key
+                - name: MONGODB_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: backend-secrets
+                      key: mongodb_uri
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  mkdir -p /backup
+                  apk add --no-cache mongodb-tools >/dev/null 2>&1 || true
+                  echo "Dumping MongoDB..."
+                  mongodump --uri="$MONGODB_URI" --out=/backup/dump-$(date +%F)
+                  echo "Backing up with restic..."
+                  restic backup /backup
+                  echo "Pruning old backups..."
+                  restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+              volumeMounts:
+                - name: tmp
+                  mountPath: /backup
+          volumes:
+            - name: tmp
+              emptyDir: {}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo-backup-secrets
+type: Opaque
+stringData:
+  restic_repository: "s3:https://s3.example.com/respicare-mongo-backups"
+  restic_password: "change_me_strong_password"
+  aws_access_key_id: "AKIA..."
+  aws_secret_access_key: "SECRET..."
+
+

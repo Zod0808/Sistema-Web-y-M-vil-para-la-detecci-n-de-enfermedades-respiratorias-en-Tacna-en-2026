@@ -1,0 +1,353 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (must be a version tag like v1.0.0)'
+        required: true
+      confirm_deploy:
+        description: 'Type "DEPLOY" to confirm production deployment'
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/respicare-backend
+  AI_SERVICES_IMAGE: ${{ github.repository }}/ai-services
+  WEB_IMAGE: ${{ github.repository }}/respicare-web
+  KUBERNETES_NAMESPACE: respicare-production
+
+jobs:
+  pre-deployment-checks:
+    name: Pre-Deployment Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Verify deployment confirmation
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.confirm_deploy }}" != "DEPLOY" ]; then
+            echo "❌ Deployment not confirmed. Please type 'DEPLOY' to confirm."
+            exit 1
+          fi
+          echo "✅ Deployment confirmed"
+      
+      - name: Extract version tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.image_tag }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Must be vX.Y.Z (e.g., v1.0.0)"
+            exit 1
+          fi
+          echo "✅ Version format valid: $VERSION"
+
+  build-and-push:
+    name: Build and Push Production Images
+    needs: pre-deployment-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+      ai-services-image: ${{ steps.meta-ai.outputs.tags }}
+      web-image: ${{ steps.meta-web.outputs.tags }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.image_tag }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Backend Image
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+      
+      # AI Services Image
+      - name: Extract metadata for AI Services
+        id: meta-ai
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.AI_SERVICES_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push AI Services image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-services
+          push: true
+          tags: ${{ steps.meta-ai.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=3.10
+      
+      # Web Image
+      - name: Extract metadata for Web
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.WEB_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+  blue-green-deploy:
+    name: Blue-Green Deployment
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://respicare.dev
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      
+      # Blue-Green Deployment Strategy
+      - name: Deploy Green Environment (Backend)
+        run: |
+          VERSION="${{ needs.build-and-push.outputs.version }}"
+          # Create green deployment
+          cat infrastructure/k8s/backend-deployment.yaml | \
+            sed "s|name: backend|name: backend-green|g" | \
+            sed "s|app: backend|app: backend-green|g" | \
+            sed "s|ghcr.io/your-org/respicare-backend:\${IMAGE_TAG:-latest}|${{ needs.build-and-push.outputs.backend-image }}|g" | \
+            kubectl apply -f - -n ${{ env.KUBERNETES_NAMESPACE }}
+          
+          # Wait for green to be ready
+          kubectl rollout status deployment/backend-green -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m
+          
+          # Update service to point to green
+          kubectl patch service backend -n ${{ env.KUBERNETES_NAMESPACE }} -p '{"spec":{"selector":{"app":"backend-green"}}}' || \
+            kubectl apply -f infrastructure/k8s/backend-service.yaml -n ${{ env.KUBERNETES_NAMESPACE }}
+          
+          # Wait for traffic to shift
+          sleep 30
+          
+          # Delete old blue deployment
+          kubectl delete deployment backend-blue -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found=true
+          
+          # Rename green to main
+          kubectl get deployment backend-green -n ${{ env.KUBERNETES_NAMESPACE }} -o yaml | \
+            sed "s|name: backend-green|name: backend|g" | \
+            sed "s|app: backend-green|app: backend|g" | \
+            kubectl apply -f -
+          kubectl delete deployment backend-green -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found=true
+      
+      - name: Deploy Green Environment (AI Services)
+        run: |
+          # Create green deployment
+          cat infrastructure/k8s/ai-services-deployment.yaml | \
+            sed "s|name: ai-services|name: ai-services-green|g" | \
+            sed "s|app: ai-services|app: ai-services-green|g" | \
+            sed "s|ghcr.io/your-org/ai-services:latest|${{ needs.build-and-push.outputs.ai-services-image }}|g" | \
+            kubectl apply -f - -n ${{ env.KUBERNETES_NAMESPACE }}
+          
+          kubectl rollout status deployment/ai-services-green -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m
+          
+          kubectl patch service ai-services -n ${{ env.KUBERNETES_NAMESPACE }} -p '{"spec":{"selector":{"app":"ai-services-green"}}}' || \
+            kubectl apply -f infrastructure/k8s/ai-services-service.yaml -n ${{ env.KUBERNETES_NAMESPACE }}
+          
+          sleep 30
+          
+          kubectl delete deployment ai-services-blue -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found=true
+          
+          kubectl get deployment ai-services-green -n ${{ env.KUBERNETES_NAMESPACE }} -o yaml | \
+            sed "s|name: ai-services-green|name: ai-services|g" | \
+            sed "s|app: ai-services-green|app: ai-services|g" | \
+            kubectl apply -f -
+          kubectl delete deployment ai-services-green -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found=true
+
+  production-smoke-tests:
+    name: Production Smoke Tests
+    needs: blue-green-deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Wait for services to stabilize
+        run: |
+          echo "Waiting for services to stabilize..."
+          sleep 60
+      
+      - name: Test Backend Health
+        run: |
+          BACKEND_URL="${{ secrets.PRODUCTION_BACKEND_URL || 'https://api.respicare.dev' }}"
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/health)
+            if [ "$response" == "200" ]; then
+              echo "✅ Backend health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Backend not ready yet (attempt $i/5), waiting..."
+            sleep 10
+          done
+          echo "❌ Backend health check failed after 5 attempts"
+          exit 1
+      
+      - name: Test AI Services Health
+        run: |
+          AI_URL="${{ secrets.PRODUCTION_AI_URL || 'https://ai.respicare.dev' }}"
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" $AI_URL/api/v1/health)
+            if [ "$response" == "200" ]; then
+              echo "✅ AI Services health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ AI Services not ready yet (attempt $i/5), waiting..."
+            sleep 10
+          done
+          echo "❌ AI Services health check failed after 5 attempts"
+          exit 1
+      
+      - name: Test Critical Endpoints
+        run: |
+          BACKEND_URL="${{ secrets.PRODUCTION_BACKEND_URL || 'https://api.respicare.dev' }}"
+          # Test authentication endpoint
+          curl -f $BACKEND_URL/api/v1/auth/health || exit 1
+          echo "✅ Critical endpoints are responding"
+
+  rollback-production:
+    name: Rollback Production on Failure
+    needs: [blue-green-deploy, production-smoke-tests]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Rollback Backend
+        run: |
+          echo "🚨 Rolling back backend deployment..."
+          kubectl rollout undo deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m
+          echo "✅ Backend rolled back to previous version"
+      
+      - name: Rollback AI Services
+        run: |
+          echo "🚨 Rolling back AI Services deployment..."
+          kubectl rollout undo deployment/ai-services -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/ai-services -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m
+          echo "✅ AI Services rolled back to previous version"
+      
+      - name: Verify Rollback
+        run: |
+          echo "Verifying rollback..."
+          sleep 30
+          BACKEND_URL="${{ secrets.PRODUCTION_BACKEND_URL || 'https://api.respicare.dev' }}"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/health)
+          if [ "$response" == "200" ]; then
+            echo "✅ Rollback verified - services are healthy"
+          else
+            echo "⚠️ Rollback completed but health check failed. Manual intervention may be required."
+          fi
+      
+      - name: Notify Team
+        run: |
+          echo "🚨 Production deployment failed and was automatically rolled back"
+          echo "Version: ${{ needs.build-and-push.outputs.version }}"
+          echo "Please investigate the issue before attempting another deployment"
+

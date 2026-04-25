@@ -1,0 +1,25 @@
+# backend/Dockerfile.dev
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache python3 make g++
+
+# Copiar package files
+COPY package*.json ./
+# Instalar todas las dependencias (incluyendo devDependencies para desarrollo)
+RUN npm ci
+
+# Copiar código fuente
+COPY . .
+
+# Crear usuario no-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+EXPOSE 3001
+
+CMD ["npm", "run", "dev"]

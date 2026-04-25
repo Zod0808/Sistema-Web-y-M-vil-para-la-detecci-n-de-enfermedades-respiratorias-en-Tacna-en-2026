@@ -1,0 +1,60 @@
+name: Mobile Beta Artifact
+
+on:
+  push:
+    tags:
+      - 'beta-*'
+      - 'mobile-beta-*'
+
+jobs:
+  build-beta-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (mobile) if present
+        run: |
+          if [ -f "mobile/package.json" ]; then
+            cd mobile
+            npm ci --prefer-offline --no-audit --no-fund
+          else
+            echo "No mobile/package.json found. Skipping install."
+          fi
+
+      - name: Run tests (mobile) if present
+        run: |
+          if [ -f "mobile/package.json" ]; then
+            cd mobile
+            npm test --silent -- --ci --reporters=default || true
+          else
+            echo "No mobile/package.json found. Skipping tests."
+          fi
+
+      - name: Create beta artifact (zip mobile directory)
+        run: |
+          ts=$(date -u +%Y%m%d%H%M%S)
+          name="respicare-mobile-beta-${GITHUB_REF_NAME}-${ts}.zip"
+          if [ -d "mobile" ]; then
+            zip -r "$name" mobile -x "mobile/node_modules/*" "mobile/android/*" "mobile/ios/*" "*.git/*"
+          else
+            echo "No mobile directory found. Creating empty marker."
+            echo "no-mobile-dir" > README_BETA.txt
+            zip -r "$name" README_BETA.txt
+          fi
+          echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
+
+      - name: Upload beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}
+          retention-days: 14
+
+

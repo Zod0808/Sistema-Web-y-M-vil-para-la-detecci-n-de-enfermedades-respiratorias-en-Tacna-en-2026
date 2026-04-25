@@ -1,0 +1,77 @@
+[
+  {
+    "patient_id": "P001",
+    "symptoms": [
+      {
+        "symptom": "tos seca",
+        "severity": "moderate",
+        "duration": "2 semanas"
+      },
+      {
+        "symptom": "dificultad respiratoria",
+        "severity": "mild",
+        "duration": "1 semana"
+      },
+      {
+        "symptom": "fiebre",
+        "severity": "moderate",
+        "duration": "3 días"
+      }
+    ],
+    "context": "Síntomas respiratorios persistentes con antecedentes de tabaquismo",
+    "metadata": {
+      "age": 45,
+      "gender": "M"
+    }
+  },
+  {
+    "patient_id": "P002",
+    "symptoms": [
+      {
+        "symptom": "dolor de cabeza",
+        "severity": "severe",
+        "duration": "3 días"
+      },
+      {
+        "symptom": "náuseas",
+        "severity": "moderate",
+        "duration": "2 días"
+      },
+      {
+        "symptom": "vómitos",
+        "severity": "mild",
+        "duration": "1 día"
+      }
+    ],
+    "context": "Cefalea severa con síntomas gastrointestinales",
+    "metadata": {
+      "age": 32,
+      "gender": "F"
+    }
+  },
+  {
+    "patient_id": "P003",
+    "symptoms": [
+      {
+        "symptom": "dolor abdominal",
+        "severity": "moderate",
+        "duration": "5 días"
+      },
+      {
+        "symptom": "diarrea",
+        "severity": "severe",
+        "duration": "3 días"
+      },
+      {
+        "symptom": "fiebre",
+        "severity": "mild",
+        "duration": "2 días"
+      }
+    ],
+    "context": "Síntomas gastrointestinales en paciente diabético",
+    "metadata": {
+      "age": 58,
+      "gender": "M"
+    }
+  }
+]

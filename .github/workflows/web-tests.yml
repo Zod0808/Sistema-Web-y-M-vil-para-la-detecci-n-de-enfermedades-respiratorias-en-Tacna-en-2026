@@ -1,0 +1,129 @@
+name: Frontend Web Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'web/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'web/**'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint || true
+      
+      - name: Run unit tests
+        run: npm run test:unit -- --watchAll=false --coverage
+      
+      - name: Upload test reports (JUnit XML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-test-reports
+          path: |
+            web/coverage/junit.xml
+          retention-days: 14
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-coverage-reports
+          path: |
+            web/coverage/coverage-final.json
+            web/coverage/lcov.info
+          retention-days: 14
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./web/coverage/lcov.info
+          flags: frontend-web
+          name: frontend-web-coverage
+          fail_ci_if_error: false
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Cypress
+        run: npm install --save-dev cypress
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Start application
+        run: npm start &
+        env:
+          CI: true
+      
+      - name: Wait for application
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+      
+      - name: Run E2E tests
+        run: npx cypress run
+        env:
+          CYPRESS_baseUrl: http://localhost:3000
+
+  accessibility-tests:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run accessibility tests
+        run: npm test -- tests/a11y.test.js --watchAll=false
+

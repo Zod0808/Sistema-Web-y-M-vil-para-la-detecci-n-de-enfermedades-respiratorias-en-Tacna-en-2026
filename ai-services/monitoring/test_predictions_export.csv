@@ -1,0 +1,6 @@
+prediction_id,timestamp,model_name,disease,confidence,urgency_level,symptom_count,symptoms
+pred_20251103_114155_024516,2025-11-03T11:41:55.024516,xgboost,asma bronquial,0.95,high,4,"tos, sibilancias, dificultad respiratoria, opresion pecho"
+pred_20251103_114155_024516,2025-11-03T11:41:55.024516,xgboost,neumonía,0.88,high,4,"fiebre, tos, dificultad respiratoria, dolor toracico"
+pred_20251103_114155_024516,2025-11-03T11:41:55.025517,xgboost,resfriado común,0.92,low,4,"congestion nasal, estornudos, secrecion nasal, malestar general"
+pred_20251103_114155_025517,2025-11-03T11:41:55.025517,xgboost,bronquitis aguda,0.45,medium,3,"tos, fatiga, dificultad respiratoria"
+pred_20251103_114155_025517,2025-11-03T11:41:55.025517,xgboost,neumonía bacteriana,0.91,high,4,"fiebre alta, escalofríos, tos con esputo, dolor toracico"

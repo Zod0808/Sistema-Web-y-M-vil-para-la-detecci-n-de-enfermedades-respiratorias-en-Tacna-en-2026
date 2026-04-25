@@ -1,0 +1,316 @@
+@startuml
+title RespiCare Tacna - Diagrama de Clases (Dominio Backend)
+
+hide circle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "Usuarios y Seguridad" {
+  enum UserRole {
+    patient
+    doctor
+    admin
+  }
+
+  class User {
+    +id: string
+    +name: string
+    +email: string
+    +password: string
+    +role: UserRole
+    +phone: string
+    +isActive: boolean
+    +lastLogin: Date
+    +comparePassword(candidatePassword): boolean
+  }
+
+  class ConsentLog {
+    +id: string
+    +userId: string
+    +version: string
+    +timestamp: Date
+    +revokedAt: Date
+    +revokedReason: string
+  }
+
+  class AuditLog {
+    +id: string
+    +userId: string
+    +method: string
+    +route: string
+    +statusCode: number
+    +ip: string
+    +createdAt: Date
+  }
+}
+
+package "Historia Clínica y Atención" {
+  enum SymptomSeverity {
+    mild
+    moderate
+    severe
+  }
+
+  enum SyncStatus {
+    pending
+    synced
+    error
+  }
+
+  class Location {
+    +latitude: number
+    +longitude: number
+    +address: string
+  }
+
+  class Symptom {
+    +name: string
+    +severity: SymptomSeverity
+    +duration: string
+    +description: string
+  }
+
+  class MedicalHistory {
+    +id: string
+    +patientId: string
+    +doctorId: string
+    +patientName: string
+    +age: number
+    +diagnosis: string
+    +date: Date
+    +isOffline: boolean
+    +syncStatus: SyncStatus
+  }
+
+  enum AppointmentStatus {
+    scheduled
+    completed
+    cancelled
+    rescheduled
+    no_show
+  }
+
+  class Appointment {
+    +id: string
+    +patientId: string
+    +doctorId: string
+    +createdBy: string
+    +scheduledAt: Date
+    +durationMinutes: number
+    +status: AppointmentStatus
+    +reason: string
+    +notes: string
+    +cancel(reason)
+    +markCompleted(notes)
+    +reschedule(newDate)
+  }
+
+  enum PrescriptionStatus {
+    draft
+    pending_validation
+    active
+    completed
+    cancelled
+    rejected
+  }
+
+  enum InteractionSeverity {
+    minor
+    moderate
+    major
+    contraindicated
+  }
+
+  class PrescriptionMedication {
+    +name: string
+    +dosage: string
+    +frequencyPerDay: number
+    +durationDays: number
+    +instructions: string
+  }
+
+  class DrugInteraction {
+    +medicationA: string
+    +medicationB: string
+    +severity: InteractionSeverity
+    +description: string
+  }
+
+  class Prescription {
+    +id: string
+    +patientId: string
+    +doctorId: string
+    +createdBy: string
+    +diagnosis: string
+    +status: PrescriptionStatus
+    +validatedBy: string
+    +validatedAt: Date
+    +markCompleted(notes)
+    +cancel(reason)
+    +addValidation(doctorId, notes)
+  }
+}
+
+package "IA y Analítica" {
+  enum UrgencyLevel {
+    low
+    medium
+    high
+    critical
+  }
+
+  class PossibleDiagnosis {
+    +condition: string
+    +probability: number
+    +recommendations: string[]
+  }
+
+  class AIAnalysis {
+    +id: string
+    +medicalHistoryId: string
+    +urgency: UrgencyLevel
+    +confidence: number
+    +timestamp: Date
+  }
+
+  enum AlertPriority {
+    low
+    medium
+    high
+    critical
+  }
+
+  enum AlertStatus {
+    pending
+    scheduled
+    sent
+    delivered
+    failed
+    acknowledged
+    expired
+  }
+
+  enum AlertCategory {
+    critical_symptom
+    medication_reminder
+    follow_up
+    doctor_notification
+    system
+    emergency
+  }
+
+  class Alert {
+    +id: string
+    +userId: string
+    +patientId: string
+    +doctorId: string
+    +title: string
+    +message: string
+    +priority: AlertPriority
+    +status: AlertStatus
+    +category: AlertCategory
+    +scheduledAt: Date
+    +markAsDispatched()
+    +markAsFailed(error)
+    +markAsAcknowledged()
+  }
+
+  enum ReportType {
+    daily
+    weekly
+    monthly
+  }
+
+  enum ReportStatus {
+    pending
+    generating
+    completed
+    failed
+    exported
+  }
+
+  class AutomaticReport {
+    +id: string
+    +reportType: ReportType
+    +status: ReportStatus
+    +generatedBy: string
+    +generatedAt: Date
+    +exportFormat: string
+  }
+
+  enum MLExperimentType {
+    rl_session
+    fl_round
+    automl_pipeline
+    prediction
+    training
+    evaluation
+  }
+
+  enum MLExperimentStatus {
+    pending
+    running
+    completed
+    failed
+    cancelled
+  }
+
+  class MLExperiment {
+    +id: string
+    +experimentId: string
+    +experimentType: MLExperimentType
+    +modelName: string
+    +status: MLExperimentStatus
+    +addLog(level, message)
+    +addError(error)
+    +complete(outputs, results)
+  }
+
+  class WearableData {
+    +id: string
+    +patientId: ObjectId
+    +heartRate: number
+    +oxygenSaturation: number
+    +respiratoryRate: number
+    +steps: number
+    +timestamp: Date
+    +source: string
+  }
+}
+
+' Composición / agregación de objetos embebidos
+MedicalHistory *-- "0..*" Symptom
+MedicalHistory o-- "0..1" Location
+AIAnalysis *-- "1..*" PossibleDiagnosis
+Prescription *-- "1..*" PrescriptionMedication
+Prescription *-- "0..*" DrugInteraction
+
+' Relaciones entre entidades de dominio
+User "1" <-- "0..*" MedicalHistory : patientId
+User "1" <-- "0..*" MedicalHistory : doctorId
+
+User "1" <-- "0..*" Appointment : patientId
+User "1" <-- "0..*" Appointment : doctorId
+User "1" <-- "0..*" Appointment : createdBy
+
+User "1" <-- "0..*" Prescription : patientId
+User "1" <-- "0..*" Prescription : doctorId
+User "1" <-- "0..*" Prescription : createdBy
+User "0..1" <-- "0..*" Prescription : validatedBy
+
+MedicalHistory "1" <-- "0..*" AIAnalysis : medicalHistoryId
+
+User "1" <-- "0..*" Alert : userId
+User "0..1" <-- "0..*" Alert : patientId
+User "0..1" <-- "0..*" Alert : doctorId
+
+User "1" <-- "0..*" ConsentLog : userId
+User "0..1" <-- "0..*" AuditLog : userId
+User "1" <-- "0..*" WearableData : patientId
+
+User "0..1" <-- "0..*" AutomaticReport : generatedBy
+User "0..1" <-- "0..*" MLExperiment : metadata.userId
+User "0..1" <-- "0..*" MLExperiment : metadata.patientId
+
+@enduml

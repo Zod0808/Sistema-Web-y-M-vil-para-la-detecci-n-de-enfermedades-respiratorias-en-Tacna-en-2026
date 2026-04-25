@@ -1,0 +1,162 @@
+---
+# Grafana Dashboard ConfigMap para GPU Metrics
+# Este dashboard muestra métricas de GPU recolectadas por DCGM
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-gpu-dashboard
+  namespace: ml-gpu
+  labels:
+    grafana_dashboard: "1"
+data:
+  gpu-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "GPU Metrics Dashboard",
+        "tags": ["gpu", "ml", "dcgm"],
+        "timezone": "browser",
+        "schemaVersion": 27,
+        "version": 1,
+        "refresh": "30s",
+        "panels": [
+          {
+            "id": 1,
+            "title": "GPU Utilization",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_GPU_UTIL",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "percent",
+                "label": "Utilization %"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "GPU Memory Utilization",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_MEM_COPY_UTIL",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "percent",
+                "label": "Memory Utilization %"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "GPU Temperature",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_GPU_TEMP",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "celsius",
+                "label": "Temperature (°C)"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "alert": {
+              "conditions": [
+                {
+                  "evaluator": {
+                    "params": [85],
+                    "type": "gt"
+                  },
+                  "operator": {
+                    "type": "and"
+                  },
+                  "query": {
+                    "params": ["A", "5m", "now"]
+                  },
+                  "reducer": {
+                    "params": [],
+                    "type": "avg"
+                  },
+                  "type": "query"
+                }
+              ],
+              "executionErrorState": "alerting",
+              "for": "5m",
+              "frequency": "10s",
+              "handler": 1,
+              "name": "High GPU Temperature",
+              "noDataState": "no_data",
+              "notifications": []
+            }
+          },
+          {
+            "id": 4,
+            "title": "GPU Power Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_POWER_USAGE",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "watt",
+                "label": "Power (W)"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "GPU Memory Used",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_FB_USED",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "bytes",
+                "label": "Memory (bytes)"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 6,
+            "title": "GPU Memory Total",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "DCGM_FI_DEV_FB_TOTAL",
+                "legendFormat": "GPU {{gpu}}"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "bytes",
+                "label": "Memory (bytes)"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          }
+        ]
+      }
+    }
+

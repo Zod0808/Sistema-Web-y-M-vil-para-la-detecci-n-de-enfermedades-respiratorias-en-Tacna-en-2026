@@ -1,0 +1,251 @@
+# Docker Compose for Development
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: respicare-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - "27018:27017"  # Puerto externo 27018 para evitar conflicto con MongoDB de Windows
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-respicare_dev}
+    volumes:
+      - mongodb_dev_data:/data/db
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - respicare-dev-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: respicare-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - respicare-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # AI Services
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: dockerfile
+    container_name: respicare-ai-dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      DATABASE_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/${MONGO_DB:-respicare_dev}?authSource=admin
+      REDIS_URL: redis://redis:6379
+      MODEL_PATH: /app/models
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Deshabilitar rate limiting para desarrollo (o aumentar límites)
+      AI_RATE_LIMIT_ENABLED: ${AI_RATE_LIMIT_ENABLED:-0}
+      AI_RATE_LIMIT_CAPACITY: ${AI_RATE_LIMIT_CAPACITY:-1000}
+      AI_RATE_LIMIT_REFILL_PER_SEC: ${AI_RATE_LIMIT_REFILL_PER_SEC:-100.0}
+      AI_MAX_BODY_BYTES: ${AI_MAX_BODY_BYTES:-4194304}
+    volumes:
+      - ./ai-services:/app
+      - ai_models_dev:/app/models
+      - ai_cache_dev:/app/cache
+      - ai_logs_dev:/app/logs
+      - ./data/etl:/app/data/etl   # Datasets ETL (Kaggle, CSV locales)
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - respicare-dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    # En desarrollo mantenemos --reload pero agregamos workers y optimizaciones
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --reload --log-level debug --timeout-keep-alive 120 --limit-concurrency 500 --backlog 1024
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile.dev
+    container_name: respicare-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Node.js debugger
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      MONGO_DB: respicare_dev
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/respicare_dev?authSource=admin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-08Slv/UdXHuRefzQoP/URYfW9D01LZX2ONA/X1riCts=}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-30d}
+      AI_SERVICE_URL: http://ai-services:8000
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-dev@respicare.local}
+      SMTP_PASS: ${SMTP_PASS:-dev}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@respicare.local}
+      PUSH_PROVIDER: ${PUSH_PROVIDER:-none}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8083}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - backend_logs_dev:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-services:
+        condition: service_started
+    networks:
+      - respicare-dev-network
+    command: npm run dev
+
+  # Frontend Web
+  web:
+    build:
+      context: ./web
+      dockerfile: dockerfile.dev
+    container_name: respicare-web-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # URLs del backend y servicios (usar localhost para que el navegador pueda acceder)
+      REACT_APP_BACKEND_URL: http://localhost:3001
+      REACT_APP_API_URL: http://localhost:3001/api
+      REACT_APP_AI_URL: http://localhost:8000
+      # Configuración para hot-reload en Docker
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      FAST_REFRESH: "true"
+      # Variables de Node
+      NODE_ENV: development
+      # Configuración de React Scripts
+      BROWSER: none
+      HOST: 0.0.0.0
+    volumes:
+      # Montar código fuente para hot-reload
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+      - ./web/package.json:/app/package.json
+      - ./web/package-lock.json:/app/package-lock.json
+      # Usar volumen nombrado para node_modules para evitar conflictos
+      - web_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - respicare-dev-network
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # MongoDB Admin Interface
+  mongo-express:
+    image: mongo-express:latest
+    container_name: respicare-mongo-express-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-password123}
+      # Conectar a MongoDB con autenticación y especificar base de datos por defecto
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/?authSource=admin
+      # Base de datos por defecto a mostrar
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      # Permitir ver todas las bases de datos
+      ME_CONFIG_SITE_BASEURL: /
+      ME_CONFIG_SITE_COOKIESECRET: ${ME_COOKIE_SECRET:-respicare-cookie-secret-change-in-production}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_PASSWORD:-admin123}
+      # Configuración adicional para desarrollo
+      ME_CONFIG_OPTIONS_EDITORTHEME: default
+      ME_CONFIG_OPTIONS_READONLY: false
+    depends_on:
+      - mongodb
+    networks:
+      - respicare-dev-network
+
+  # Redis Commander
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: respicare-redis-commander-dev
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - respicare-dev-network
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  ai_models_dev:
+    driver: local
+  ai_cache_dev:
+    driver: local
+  ai_logs_dev:
+    driver: local
+  backend_logs_dev:
+    driver: local
+  web_node_modules:
+    driver: local
+
+networks:
+  respicare-dev-network:
+    driver: bridge
+

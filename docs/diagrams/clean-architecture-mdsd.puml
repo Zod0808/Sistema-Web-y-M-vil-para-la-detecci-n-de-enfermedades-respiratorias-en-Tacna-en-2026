@@ -1,0 +1,141 @@
+@startuml Clean Architecture as MDSD
+
+!theme plain
+skinparam linetype ortho
+
+title Clean Architecture mapped to MDSD - RespiCare
+
+' Center - Domain (PIM)
+package "Enterprise\nBusiness Rules\n(PIM)" as Domain #lightblue {
+  rectangle "**Entities**" as Entities {
+    [UserEntity]
+    [MedicalHistoryEntity]
+  }
+  rectangle "**Value Objects**" as VOs {
+    [SymptomVO]
+    [LocationVO]
+  }
+}
+
+' Second layer - Use Cases
+package "Application\nBusiness Rules" as UseCases #lightgreen {
+  rectangle "**Use Cases**" as UC {
+    [RegisterUserUseCase]
+    [CreateMedicalHistoryUseCase]
+    [AuthenticateUserUseCase]
+  }
+  rectangle "**Orchestration**" as Orch {
+    [Coordinates entities]
+    [Applies business rules]
+    [Platform independent]
+  }
+}
+
+' Third layer - Interface Adapters (PSM)
+package "Interface\nAdapters\n(PSM)" as Adapters #lightyellow {
+  rectangle "**Controllers**" as Controllers {
+    [HTTP Request/Response]
+    [REST API endpoints]
+  }
+  rectangle "**DTOs**" as DTOs {
+    [UserResponseDto]
+    [CreateMedicalHistoryRequestDto]
+  }
+  rectangle "**Presenters**" as Presenters {
+    [Format data for UI]
+    [Transform entities to DTOs]
+  }
+}
+
+' Outer layer - Frameworks & Drivers (PSM)
+package "Frameworks\n& Drivers\n(PSM)" as Frameworks #lightcoral {
+  rectangle "**MongoDB**" as DB {
+    [UserDocument schema]
+    [MedicalHistoryDocument schema]
+  }
+  rectangle "**Express**" as Express {
+    [HTTP Server]
+    [Middleware]
+    [Routes]
+  }
+  rectangle "**External Services**" as External {
+    [OpenAI API]
+    [AWS S3]
+    [Email Service]
+  }
+}
+
+' Relationships
+Domain -down-> UseCases : used by
+UseCases -down-> Adapters : transformed to
+Adapters -down-> Frameworks : implemented with
+
+' Dependency Rule
+note as DependencyRule
+  <b>Dependency Rule (MDSD)</b>
+  Dependencies point INWARD
+  
+  Inner circles (PIM):
+  • Don't know about outer circles
+  • Technology independent
+  • Pure business logic
+  
+  Outer circles (PSM):
+  • Depend on inner circles
+  • Technology specific
+  • Implementation details
+  
+  Transformations:
+  • Repository: PIM ↔ PSM (DB)
+  • DTOs: PIM ↔ PSM (API)
+  • Services: Orchestrate transformations
+end note
+
+DependencyRule -[hidden]right- Domain
+
+' MDSD Mapping
+note bottom of Domain
+  <b>PIM Layer</b>
+  Platform Independent Models
+  • Pure domain logic
+  • No framework dependencies
+  • Can run without external systems
+end note
+
+note bottom of Adapters
+  <b>PSM Layer - Interface</b>
+  Platform Specific Models
+  • REST API models (DTOs)
+  • HTTP specific
+  • JSON serialization
+end note
+
+note bottom of Frameworks
+  <b>PSM Layer - Infrastructure</b>
+  Platform Specific Models
+  • Database schemas
+  • Framework specific code
+  • External service adapters
+end note
+
+' Transformation Flow
+rectangle "**Transformation Flow**" as Flow #white {
+  (HTTP Request) -right-> (DTO)
+  (DTO) -right-> (Use Case)
+  (Use Case) -right-> (Entity)
+  (Entity) -right-> (Repository)
+  (Repository) -right-> (Document)
+  (Document) -right-> (MongoDB)
+  
+  (MongoDB) -left-> (Document)
+  (Document) -left-> (Repository)
+  (Repository) -left-> (Entity)
+  (Entity) -left-> (Use Case)
+  (Use Case) -left-> (DTO)
+  (DTO) -left-> (HTTP Response)
+}
+
+Flow -[hidden]down- DependencyRule
+
+@enduml
+

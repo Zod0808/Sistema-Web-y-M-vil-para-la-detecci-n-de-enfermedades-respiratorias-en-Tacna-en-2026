@@ -1,0 +1,29 @@
+[MASTER]
+ignore=venv,__pycache__,migrations,models,node_modules
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+disable=missing-docstring,too-few-public-methods,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,too-many-instance-attributes,too-many-public-methods,too-many-return-statements
+
+[FORMAT]
+max-line-length=100
+indent-string='  '
+
+[DESIGN]
+max-args=7
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-attributes=10
+min-public-methods=1
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,db,pd,np,df
+
+[IMPORTS]
+preferred-modules=fastapi,pydantic,motor,redis
+
+[REFACTORING]
+max-nested-blocks=5
+

@@ -1,0 +1,209 @@
+---
+# Configuración para Spot/Preemptible Instances en GPU Nodes
+# Permite usar instancias spot para reducir costos
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-gpu-spot
+---
+# Node Pool para Spot Instances
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-spot-config
+  namespace: ml-gpu-spot
+data:
+  node-pool-config.yaml: |
+    # Configuración para node pool de spot instances
+    # Para GKE:
+    # gcloud container node-pools create gpu-spot-pool \
+    #   --cluster=respicare-cluster \
+    #   --machine-type=n1-standard-4 \
+    #   --accelerator=type=nvidia-tesla-t4,count=1 \
+    #   --spot \
+    #   --num-nodes=0 \
+    #   --min-nodes=0 \
+    #   --max-nodes=5 \
+    #   --enable-autoscaling \
+    #   --node-labels=accelerator=nvidia-tesla-t4,instance-type=spot \
+    #   --node-taints=spot-instance=true:NoSchedule
+    
+    # Para EKS:
+    # aws eks create-nodegroup \
+    #   --cluster-name respicare-cluster \
+    #   --nodegroup-name gpu-spot-pool \
+    #   --instance-types g4dn.xlarge \
+    #   --capacity-type SPOT \
+    #   --scaling-config minSize=0,maxSize=5,desiredSize=0 \
+    #   --node-labels accelerator=nvidia-tesla-t4,instance-type=spot \
+    #   --taints spot-instance=true:NoSchedule
+---
+# Tolerations para Pods que pueden usar spot instances
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spot-tolerations
+  namespace: ml-gpu-spot
+data:
+  tolerations.yaml: |
+    tolerations:
+    - key: spot-instance
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+---
+# PriorityClass para trabajos en spot instances
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: spot-workload
+  namespace: ml-gpu-spot
+value: 100
+description: "Priority class for workloads that can run on spot instances"
+---
+# Job con checkpointing para spot instances
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ml-training-spot-job
+  namespace: ml-gpu-spot
+  labels:
+    workload-type: training
+    instance-type: spot
+spec:
+  # Completar múltiples veces para permitir checkpointing
+  completions: 1
+  parallelism: 1
+  backoffLimit: 10  # Más reintentos para spot instances
+  activeDeadlineSeconds: 3600  # 1 hora máximo
+  template:
+    metadata:
+      labels:
+        workload-type: training
+        instance-type: spot
+    spec:
+      priorityClassName: spot-workload
+      restartPolicy: OnFailure
+      tolerations:
+      - key: spot-instance
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+      nodeSelector:
+        accelerator: nvidia-tesla-t4
+        instance-type: spot
+      containers:
+      - name: training
+        image: respicare/ai-services:latest
+        command:
+        - python
+        - -m
+        - ml_models.train_with_checkpointing
+        env:
+        - name: CHECKPOINT_DIR
+          value: /checkpoints
+        - name: CHECKPOINT_INTERVAL
+          value: "300"  # Checkpoint cada 5 minutos
+        - name: SPOT_INSTANCE
+          value: "true"
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+            memory: "8Gi"
+            cpu: "2"
+          limits:
+            nvidia.com/gpu: 1
+            memory: "16Gi"
+            cpu: "4"
+        volumeMounts:
+        - name: checkpoints
+          mountPath: /checkpoints
+        - name: model-storage
+          mountPath: /models
+      volumes:
+      - name: checkpoints
+        persistentVolumeClaim:
+          claimName: checkpoint-storage
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage
+---
+# PersistentVolumeClaim para checkpoints
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: checkpoint-storage
+  namespace: ml-gpu-spot
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 50Gi
+---
+# CronJob para entrenamiento recurrente con checkpointing
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ml-training-spot-cron
+  namespace: ml-gpu-spot
+spec:
+  schedule: "0 2 * * *"  # Diario a las 2 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            workload-type: training
+            instance-type: spot
+        spec:
+          priorityClassName: spot-workload
+          restartPolicy: OnFailure
+          tolerations:
+          - key: spot-instance
+            operator: Equal
+            value: "true"
+            effect: NoSchedule
+          nodeSelector:
+            accelerator: nvidia-tesla-t4
+            instance-type: spot
+          containers:
+          - name: training
+            image: respicare/ai-services:latest
+            command:
+            - python
+            - -m
+            - ml_models.train_with_checkpointing
+            env:
+            - name: CHECKPOINT_DIR
+              value: /checkpoints
+            - name: CHECKPOINT_INTERVAL
+              value: "300"
+            - name: SPOT_INSTANCE
+              value: "true"
+            resources:
+              requests:
+                nvidia.com/gpu: 1
+                memory: "8Gi"
+                cpu: "2"
+              limits:
+                nvidia.com/gpu: 1
+                memory: "16Gi"
+                cpu: "4"
+            volumeMounts:
+            - name: checkpoints
+              mountPath: /checkpoints
+            - name: model-storage
+              mountPath: /models
+          volumes:
+          - name: checkpoints
+            persistentVolumeClaim:
+              claimName: checkpoint-storage
+          - name: model-storage
+            persistentVolumeClaim:
+              claimName: model-storage
+

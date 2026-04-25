@@ -1,0 +1,332 @@
+# GPU Nodes Configuration for Heavy ML Models
+# 
+# Este archivo define la configuración para nodos GPU dedicados
+# para entrenamiento y inferencia de modelos pesados (BERT, CV, etc.)
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-gpu
+---
+# Node Pool para GPU (requiere cluster con nodos GPU)
+# Nota: Esto es una configuración de ejemplo. En producción, configurar
+# node pools con GPU usando el proveedor de cloud (GKE, EKS, AKS)
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-config
+  namespace: ml-gpu
+data:
+  gpu-driver-version: "470.82.01"
+  cuda-version: "11.8"
+  gpu-memory-fraction: "0.9"
+  allow-memory-growth: "true"
+---
+# Resource Quota para namespace ML-GPU
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ml-gpu-quota
+  namespace: ml-gpu
+spec:
+  hard:
+    requests.nvidia.com/gpu: "4"
+    limits.nvidia.com/gpu: "4"
+    requests.cpu: "16"
+    limits.cpu: "32"
+    requests.memory: "64Gi"
+    limits.memory: "128Gi"
+---
+# Limit Range para pods en namespace ML-GPU
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ml-gpu-limits
+  namespace: ml-gpu
+spec:
+  limits:
+    - type: Container
+      max:
+        nvidia.com/gpu: "2"
+        cpu: "8"
+        memory: "32Gi"
+      min:
+        cpu: "1"
+        memory: "2Gi"
+      default:
+        cpu: "2"
+        memory: "4Gi"
+      defaultRequest:
+        cpu: "1"
+        memory: "2Gi"
+---
+# Deployment para AI Services con GPU
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-services-gpu
+  namespace: ml-gpu
+  labels:
+    app: ai-services
+    tier: gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-services
+      tier: gpu
+  template:
+    metadata:
+      labels:
+        app: ai-services
+        tier: gpu
+    spec:
+      # Node selector para forzar scheduling en nodos GPU
+      nodeSelector:
+        accelerator: nvidia-tesla-t4  # Ajustar según tipo de GPU disponible
+        # cloud.google.com/gke-accelerator: nvidia-tesla-t4  # Para GKE
+        # eks.amazonaws.com/accelerator: nvidia-tesla-t4     # Para EKS
+      
+      # Tolerations para nodos GPU (si tienen taints)
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      
+      containers:
+        - name: ai-services
+          image: ghcr.io/your-org/ai-services:gpu-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          
+          # Variables de entorno para GPU
+          env:
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: AI_USE_REAL_MODELS
+              value: "1"
+            - name: AI_USE_GPU
+              value: "1"
+            - name: GPU_MEMORY_FRACTION
+              value: "0.9"
+            - name: TF_FORCE_GPU_ALLOW_GROWTH
+              value: "true"
+          
+          # Recursos con GPU
+          resources:
+            requests:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: "16Gi"
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "8"
+              memory: "32Gi"
+          
+          # Health checks
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 20
+---
+# Service para AI Services GPU
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-services-gpu
+  namespace: ml-gpu
+spec:
+  selector:
+    app: ai-services
+    tier: gpu
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+# Job para entrenamiento de modelos pesados
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: train-heavy-model
+  namespace: ml-gpu
+spec:
+  # Completar manualmente o usar CronJob para entrenamiento recurrente
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia-tesla-t4
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: train-model
+          image: ghcr.io/your-org/ai-services:gpu-latest
+          command: ["python", "scripts/train_heavy_model.py"]
+          env:
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: AI_USE_GPU
+              value: "1"
+            - name: MODEL_TYPE
+              value: "bert"  # o "cv", "transformer", etc.
+          resources:
+            requests:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: "16Gi"
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "8"
+              memory: "32Gi"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+            - name: data-storage
+              mountPath: /app/data
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: ml-models-pvc
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: ml-data-pvc
+---
+# PersistentVolumeClaim para modelos grandes
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-models-pvc
+  namespace: ml-gpu
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd  # Ajustar según storage class disponible
+---
+# PersistentVolumeClaim para datos de entrenamiento
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-data-pvc
+  namespace: ml-gpu
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: fast-ssd
+---
+# CronJob para entrenamiento recurrente de modelos
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: retrain-heavy-models
+  namespace: ml-gpu
+spec:
+  schedule: "0 2 * * 0"  # Domingos a las 2 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            accelerator: nvidia-tesla-t4
+          tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+              effect: "NoSchedule"
+          containers:
+            - name: retrain
+              image: ghcr.io/your-org/ai-services:gpu-latest
+              command: ["python", "scripts/auto_retrain_heavy_models.py"]
+              env:
+                - name: CUDA_VISIBLE_DEVICES
+                  value: "0"
+                - name: AI_USE_GPU
+                  value: "1"
+              resources:
+                requests:
+                  nvidia.com/gpu: 1
+                  cpu: "4"
+                  memory: "16Gi"
+                limits:
+                  nvidia.com/gpu: 1
+                  cpu: "8"
+                  memory: "32Gi"
+              volumeMounts:
+                - name: model-storage
+                  mountPath: /app/models
+                - name: data-storage
+                  mountPath: /app/data
+          volumes:
+            - name: model-storage
+              persistentVolumeClaim:
+                claimName: ml-models-pvc
+            - name: data-storage
+              persistentVolumeClaim:
+                claimName: ml-data-pvc
+---
+# HPA para escalado de servicios GPU (limitado por GPU disponible)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-services-gpu-hpa
+  namespace: ml-gpu
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-services-gpu
+  minReplicas: 1
+  maxReplicas: 4  # Limitado por número de GPUs disponibles
+  metrics:
+    - type: Resource
+      resource:
+        name: nvidia.com/gpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+

@@ -1,0 +1,283 @@
+# RespiCare - Docker Makefile
+# Comandos simplificados para gestión de Docker
+
+.PHONY: help dev-up dev-down prod-up prod-down logs backup restore health clean
+
+# Variables
+DEV_COMPOSE = docker-compose.dev.yml
+PROD_COMPOSE = docker-compose.prod.yml
+
+help: ## Mostrar esta ayuda
+	@echo "RespiCare - Comandos Docker Disponibles:"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# ====================================
+# DESARROLLO
+# ====================================
+
+dev-setup: ## Configurar entorno de desarrollo
+	@echo "Configurando entorno de desarrollo..."
+	@if [ ! -f .env ]; then cp env.example .env; echo "Archivo .env creado. Por favor, configúralo antes de continuar."; exit 1; fi
+	@mkdir -p backups/mongodb mongodb/init nginx/ssl certbot/conf certbot/www
+	@chmod +x scripts/*.sh
+	@echo "✓ Entorno configurado"
+
+dev-build: ## Construir imágenes de desarrollo
+	@echo "Construyendo imágenes de desarrollo..."
+	docker-compose -f $(DEV_COMPOSE) build
+
+dev-up: ## Iniciar servicios de desarrollo
+	@echo "Iniciando servicios de desarrollo..."
+	docker-compose -f $(DEV_COMPOSE) up -d
+	@echo "✓ Servicios iniciados"
+	@echo ""
+	@echo "Servicios disponibles:"
+	@echo "  - Backend API: http://localhost:3001"
+	@echo "  - AI Services: http://localhost:8000"
+	@echo "  - MongoDB Express: http://localhost:8081"
+	@echo "  - Redis Commander: http://localhost:8082"
+
+dev-down: ## Detener servicios de desarrollo
+	@echo "Deteniendo servicios de desarrollo..."
+	docker-compose -f $(DEV_COMPOSE) down
+
+dev-restart: ## Reiniciar servicios de desarrollo
+	@echo "Reiniciando servicios..."
+	docker-compose -f $(DEV_COMPOSE) restart
+
+dev-logs: ## Ver logs de desarrollo
+	docker-compose -f $(DEV_COMPOSE) logs -f
+
+dev-shell-backend: ## Acceder a shell del backend
+	docker exec -it respicare-backend-dev sh
+
+dev-shell-ai: ## Acceder a shell de AI services
+	docker exec -it respicare-ai-dev bash
+
+# ====================================
+# PRODUCCIÓN
+# ====================================
+
+prod-setup: ## Configurar entorno de producción
+	@echo "Configurando entorno de producción..."
+	@if [ ! -f .env ]; then echo "Error: Archivo .env no encontrado. Créalo desde env.example"; exit 1; fi
+	@mkdir -p backups/mongodb mongodb/init nginx/ssl certbot/conf certbot/www
+	@chmod +x scripts/*.sh
+	@echo "✓ Entorno configurado"
+
+prod-build: ## Construir imágenes de producción
+	@echo "Construyendo imágenes de producción..."
+	docker-compose -f $(PROD_COMPOSE) build --no-cache
+
+prod-up: ## Iniciar servicios de producción
+	@echo "Iniciando servicios de producción..."
+	docker-compose -f $(PROD_COMPOSE) up -d
+	@sleep 10
+	@./scripts/healthcheck.sh
+	@echo "✓ Servicios de producción iniciados"
+
+prod-down: ## Detener servicios de producción
+	@echo "Deteniendo servicios de producción..."
+	docker-compose -f $(PROD_COMPOSE) down
+
+prod-restart: ## Reiniciar servicios de producción
+	@echo "Reiniciando servicios de producción..."
+	docker-compose -f $(PROD_COMPOSE) restart
+
+prod-logs: ## Ver logs de producción
+	docker-compose -f $(PROD_COMPOSE) logs -f
+
+prod-update: ## Actualizar servicios de producción
+	@echo "Actualizando servicios..."
+	git pull origin main
+	docker-compose -f $(PROD_COMPOSE) build --no-cache
+	docker-compose -f $(PROD_COMPOSE) up -d
+	@./scripts/healthcheck.sh
+
+# ====================================
+# SERVICIOS ESPECÍFICOS
+# ====================================
+
+restart-backend: ## Reiniciar solo backend
+	docker-compose restart backend
+
+restart-ai: ## Reiniciar solo AI services
+	docker-compose restart ai-services
+
+restart-nginx: ## Reiniciar solo Nginx
+	docker-compose restart nginx
+
+logs-backend: ## Ver logs del backend
+	docker-compose logs -f backend
+
+logs-ai: ## Ver logs de AI services
+	docker-compose logs -f ai-services
+
+logs-mongodb: ## Ver logs de MongoDB
+	docker-compose logs -f mongodb
+
+logs-nginx: ## Ver logs de Nginx
+	docker-compose logs -f nginx
+
+# ====================================
+# BASE DE DATOS
+# ====================================
+
+db-init: ## Inicializar base de datos
+	@echo "Inicializando base de datos..."
+	@./scripts/init-db.sh
+
+db-backup: ## Crear backup de MongoDB
+	@echo "Creando backup..."
+	@./scripts/backup.sh
+
+db-restore: ## Restaurar backup de MongoDB
+	@echo "Backups disponibles:"
+	@ls -lh backups/mongodb/*.tar.gz 2>/dev/null || echo "No hay backups disponibles"
+	@echo ""
+	@read -p "Ingresa el nombre del archivo de backup: " BACKUP_FILE; \
+	./scripts/restore.sh $$BACKUP_FILE
+
+db-shell: ## Acceder a shell de MongoDB
+	docker exec -it respicare-mongodb mongosh -u admin -p password123
+
+# ====================================
+# MONITOREO Y DIAGNÓSTICO
+# ====================================
+
+health: ## Verificar salud de servicios
+	@./scripts/healthcheck.sh
+
+status: ## Ver estado de servicios
+	@docker-compose ps
+
+stats: ## Ver estadísticas de recursos
+	docker stats --no-stream
+
+inspect: ## Inspeccionar servicios
+	@echo "=== Servicios en Ejecución ==="
+	@docker-compose ps
+	@echo ""
+	@echo "=== Uso de Recursos ==="
+	@docker stats --no-stream
+	@echo ""
+	@echo "=== Espacio en Disco ==="
+	@docker system df
+
+# ====================================
+# SSL/TLS
+# ====================================
+
+ssl-cert: ## Obtener certificado SSL con Let's Encrypt
+	@read -p "Ingresa tu dominio: " DOMAIN; \
+	read -p "Ingresa tu email: " EMAIL; \
+	docker-compose -f $(PROD_COMPOSE) run --rm certbot certonly \
+		--webroot \
+		--webroot-path=/var/www/certbot \
+		--email $$EMAIL \
+		--agree-tos \
+		--no-eff-email \
+		-d $$DOMAIN
+
+ssl-renew: ## Renovar certificados SSL
+	docker-compose -f $(PROD_COMPOSE) run --rm certbot renew
+
+# ====================================
+# LIMPIEZA Y MANTENIMIENTO
+# ====================================
+
+clean: ## Limpiar recursos no utilizados
+	@echo "Limpiando recursos Docker..."
+	docker system prune -f
+	@echo "✓ Limpieza completada"
+
+clean-all: ## Limpiar TODO (¡CUIDADO! Elimina volúmenes)
+	@read -p "¿Estás seguro? Esto eliminará TODOS los datos (yes/no): " CONFIRM; \
+	if [ "$$CONFIRM" = "yes" ]; then \
+		docker-compose down -v; \
+		docker system prune -af --volumes; \
+		echo "✓ Limpieza completa realizada"; \
+	else \
+		echo "Operación cancelada"; \
+	fi
+
+clean-logs: ## Limpiar logs antiguos
+	@echo "Limpiando logs antiguos..."
+	@find . -name "*.log" -type f -mtime +30 -delete
+	@echo "✓ Logs limpiados"
+
+# ====================================
+# TESTING
+# ====================================
+
+test: ## Ejecutar tests
+	@echo "Ejecutando tests..."
+	docker-compose exec backend npm test
+	docker-compose exec ai-services pytest
+
+test-coverage: ## Ejecutar tests con cobertura
+	docker-compose exec backend npm run test:coverage
+	docker-compose exec ai-services pytest --cov
+
+# ====================================
+# UTILIDADES
+# ====================================
+
+ps: ## Listar contenedores
+	docker-compose ps
+
+images: ## Listar imágenes
+	docker images | grep respicare
+
+volumes: ## Listar volúmenes
+	docker volume ls | grep respicare
+
+networks: ## Listar redes
+	docker network ls | grep respicare
+
+shell: ## Menú interactivo de shells
+	@echo "Selecciona un servicio:"
+	@echo "1) Backend"
+	@echo "2) AI Services"
+	@echo "3) MongoDB"
+	@echo "4) Redis"
+	@read -p "Opción: " OPT; \
+	case $$OPT in \
+		1) docker exec -it respicare-backend sh ;; \
+		2) docker exec -it respicare-ai bash ;; \
+		3) docker exec -it respicare-mongodb mongosh ;; \
+		4) docker exec -it respicare-redis redis-cli ;; \
+		*) echo "Opción inválida" ;; \
+	esac
+
+env-check: ## Verificar variables de entorno
+	@echo "Verificando configuración de entorno..."
+	@if [ -f .env ]; then \
+		echo "✓ Archivo .env existe"; \
+		echo ""; \
+		echo "Variables configuradas:"; \
+		grep -v '^#' .env | grep -v '^$$' | cut -d= -f1; \
+	else \
+		echo "✗ Archivo .env no encontrado"; \
+		exit 1; \
+	fi
+
+# ====================================
+# QUICK START
+# ====================================
+
+quick-start-dev: dev-setup dev-build dev-up ## Setup y start completo para desarrollo
+	@echo ""
+	@echo "✓ Entorno de desarrollo listo!"
+	@echo ""
+	@echo "Ejecuta 'make dev-logs' para ver logs"
+	@echo "Ejecuta 'make health' para verificar servicios"
+
+quick-start-prod: prod-setup prod-build prod-up ## Setup y start completo para producción
+	@echo ""
+	@echo "✓ Entorno de producción listo!"
+	@echo ""
+	@echo "Ejecuta 'make prod-logs' para ver logs"
+	@echo "Ejecuta 'make health' para verificar servicios"
+

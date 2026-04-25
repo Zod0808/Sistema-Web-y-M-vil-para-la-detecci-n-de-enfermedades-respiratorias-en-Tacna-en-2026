@@ -1,0 +1,342 @@
+@startuml Class Diagram - RespiCare
+
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam class {
+    BackgroundColor<<Entity>> #E8F4F8
+    BackgroundColor<<Service>> #FFF4E6
+    BackgroundColor<<ValueObject>> #F0F0F0
+    BorderColor #2C3E50
+    ArrowColor #34495E
+    FontSize 10
+}
+
+left to right direction
+
+title RespiCare - Diagrama de Clases Completo
+
+' ============================================
+' ENTIDADES PRINCIPALES
+' ============================================
+
+package "Core Entities" <<Entity>> {
+  
+  class User <<Entity>> {
+    + _id: ObjectId
+    + name: string
+    + email: string <<unique>>
+    + role: string
+    + isActive: boolean
+    --
+    + comparePassword(): boolean
+    + isAdmin(): boolean
+    + isDoctor(): boolean
+    + isPatient(): boolean
+  }
+
+  class MedicalHistory <<Entity>> {
+    + _id: ObjectId
+    + patientId: string
+    + doctorId: string
+    + diagnosis: string
+    + age: number
+    + date: Date
+    + syncStatus: string
+    --
+    + isUrgent(): boolean
+    + markAsSynced(): void
+    + findByPatient(): MedicalHistory[]
+  }
+
+  class Appointment <<Entity>> {
+    + _id: ObjectId
+    + patientId: string
+    + doctorId: string
+    + scheduledAt: Date
+    + status: string
+    + durationMinutes: number
+    --
+    + cancel(): void
+    + markCompleted(): void
+    + reschedule(): void
+  }
+
+  class Prescription <<Entity>> {
+    + _id: ObjectId
+    + patientId: string
+    + doctorId: string
+    + status: string
+    --
+    + markCompleted(): void
+    + cancel(): void
+    + addValidation(): void
+  }
+
+  class Alert <<Entity>> {
+    + _id: ObjectId
+    + userId: string
+    + category: string
+    + priority: string
+    + status: string
+    --
+    + markAsDispatched(): void
+    + isDue(): boolean
+  }
+}
+
+' ============================================
+' ENTIDADES DE ANÁLISIS Y REPORTES
+' ============================================
+
+package "Analysis & Reports" <<Entity>> {
+  
+  class AIAnalysis <<Entity>> {
+    + _id: ObjectId
+    + medicalHistoryId: string
+    + urgency: string
+    + confidence: number
+    --
+    + findByUrgency(): AIAnalysis[]
+    + findCritical(): AIAnalysis[]
+  }
+
+  class SymptomReport <<Entity>> {
+    + _id: ObjectId
+    + patientId: string
+    + category: string
+    + overallSeverity: string
+    --
+    + calculateSeverity(): string
+  }
+
+  class AutomaticReport <<Entity>> {
+    + _id: ObjectId
+    + reportType: string
+    + status: string
+    + metrics: object
+    --
+    + findByType(): AutomaticReport[]
+    + findLatestByType(): AutomaticReport
+  }
+
+  class ChatConversation <<Entity>> {
+    + _id: ObjectId
+    + sessionId: string
+    + userId: string
+    + status: string
+    --
+    + addMessage(): void
+    + complete(): void
+  }
+}
+
+' ============================================
+' ENTIDADES DE SEGURIDAD Y AUDITORÍA
+' ============================================
+
+package "Security & Audit" <<Entity>> {
+  
+  class AuditLog <<Entity>> {
+    + _id: ObjectId
+    + userId: string
+    + method: string
+    + route: string
+    + statusCode: number
+  }
+
+  class ConsentLog <<Entity>> {
+    + _id: ObjectId
+    + userId: string
+    + version: string
+    + timestamp: Date
+    --
+    + getLatestConsent(): ConsentLog
+  }
+
+  class WearableData <<Entity>> {
+    + _id: ObjectId
+    + patientId: ObjectId
+    + heartRate: number
+    + oxygenSaturation: number
+    + timestamp: Date
+  }
+
+  class MLExperiment <<Entity>> {
+    + _id: ObjectId
+    + experimentId: string
+    + experimentType: string
+    + status: string
+    --
+    + addLog(): void
+    + complete(): void
+  }
+}
+
+' ============================================
+' VALUE OBJECTS
+' ============================================
+
+package "Value Objects" <<ValueObject>> {
+  
+  class Symptom <<ValueObject>> {
+    + name: string
+    + severity: string
+    + duration: string
+  }
+
+  class PossibleDiagnosis <<ValueObject>> {
+    + condition: string
+    + probability: number
+    + recommendations: string[]
+  }
+
+  class PrescriptionMedication <<ValueObject>> {
+    + name: string
+    + dosage: string
+    + frequencyPerDay: number
+    + durationDays: number
+  }
+
+  class DrugInteraction <<ValueObject>> {
+    + medicationA: string
+    + medicationB: string
+    + severity: string
+  }
+
+  class Message <<ValueObject>> {
+    + role: string
+    + content: string
+    + timestamp: Date
+  }
+}
+
+' ============================================
+' SERVICIOS
+' ============================================
+
+package "Services" <<Service>> {
+  
+  class AIIntegrationService <<Service>> {
+    - aiClient: AxiosInstance
+    --
+    + analyzeSymptoms(): SymptomAnalysisResponse
+    + analyzeSymptomsML(): MLPredictionResponse
+    + checkHealth(): boolean
+  }
+
+  class AutomaticReportService <<Service>> {
+    --
+    + generateReport(): AutomaticReportDocument
+    + exportReport(): string
+  }
+
+  class PrescriptionService <<Service>> {
+    --
+    + createPrescription(): PrescriptionDocument
+    + checkDrugInteractions(): DrugInteraction[]
+    + applySmartDosage(): PrescriptionMedication
+  }
+
+  class AlertService <<Service>> {
+    --
+    + createAlert(): AlertDocument
+    + sendAlert(): void
+    + getDueAlerts(): Alert[]
+  }
+
+  class AppointmentService <<Service>> {
+    --
+    + createAppointment(): AppointmentDocument
+    + checkAvailability(): boolean
+    + cancelAppointment(): void
+  }
+
+  class FhirService <<Service>> {
+    - client: AxiosInstance
+    --
+    + createResource(): FhirResource
+    + getResource(): FhirResource
+  }
+
+  class DrugIntegrationService <<Service>> {
+    - cache: Map
+    --
+    + searchDrug(): DrugInfo
+    + checkInteractions(): DrugInteraction[]
+  }
+
+  class ExportService <<Service>> {
+    --
+    + exportToPDF(): Buffer
+    + exportToCSV(): string
+    + exportToJSON(): string
+  }
+}
+
+' ============================================
+' RELACIONES PRINCIPALES
+' ============================================
+
+User ||--o{ MedicalHistory : "creates"
+User ||--o{ Appointment : "schedules"
+User ||--o{ Alert : "receives"
+User ||--o{ Prescription : "prescribed_to"
+User ||--o{ ChatConversation : "participates"
+User ||--o{ SymptomReport : "submits"
+User ||--o{ WearableData : "generates"
+User ||--o{ AuditLog : "generates"
+User ||--o{ ConsentLog : "consents"
+
+MedicalHistory ||--|| AIAnalysis : "has"
+MedicalHistory ||--o{ Symptom : "contains"
+MedicalHistory }o--|| Appointment : "related_to"
+
+AIAnalysis ||--o{ PossibleDiagnosis : "contains"
+
+Appointment ||--o{ Prescription : "may_result_in"
+
+Prescription ||--o{ PrescriptionMedication : "contains"
+Prescription ||--o{ DrugInteraction : "has"
+
+ChatConversation ||--o{ Message : "contains"
+
+AutomaticReport ..> MedicalHistory : "aggregates"
+AutomaticReport ..> Alert : "aggregates"
+AutomaticReport ..> Appointment : "aggregates"
+
+' Relaciones con Servicios
+AIIntegrationService ..> MedicalHistory : "analyzes"
+AIIntegrationService ..> AIAnalysis : "creates"
+AutomaticReportService ..> AutomaticReport : "generates"
+PrescriptionService ..> Prescription : "manages"
+PrescriptionService ..> DrugIntegrationService : "uses"
+AlertService ..> Alert : "manages"
+AppointmentService ..> Appointment : "manages"
+ExportService ..> MedicalHistory : "exports"
+
+' Notas informativas
+note right of User
+  <b>Roles:</b>
+  patient | doctor | admin
+end note
+
+note right of MedicalHistory
+  <b>Sync Status:</b>
+  pending | synced | error
+end note
+
+note right of AIAnalysis
+  <b>Urgency:</b>
+  low | medium | high | critical
+end note
+
+note right of Appointment
+  <b>Status:</b>
+  scheduled | completed | cancelled
+end note
+
+@enduml

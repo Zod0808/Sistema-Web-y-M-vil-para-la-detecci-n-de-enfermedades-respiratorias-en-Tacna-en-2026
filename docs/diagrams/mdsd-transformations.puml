@@ -1,0 +1,181 @@
+@startuml MDSD Transformations - RespiCare
+
+!theme plain
+skinparam linetype ortho
+
+title Model-Driven Software Development - Transformation Flow
+
+package "Platform Independent Models (PIM)" <<Database>> {
+  class UserEntity <<Domain>> {
+    + id: string
+    + name: string
+    + email: string
+    + role: UserRole
+    --
+    + isValid(): boolean
+    + canAccessMedicalData(): boolean
+  }
+
+  class MedicalHistoryEntity <<Domain>> {
+    + id: string
+    + diagnosis: string
+    + symptoms: Symptom[]
+    --
+    + isUrgent(): boolean
+    + isValid(): boolean
+  }
+}
+
+package "Platform Specific Models (PSM) - Persistence" <<Database>> {
+  class UserDocument <<MongoDB>> {
+    + _id: ObjectId
+    + name: String
+    + email: String
+    + password: String
+    + role: String
+    + isActive: Boolean
+    --
+    Schema validations
+    Indexes
+    Middleware
+  }
+
+  class MedicalHistoryDocument <<MongoDB>> {
+    + _id: ObjectId
+    + patientId: String
+    + diagnosis: String
+    + symptoms: SymptomSchema[]
+    + syncStatus: String
+    --
+    Schema validations
+    Indexes
+    Static methods
+  }
+}
+
+package "Platform Specific Models (PSM) - API" <<Cloud>> {
+  class UserResponseDto <<REST API>> {
+    + id: string
+    + name: string
+    + email: string
+    + role: string
+    --
+    NO password field
+    Optimized for transport
+  }
+
+  class CreateMedicalHistoryRequestDto <<REST API>> {
+    @IsNotEmpty()
+    + patientName: string
+    @Min(0) @Max(150)
+    + age: number
+    @IsNotEmpty()
+    + diagnosis: string
+    --
+    Class-validator decorators
+  }
+
+  class MedicalHistoryResponseDto <<REST API>> {
+    + id: string
+    + diagnosis: string
+    + symptoms: SymptomDto[]
+    + isUrgent: boolean
+    --
+    Computed fields
+    Optimized for client
+  }
+}
+
+package "Transformation Layer" <<Folder>> {
+  class MongoUserRepository <<Repository>> {
+    - toEntity(doc): UserEntity
+    - toDocument(entity): UserDocument
+    --
+    + save(entity): Promise<UserEntity>
+    + findById(id): Promise<UserEntity>
+  }
+
+  class MongoMedicalHistoryRepository <<Repository>> {
+    - toEntity(doc): MedicalHistoryEntity
+    - toDocument(entity): MedicalHistoryDocument
+    --
+    + save(entity): Promise<Entity>
+    + findByPatient(id): Promise<Entity[]>
+  }
+
+  class UserResponseDtoMapper <<Mapper>> {
+    + toDto(entity): UserResponseDto
+    + toDtoArray(entities): UserResponseDto[]
+  }
+
+  class MedicalHistoryMapper <<Mapper>> {
+    + toResponseDto(entity): MedicalHistoryResponseDto
+    + fromRequestDto(dto): MedicalHistoryData
+  }
+}
+
+' Transformations - Domain to Persistence
+UserEntity -right-> MongoUserRepository : <<transform>>
+MongoUserRepository -right-> UserDocument : PIM→PSM
+UserDocument -left-> MongoUserRepository : <<transform>>
+MongoUserRepository -left-> UserEntity : PSM→PIM
+
+MedicalHistoryEntity -right-> MongoMedicalHistoryRepository : <<transform>>
+MongoMedicalHistoryRepository -right-> MedicalHistoryDocument : PIM→PSM
+MedicalHistoryDocument -left-> MongoMedicalHistoryRepository : <<transform>>
+MongoMedicalHistoryRepository -left-> MedicalHistoryEntity : PSM→PIM
+
+' Transformations - Domain to API
+UserEntity -down-> UserResponseDtoMapper : <<transform>>
+UserResponseDtoMapper -down-> UserResponseDto : PIM→PSM
+
+MedicalHistoryEntity -down-> MedicalHistoryMapper : <<transform>>
+MedicalHistoryMapper -down-> MedicalHistoryResponseDto : PIM→PSM
+CreateMedicalHistoryRequestDto -up-> MedicalHistoryMapper : <<transform>>
+MedicalHistoryMapper -up-> MedicalHistoryEntity : PSM→PIM
+
+' Annotations
+note right of UserEntity
+  <b>Pure Domain Logic</b>
+  • Technology independent
+  • Rich behavior
+  • Business rules
+  • Immutable operations
+end note
+
+note right of UserDocument
+  <b>MongoDB Specific</b>
+  • Schema definitions
+  • Indexes for performance
+  • Mongoose middleware
+  • Database constraints
+end note
+
+note right of UserResponseDto
+  <b>API Optimized</b>
+  • Security (no password)
+  • JSON serialization
+  • Client requirements
+  • Transport optimization
+end note
+
+note bottom of MongoUserRepository
+  <b>Transformation Logic</b>
+  • Manual mapping (current)
+  • Could be auto-generated
+  • Bidirectional
+  • Type-safe
+end note
+
+' Transformation Types
+legend right
+  |= Symbol |= Meaning |
+  | <<transform>> | Model-to-Model Transformation |
+  | PIM→PSM | Platform Independent to Specific |
+  | PSM→PIM | Platform Specific to Independent |
+  | ⚠️ Manual | Needs manual coding (improvement opportunity) |
+  | ✅ Automated | Could be auto-generated |
+endlegend
+
+@enduml
+

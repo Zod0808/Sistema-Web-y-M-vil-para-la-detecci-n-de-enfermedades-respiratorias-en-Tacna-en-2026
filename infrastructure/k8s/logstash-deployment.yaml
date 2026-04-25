@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: logging
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+  pipeline.yml: |
+    - pipeline.id: main
+      path.config: "/usr/share/logstash/pipeline/logstash.conf"
+  logstash.conf: |
+    input {
+      # Kubernetes logs via filebeat (if deployed)
+      beats {
+        port => 5044
+      }
+      
+      # Direct log files (if mounted)
+      file {
+        path => "/var/log/apps/*.log"
+        codec => json
+        type => "application"
+      }
+    }
+
+    filter {
+      if [fields][namespace] == "respicare-production" or [fields][namespace] == "respicare-staging" {
+        mutate {
+          add_field => { "environment" => "%{[fields][namespace]}" }
+        }
+      }
+
+      # Parse JSON logs
+      if [message] =~ /^\{/ {
+        json {
+          source => "message"
+        }
+      }
+
+      # Parse timestamp
+      date {
+        match => [ "timestamp", "ISO8601", "yyyy-MM-dd HH:mm:ss" ]
+      }
+
+      # Add metadata
+      mutate {
+        add_field => { "cluster" => "respicare-cluster" }
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["http://elasticsearch:9200"]
+        index => "respicare-logs-%{+YYYY.MM.dd}"
+      }
+      
+      # Fallback to stdout for debugging
+      stdout {
+        codec => rubydebug
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+        - name: logstash
+          image: docker.elastic.co/logstash/logstash:8.11.0
+          ports:
+            - containerPort: 5044
+              name: beats
+          volumeMounts:
+            - name: logstash-config
+              mountPath: /usr/share/logstash/config
+            - name: logstash-pipeline
+              mountPath: /usr/share/logstash/pipeline
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: logstash-config
+          configMap:
+            name: logstash-config
+        - name: logstash-pipeline
+          configMap:
+            name: logstash-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5044
+      targetPort: 5044
+      protocol: TCP
+      name: beats
+  selector:
+    app: logstash
+

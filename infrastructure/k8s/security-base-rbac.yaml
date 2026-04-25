@@ -1,0 +1,131 @@
+# RBAC (Role-Based Access Control) para Seguridad Base
+# Define roles y permisos para diferentes componentes del sistema
+
+---
+# ServiceAccount para backend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-service-account
+  namespace: respicare-prod
+  labels:
+    app: backend
+    component: security
+---
+# ServiceAccount para AI Services
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-services-service-account
+  namespace: respicare-prod
+  labels:
+    app: ai-services
+    component: security
+---
+# ServiceAccount para core-domains
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: core-domains-service-account
+  namespace: respicare-prod
+  labels:
+    app: core-domains-service
+    component: security
+---
+# Role para backend - permisos limitados
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backend-role
+  namespace: respicare-prod
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+  resourceNames: ["backend-config", "backend-secrets"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+# RoleBinding para backend
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-rolebinding
+  namespace: respicare-prod
+subjects:
+- kind: ServiceAccount
+  name: backend-service-account
+  namespace: respicare-prod
+roleRef:
+  kind: Role
+  name: backend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role para AI Services - permisos limitados
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ai-services-role
+  namespace: respicare-prod
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+  resourceNames: ["ai-services-config", "ai-services-secrets"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+# RoleBinding para AI Services
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ai-services-rolebinding
+  namespace: respicare-prod
+subjects:
+- kind: ServiceAccount
+  name: ai-services-service-account
+  namespace: respicare-prod
+roleRef:
+  kind: Role
+  name: ai-services-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# ClusterRole para monitoring (lectura de métricas)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list"]
+---
+# ClusterRoleBinding para monitoring
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitoring-reader-binding
+subjects:
+- kind: ServiceAccount
+  name: prometheus-service-account
+  namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: monitoring-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# ServiceAccount para Prometheus
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-service-account
+  namespace: monitoring
+  labels:
+    app: prometheus
+    component: monitoring
+

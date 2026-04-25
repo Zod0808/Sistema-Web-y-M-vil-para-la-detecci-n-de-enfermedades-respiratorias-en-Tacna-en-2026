@@ -1,0 +1,41 @@
+VALIDACION COMPARATIVA DE MODELOS ML
+Dataset: augmented_dataset_full_20251103_124126.csv
+Fecha: 2025-11-03 12:50:40
+Total casos en dataset: 307,295
+Casos evaluados: 1000
+
+
+================================================================================
+TABLA COMPARATIVA DE MODELOS ML
+================================================================================
+
+Modelo               Accuracy     Precision    Recall       F1-Score     Muestras  
+--------------------------------------------------------------------------------
+XGBoost              ERROR       
+Random Forest        1.0000       1.0000       1.0000       1.0000       5         
+Neural Network       0.9960       0.9961       0.9960       0.9960       1000      
+--------------------------------------------------------------------------------
+
+Mejor modelo por Accuracy: Random Forest (1.0000)
+Mejor modelo por F1-Score: Random Forest (1.0000)
+
+
+RESULTADOS DETALLADOS:
+================================================================================
+
+XGBoost:
+  Error: could not convert string to float: '[4.02968E-3,3.4484763E-2,2.4216827E-3,5.2753936E-2,2.2976926E-2,4.3725904E-2,7.079063E-2,2.1213941E-2,3.2586165E-2,6.149137E-2,2.652227E-2,6.623787E-2,6.79621E-2,7.4510336E-2,5.476878E-2,3.7720133E-2,7.156557E-2,6.2227562E-2,5.277331E-2,4.8414283E-2,2.6851619E-2,4.8530523E-2,1.6467443E-3,4.1459207E-3,4.3590292E-3,5.2889553E-3]'
+
+Random Forest:
+  Accuracy: 1.0000
+  Precision: 1.0000
+  Recall: 1.0000
+  F1-Score: 1.0000
+  Correctas: 5/5
+
+Neural Network:
+  Accuracy: 0.9960
+  Precision: 0.9961
+  Recall: 0.9960
+  F1-Score: 0.9960
+  Correctas: 996/1000

@@ -1,0 +1,147 @@
+---
+# Alertas para GPU (Prometheus AlertManager)
+# Alertas para utilización alta, temperatura, y otros problemas
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-alerts
+  namespace: ml-gpu
+data:
+  gpu-alerts.yaml: |
+    groups:
+    - name: gpu_alerts
+      interval: 30s
+      rules:
+      # Alerta: GPU Temperature Alta
+      - alert: HighGPUTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU temperature is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has temperature {{ $value }}°C (threshold: 85°C)"
+      
+      # Alerta: GPU Temperature Crítica
+      - alert: CriticalGPUTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 90
+        for: 2m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "GPU temperature is critical"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has critical temperature {{ $value }}°C (threshold: 90°C)"
+      
+      # Alerta: GPU Utilization Alta (puede indicar sobrecarga)
+      - alert: HighGPUUtilization
+        expr: DCGM_FI_DEV_GPU_UTIL > 95
+        for: 10m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU utilization is very high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has utilization {{ $value }}% (threshold: 95%)"
+      
+      # Alerta: GPU Memory Alta
+      - alert: HighGPUMemory
+        expr: (DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_TOTAL) > 0.95
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU memory usage is very high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has memory usage {{ $value | humanizePercentage }}"
+      
+      # Alerta: GPU Power Usage Alta
+      - alert: HighGPUPower
+        expr: DCGM_FI_DEV_POWER_USAGE > 200
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU power usage is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} is using {{ $value }}W (threshold: 200W)"
+      
+      # Alerta: GPU No Disponible
+      - alert: GPUNotAvailable
+        expr: up{job="dcgm-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "GPU metrics exporter is down"
+          description: "DCGM exporter on node {{ $labels.instance }} is not responding"
+      
+      # Alerta: GPU Throttling (reducción de rendimiento por temperatura)
+      - alert: GPUThrottling
+        expr: DCGM_FI_DEV_GPU_TEMP > 83 AND DCGM_FI_DEV_GPU_UTIL < 50
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU may be throttling due to temperature"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has high temperature ({{ $value }}°C) but low utilization, possible throttling"
+
+---
+# PrometheusRule para AlertManager
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gpu-alerts
+  namespace: ml-gpu
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: gpu_alerts
+    interval: 30s
+    rules:
+    - alert: HighGPUTemperature
+      expr: DCGM_FI_DEV_GPU_TEMP > 85
+      for: 5m
+      labels:
+        severity: warning
+        component: gpu
+      annotations:
+        summary: "GPU temperature is high"
+        description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has temperature {{ $value }}°C"
+    
+    - alert: CriticalGPUTemperature
+      expr: DCGM_FI_DEV_GPU_TEMP > 90
+      for: 2m
+      labels:
+        severity: critical
+        component: gpu
+      annotations:
+        summary: "GPU temperature is critical"
+        description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has critical temperature {{ $value }}°C"
+    
+    - alert: HighGPUUtilization
+      expr: DCGM_FI_DEV_GPU_UTIL > 95
+      for: 10m
+      labels:
+        severity: warning
+        component: gpu
+      annotations:
+        summary: "GPU utilization is very high"
+        description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has utilization {{ $value }}%"
+    
+    - alert: HighGPUMemory
+      expr: (DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_TOTAL) > 0.95
+      for: 5m
+      labels:
+        severity: warning
+        component: gpu
+      annotations:
+        summary: "GPU memory usage is very high"
+        description: "GPU {{ $labels.gpu }} on node {{ $labels.instance }} has memory usage {{ $value | humanizePercentage }}"
+

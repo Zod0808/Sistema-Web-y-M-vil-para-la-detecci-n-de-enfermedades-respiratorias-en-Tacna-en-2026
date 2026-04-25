@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backend-auditlog-purge
+spec:
+  schedule: "0 3 * * *" # diario a las 03:00
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: purge
+              image: mongo:6
+              command:
+                - /bin/bash
+                - -c
+                - >
+                  mongo "${MONGODB_URI}"
+                  --eval '
+                    const dbName = (new URL(MONGODB_URI)).pathname.substring(1) || "respicare";
+                    const conn = new Mongo(MONGODB_URI);
+                    const db = conn.getDB(dbName);
+                    const days = parseInt(_RETENTION_DAYS) || 180;
+                    const cutoff = new Date(Date.now() - days*24*60*60*1000);
+                    const res = db.AuditLog.deleteMany({ createdAt: { $lt: cutoff } });
+                    printjson({deletedCount: res.deletedCount, cutoff});
+                  ';
+              env:
+                - name: MONGODB_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: backend-secrets
+                      key: mongodb_uri
+                - name: _RETENTION_DAYS
+                  value: "180"
+
+

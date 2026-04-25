@@ -1,0 +1,220 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+  labels:
+    app: otel-collector
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+          grpc:
+            endpoint: 0.0.0.0:4317
+      
+      # Prometheus receiver para métricas existentes
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'respicare-backend'
+              scrape_interval: 15s
+              static_configs:
+                - targets: ['backend:3001']
+                  labels:
+                    service: 'respicare-backend'
+            - job_name: 'respicare-ai-services'
+              scrape_interval: 15s
+              static_configs:
+                - targets: ['ai-services:8000']
+                  labels:
+                    service: 'respicare-ai-services'
+    
+    processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+        send_batch_max_size: 2048
+      
+      # Procesamiento de atributos
+      attributes:
+        actions:
+          - key: deployment.environment
+            value: production
+            action: insert
+      
+      # Filtrado de spans ruidosos
+      filter:
+        spans:
+          exclude:
+            match_type: regexp
+            services:
+              - health.*
+            name_regexp: ".*health.*"
+    
+    exporters:
+      # Exportar a Jaeger
+      jaeger:
+        endpoint: jaeger-collector:14250
+        tls:
+          insecure: true
+      
+      # Exportar a OTLP (para backends externos)
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+        tls:
+          insecure: true
+        headers:
+          ${OTEL_EXPORTER_OTLP_HEADERS}
+      
+      # Logging para debugging
+      logging:
+        loglevel: info
+        sampling_initial: 5
+        sampling_thereafter: 200
+      
+      # Prometheus para métricas
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch, attributes, filter]
+          exporters: [jaeger, otlp, logging]
+        
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [batch, attributes]
+          exporters: [otlp, prometheus, logging]
+        
+        logs:
+          receivers: [otlp]
+          processors: [batch, attributes]
+          exporters: [otlp, logging]
+      
+      extensions: []
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+    component: observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        component: observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8889"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.103.1
+          args:
+            - "--config=/etc/otelcol-config/otel-collector-config.yaml"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: prometheus
+              containerPort: 8889
+              protocol: TCP
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-backend:4318"
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: ""
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol-config
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+            items:
+              - key: otel-collector-config.yaml
+                path: otel-collector-config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+    component: observability
+spec:
+  type: ClusterIP
+  selector:
+    app: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP
+    - name: prometheus
+      port: 8889
+      targetPort: 8889
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-headless
+  namespace: observability
+  labels:
+    app: otel-collector
+    component: observability
+spec:
+  clusterIP: None
+  selector:
+    app: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP

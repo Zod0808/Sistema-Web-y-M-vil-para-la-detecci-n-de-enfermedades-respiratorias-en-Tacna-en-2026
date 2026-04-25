@@ -1,0 +1,384 @@
+@startuml diagrama-casos-de-uso
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam actorStyle awesome
+skinparam usecaseBorderColor #3b82f6
+skinparam usecaseBackgroundColor #eff6ff
+skinparam usecaseFontSize 12
+skinparam actorFontSize 13
+skinparam actorBorderColor #1e40af
+skinparam arrowColor #475569
+skinparam packageBorderColor #94a3b8
+skinparam packageBackgroundColor #f8fafc
+skinparam noteBorderColor #f59e0b
+skinparam noteBackgroundColor #fffbeb
+
+title Sistema RespiCare — Diagrama de Casos de Uso\nv1.0 | Enfermedades Respiratorias
+
+' ══════════════════════════════════════════════════════════════
+'  ACTORES
+' ══════════════════════════════════════════════════════════════
+
+actor "Paciente"       as PAC #3b82f6
+actor "Doctor"         as DOC #059669
+actor "Administrador"  as ADM #7c3aed
+
+actor "Servicio IA"        as IA   #94a3b8
+actor "Laboratorio Externo" as LAB  #94a3b8
+actor "Sistema SMS"        as SMS  #94a3b8
+actor "FHIR / EHR"         as FHIR #94a3b8
+actor "Servicio Emergencias" as EMG #94a3b8
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 1 — AUTENTICACIÓN Y PERFIL
+' ══════════════════════════════════════════════════════════════
+
+package "Autenticación y Perfil" {
+
+  usecase "Registrarse"                   as UC_REG
+  usecase "Iniciar sesión"                as UC_LOGIN
+  usecase "Cerrar sesión"                 as UC_LOGOUT
+  usecase "Autenticar con biometría"      as UC_BIO
+  usecase "Recuperar contraseña"          as UC_PWD
+  usecase "Gestionar perfil"              as UC_PROFILE
+  usecase "Configurar preferencias"       as UC_PREFS
+  usecase "Gestionar consentimiento\ninformado" as UC_CONSENT
+}
+
+PAC --> UC_REG
+PAC --> UC_LOGIN
+PAC --> UC_LOGOUT
+PAC --> UC_BIO
+PAC --> UC_PWD
+PAC --> UC_PROFILE
+PAC --> UC_PREFS
+PAC --> UC_CONSENT
+
+DOC --> UC_LOGIN
+DOC --> UC_LOGOUT
+DOC --> UC_PROFILE
+ADM --> UC_LOGIN
+ADM --> UC_LOGOUT
+
+UC_LOGIN ..> UC_BIO       : <<extend>>
+UC_REG   ..> UC_CONSENT   : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 2 — HISTORIAL CLÍNICO
+' ══════════════════════════════════════════════════════════════
+
+package "Historial Clínico" {
+
+  usecase "Ver historial médico"          as UC_HM_VIEW
+  usecase "Registrar consulta"            as UC_HM_ADD
+  usecase "Actualizar diagnóstico"        as UC_HM_DIAG
+  usecase "Adjuntar documento"            as UC_HM_DOC
+  usecase "Exportar historial (PDF)"      as UC_HM_PDF
+  usecase "Importar desde FHIR/EHR"      as UC_HM_FHIR
+  usecase "Auditar acceso al historial"   as UC_HM_AUDIT
+}
+
+PAC --> UC_HM_VIEW
+PAC --> UC_HM_DOC
+PAC --> UC_HM_PDF
+
+DOC --> UC_HM_VIEW
+DOC --> UC_HM_ADD
+DOC --> UC_HM_DIAG
+DOC --> UC_HM_DOC
+DOC --> UC_HM_PDF
+DOC --> UC_HM_FHIR
+
+ADM --> UC_HM_AUDIT
+
+UC_HM_FHIR --> FHIR
+UC_HM_ADD   ..> UC_HM_DIAG  : <<include>>
+UC_HM_AUDIT ..> UC_HM_VIEW  : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 3 — CITAS MÉDICAS
+' ══════════════════════════════════════════════════════════════
+
+package "Citas Médicas" {
+
+  usecase "Solicitar cita"                as UC_APT_REQ
+  usecase "Confirmar / rechazar cita"     as UC_APT_CONF
+  usecase "Cancelar cita"                 as UC_APT_CANCEL
+  usecase "Reagendar cita"               as UC_APT_RESCHED
+  usecase "Ver agenda del doctor"         as UC_APT_AGENDA
+  usecase "Recibir recordatorio de cita"  as UC_APT_REMIND
+  usecase "Generar referido médico"       as UC_REFERRAL
+}
+
+PAC --> UC_APT_REQ
+PAC --> UC_APT_CANCEL
+PAC --> UC_APT_RESCHED
+PAC --> UC_APT_REMIND
+
+DOC --> UC_APT_CONF
+DOC --> UC_APT_CANCEL
+DOC --> UC_APT_AGENDA
+DOC --> UC_REFERRAL
+
+UC_APT_REQ    ..> UC_APT_REMIND  : <<include>>
+UC_APT_REMIND --> SMS
+UC_REFERRAL   ..> UC_HM_ADD      : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 4 — ANÁLISIS DE SÍNTOMAS E IA
+' ══════════════════════════════════════════════════════════════
+
+package "Análisis de Síntomas e IA" {
+
+  usecase "Registrar síntomas"            as UC_SYM
+  usecase "Analizar síntomas con IA"      as UC_AI_SYM
+  usecase "Analizar tos (audio)"          as UC_AI_COUGH
+  usecase "Obtener predicción\nde enfermedad" as UC_AI_PRED
+  usecase "Visualizar resultados IA"      as UC_AI_VIZ
+  usecase "Consultar historial\nde predicciones" as UC_AI_HIST
+  usecase "Calibrar modelos ML"           as UC_ML_CAL
+  usecase "Monitorear métricas ML"        as UC_ML_MON
+}
+
+PAC --> UC_SYM
+PAC --> UC_AI_COUGH
+PAC --> UC_AI_VIZ
+PAC --> UC_AI_HIST
+
+DOC --> UC_AI_VIZ
+DOC --> UC_AI_HIST
+DOC --> UC_ML_MON
+
+ADM --> UC_ML_CAL
+ADM --> UC_ML_MON
+
+UC_SYM      ..> UC_AI_SYM   : <<include>>
+UC_AI_SYM   --> IA
+UC_AI_COUGH --> IA
+UC_AI_SYM   ..> UC_AI_PRED  : <<include>>
+UC_AI_PRED  ..> UC_AI_VIZ   : <<include>>
+UC_ML_CAL   --> IA
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 5 — ALERTAS Y NOTIFICACIONES
+' ══════════════════════════════════════════════════════════════
+
+package "Alertas y Notificaciones" {
+
+  usecase "Recibir alerta de salud"       as UC_ALERT_RCV
+  usecase "Configurar umbrales\nde alerta" as UC_ALERT_CFG
+  usecase "Enviar alerta por SMS"         as UC_ALERT_SMS
+  usecase "Enviar notificación push"      as UC_ALERT_PUSH
+  usecase "Ver historial de alertas"      as UC_ALERT_HIST
+  usecase "Silenciar alerta"              as UC_ALERT_MUTE
+  usecase "Escalar alerta crítica"        as UC_ALERT_ESC
+}
+
+PAC --> UC_ALERT_RCV
+PAC --> UC_ALERT_HIST
+PAC --> UC_ALERT_MUTE
+
+DOC --> UC_ALERT_CFG
+DOC --> UC_ALERT_HIST
+DOC --> UC_ALERT_ESC
+
+ADM --> UC_ALERT_CFG
+
+UC_ALERT_RCV  ..> UC_ALERT_PUSH  : <<include>>
+UC_ALERT_ESC  ..> UC_ALERT_SMS   : <<include>>
+UC_ALERT_SMS  --> SMS
+UC_ALERT_ESC  ..> UC_ALERT_HIST  : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 6 — LABORATORIO Y RESULTADOS
+' ══════════════════════════════════════════════════════════════
+
+package "Laboratorio y Resultados" {
+
+  usecase "Solicitar examen de laboratorio" as UC_LAB_REQ
+  usecase "Ver resultados de laboratorio"   as UC_LAB_VIEW
+  usecase "Importar resultados (HL7)"       as UC_LAB_IMP
+  usecase "Adjuntar resultado a historial"  as UC_LAB_ATTACH
+  usecase "Recibir notificación\nde resultado" as UC_LAB_NOTIF
+}
+
+PAC --> UC_LAB_VIEW
+PAC --> UC_LAB_NOTIF
+
+DOC --> UC_LAB_REQ
+DOC --> UC_LAB_VIEW
+DOC --> UC_LAB_IMP
+DOC --> UC_LAB_ATTACH
+
+UC_LAB_IMP    --> LAB
+UC_LAB_IMP    ..> UC_LAB_ATTACH  : <<include>>
+UC_LAB_VIEW   ..> UC_LAB_NOTIF   : <<extend>>
+UC_LAB_ATTACH ..> UC_HM_DOC      : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 7 — WEARABLES Y MONITOREO CONTINUO
+' ══════════════════════════════════════════════════════════════
+
+package "Wearables y Monitoreo Continuo" {
+
+  usecase "Sincronizar dispositivo\nwearable"    as UC_WR_SYNC
+  usecase "Ver métricas de SpO₂ / FC"           as UC_WR_VIEW
+  usecase "Configurar monitoreo\ncontinuo"       as UC_WR_CFG
+  usecase "Detectar anomalía en\nsignos vitales" as UC_WR_ANOM
+  usecase "Generar informe\nde tendencias"       as UC_WR_REPORT
+}
+
+PAC --> UC_WR_SYNC
+PAC --> UC_WR_VIEW
+PAC --> UC_WR_CFG
+
+DOC --> UC_WR_VIEW
+DOC --> UC_WR_REPORT
+
+UC_WR_SYNC ..> UC_WR_VIEW   : <<include>>
+UC_WR_ANOM ..> UC_ALERT_ESC : <<include>>
+UC_WR_VIEW ..> UC_WR_ANOM   : <<extend>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 8 — EMERGENCIAS
+' ══════════════════════════════════════════════════════════════
+
+package "Emergencias" {
+
+  usecase "Activar botón de pánico"       as UC_EMG_PANIC
+  usecase "Solicitar ambulancia"          as UC_EMG_AMB
+  usecase "Compartir ubicación GPS"       as UC_EMG_GPS
+  usecase "Notificar contacto\nde emergencia" as UC_EMG_CONTACT
+  usecase "Ver info médica\nde emergencia" as UC_EMG_INFO
+  usecase "Gestionar casos\nde emergencia" as UC_EMG_MGMT
+}
+
+PAC --> UC_EMG_PANIC
+PAC --> UC_EMG_GPS
+PAC --> UC_EMG_CONTACT
+
+DOC --> UC_EMG_INFO
+DOC --> UC_EMG_MGMT
+
+ADM --> UC_EMG_MGMT
+
+UC_EMG_PANIC ..> UC_EMG_AMB      : <<include>>
+UC_EMG_PANIC ..> UC_EMG_GPS      : <<include>>
+UC_EMG_PANIC ..> UC_EMG_CONTACT  : <<include>>
+UC_EMG_AMB   --> EMG
+UC_EMG_GPS   ..> UC_ALERT_SMS    : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 9 — CHAT Y TELECONSULTA
+' ══════════════════════════════════════════════════════════════
+
+package "Chat y Teleconsulta" {
+
+  usecase "Iniciar chat con doctor"       as UC_CHAT_START
+  usecase "Enviar mensaje"                as UC_CHAT_MSG
+  usecase "Adjuntar imagen/documento"     as UC_CHAT_ATT
+  usecase "Solicitar teleconsulta"        as UC_TELE_REQ
+  usecase "Realizar videollamada"         as UC_TELE_CALL
+  usecase "Ver historial de chat"         as UC_CHAT_HIST
+}
+
+PAC --> UC_CHAT_START
+PAC --> UC_CHAT_MSG
+PAC --> UC_CHAT_ATT
+PAC --> UC_TELE_REQ
+PAC --> UC_CHAT_HIST
+
+DOC --> UC_CHAT_MSG
+DOC --> UC_TELE_CALL
+DOC --> UC_CHAT_HIST
+
+UC_CHAT_START ..> UC_CHAT_MSG  : <<include>>
+UC_TELE_REQ   ..> UC_TELE_CALL : <<include>>
+UC_TELE_REQ   ..> UC_APT_REQ   : <<extend>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 10 — REPORTES Y ANALÍTICA
+' ══════════════════════════════════════════════════════════════
+
+package "Reportes y Analítica" {
+
+  usecase "Ver dashboard de salud"        as UC_RPT_DASH
+  usecase "Generar reporte clínico"       as UC_RPT_CLIN
+  usecase "Exportar datos (CSV/PDF)"      as UC_RPT_EXP
+  usecase "Ver estadísticas\npoblacionales" as UC_RPT_POP
+  usecase "Configurar KPIs"               as UC_RPT_KPI
+  usecase "Integrar con BI\n(Power BI / Tableau)" as UC_RPT_BI
+  usecase "Monitorear métricas\ndel sistema" as UC_SYS_MON
+}
+
+PAC --> UC_RPT_DASH
+
+DOC --> UC_RPT_DASH
+DOC --> UC_RPT_CLIN
+DOC --> UC_RPT_EXP
+DOC --> UC_RPT_POP
+
+ADM --> UC_RPT_POP
+ADM --> UC_RPT_KPI
+ADM --> UC_RPT_BI
+ADM --> UC_SYS_MON
+
+UC_RPT_CLIN ..> UC_RPT_EXP   : <<include>>
+UC_RPT_BI   ..> UC_RPT_POP   : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  PAQUETE 11 — ADMINISTRACIÓN DEL SISTEMA
+' ══════════════════════════════════════════════════════════════
+
+package "Administración del Sistema" {
+
+  usecase "Gestionar usuarios"            as UC_ADM_USR
+  usecase "Gestionar roles y permisos"    as UC_ADM_ROLES
+  usecase "Gestionar feature flags"       as UC_ADM_FF
+  usecase "Auditar logs del sistema"      as UC_ADM_LOGS
+  usecase "Gestionar integraciones\nexternas" as UC_ADM_INT
+  usecase "Configurar pipelines ML"       as UC_ADM_ML
+  usecase "Gestionar política\nde consentimiento" as UC_ADM_CONSENT
+}
+
+ADM --> UC_ADM_USR
+ADM --> UC_ADM_ROLES
+ADM --> UC_ADM_FF
+ADM --> UC_ADM_LOGS
+ADM --> UC_ADM_INT
+ADM --> UC_ADM_ML
+ADM --> UC_ADM_CONSENT
+
+UC_ADM_USR ..> UC_ADM_ROLES   : <<include>>
+UC_ADM_ML  ..> UC_ML_CAL      : <<include>>
+
+' ══════════════════════════════════════════════════════════════
+'  NOTAS ARQUITECTÓNICAS
+' ══════════════════════════════════════════════════════════════
+
+note top of PAC
+  Accede via:
+  · Web App (Next.js)
+  · Mobile App (Capacitor/Android)
+end note
+
+note top of DOC
+  Accede via:
+  · Web App (panel clínico)
+  · API REST directa (integraciones)
+end note
+
+note right of IA
+  FastAPI (Python)
+  · CNN tos
+  · Random Forest síntomas
+  · LSTM tendencias
+end note
+
+note right of FHIR
+  Estándar HL7 FHIR R4
+  Interoperabilidad con EHR
+  externos (hospitales)
+end note
+
+@enduml

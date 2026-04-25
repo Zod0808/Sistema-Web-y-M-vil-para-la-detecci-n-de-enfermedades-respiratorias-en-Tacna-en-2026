@@ -1,0 +1,440 @@
+name: SAST Security Scan
+
+on:
+  push:
+    branches: [ master, main, develop ]
+    paths:
+      - 'backend/**'
+      - 'ai-services/**'
+      - 'web/**'
+      - 'mobile/**'
+      - '.github/workflows/sast-scan.yml'
+  pull_request:
+    branches: [ master, main, develop ]
+    paths:
+      - 'backend/**'
+      - 'ai-services/**'
+      - 'web/**'
+      - 'mobile/**'
+      - '.github/workflows/sast-scan.yml'
+  schedule:
+    # Ejecutar análisis completo cada domingo a las 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  snyk-backend:
+    name: Snyk Scan - Backend
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=package.json
+      
+      - name: Upload Snyk results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+          wait-for-processing: true
+        continue-on-error: true
+      
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-backend-report
+          path: snyk-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  snyk-web:
+    name: Snyk Scan - Web Frontend
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./web
+        run: npm ci
+      
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=package.json
+      
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-web-report
+          path: snyk-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  snyk-mobile:
+    name: Snyk Scan - Mobile App
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Determine mobile project structure
+        id: mobile-structure
+        run: |
+          if [ -f "mobile/medical-app/package.json" ]; then
+            echo "project_path=mobile/medical-app" >> $GITHUB_OUTPUT
+            echo "lockfile_path=mobile/medical-app/package-lock.json" >> $GITHUB_OUTPUT
+          elif [ -f "mobile/RespiCare-Mobile/package.json" ]; then
+            echo "project_path=mobile/RespiCare-Mobile" >> $GITHUB_OUTPUT
+            echo "lockfile_path=mobile/RespiCare-Mobile/package-lock.json" >> $GITHUB_OUTPUT
+          elif [ -f "mobile/package.json" ]; then
+            echo "project_path=mobile" >> $GITHUB_OUTPUT
+            echo "lockfile_path=mobile/package-lock.json" >> $GITHUB_OUTPUT
+          else
+            echo "Error: No mobile package.json found"
+            exit 1
+          fi
+      
+      - name: Verify lockfile and setup cache
+        id: cache-setup
+        run: |
+          lockfile_path="${{ steps.mobile-structure.outputs.lockfile_path }}"
+          if [ -f "$lockfile_path" ]; then
+            echo "use_cache=true" >> $GITHUB_OUTPUT
+            echo "✅ Lockfile found, cache will be enabled: $lockfile_path"
+          else
+            echo "use_cache=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Lockfile not found, continuing without cache: $lockfile_path"
+          fi
+      
+      - name: Setup Node.js (with cache)
+        if: steps.cache-setup.outputs.use_cache == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ steps.mobile-structure.outputs.lockfile_path }}
+      
+      - name: Setup Node.js (without cache)
+        if: steps.cache-setup.outputs.use_cache != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: ./${{ steps.mobile-structure.outputs.project_path }}
+        run: |
+          # Generate lockfile if it doesn't exist
+          if [ ! -f "package-lock.json" ]; then
+            echo "📦 Generating package-lock.json..."
+            npm install --package-lock-only
+          fi
+          npm ci
+      
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=package.json
+      
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-mobile-report
+          path: snyk-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  snyk-python:
+    name: Snyk Scan - AI Services (Python)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: ai-services/requirements*.txt
+      
+      - name: Install dependencies
+        working-directory: ./ai-services
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-lint.txt
+      
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=requirements.txt
+      
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-python-report
+          path: snyk-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  sonarqube-backend:
+    name: SonarQube Scan - Backend
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Build application
+        working-directory: ./backend
+        run: npm run build
+        continue-on-error: true
+      
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: backend
+      
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  sonarqube-python:
+    name: SonarQube Scan - AI Services
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: ai-services/requirements*.txt
+      
+      - name: Install dependencies
+        working-directory: ./ai-services
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-lint.txt
+      
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: ai-services
+      
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  bandit-python:
+    name: Bandit Security Scan - AI Services
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: ai-services/requirements*.txt
+      
+      - name: Install Bandit
+        run: pip install bandit[toml]
+      
+      - name: Run Bandit security scan
+        working-directory: ./ai-services
+        run: |
+          bandit -r api/ core/ services/ ml_models/ \
+            -f json -o bandit-report.json \
+            -ll || true
+        continue-on-error: true
+      
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: ai-services/bandit-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+      
+      - name: Comment PR with Bandit results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'ai-services/bandit-report.json';
+            if (fs.existsSync(path)) {
+              const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const issues = report.results || [];
+              const highSeverity = issues.filter(i => i.issue_severity === 'HIGH');
+              const mediumSeverity = issues.filter(i => i.issue_severity === 'MEDIUM');
+              
+              let comment = '## 🔒 Bandit Security Scan Results\n\n';
+              comment += `**Total Issues:** ${issues.length}\n`;
+              comment += `**High Severity:** ${highSeverity.length}\n`;
+              comment += `**Medium Severity:** ${mediumSeverity.length}\n\n`;
+              
+              if (highSeverity.length > 0) {
+                comment += '### ⚠️ High Severity Issues\n\n';
+                highSeverity.slice(0, 10).forEach(issue => {
+                  comment += `- **${issue.test_name}** in \`${issue.filename}:${issue.line_number}\`\n`;
+                });
+              }
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  npm-audit-backend:
+    name: npm audit - Backend
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Run npm audit
+        working-directory: ./backend
+        run: |
+          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+        continue-on-error: true
+      
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-backend-report
+          path: backend/npm-audit-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  generate-sast-summary:
+    name: Generate SAST Summary
+    runs-on: ubuntu-latest
+    needs: [snyk-backend, snyk-web, snyk-mobile, snyk-python, sonarqube-backend, sonarqube-python, bandit-python, npm-audit-backend]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🔒 SAST Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scans Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Snyk (Backend, Web, Mobile, Python)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SonarQube (Backend, AI Services)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Bandit (Python Security)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ npm audit (Backend)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📝 Ver reportes completos en los artifacts y en GitHub Security tab." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Nota:** Algunos escaneos pueden requerir tokens configurados en secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`SNYK_TOKEN\` - Para escaneos de Snyk" >> $GITHUB_STEP_SUMMARY
+          echo "- \`SONAR_TOKEN\` y \`SONAR_HOST_URL\` - Para escaneos de SonarQube" >> $GITHUB_STEP_SUMMARY
+

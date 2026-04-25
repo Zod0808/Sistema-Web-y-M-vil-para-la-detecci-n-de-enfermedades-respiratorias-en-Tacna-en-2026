@@ -1,0 +1,480 @@
+@startuml Database Diagram - RespiCare (Completo)
+
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam entity {
+    BackgroundColor #E8F4F8
+    BorderColor #2C3E50
+    FontSize 9
+}
+
+left to right direction
+
+title RespiCare - Diagrama Completo de Base de Datos (ERD)\nTodas las Colecciones y Relaciones
+
+' ============================================
+' ENTIDADES PRINCIPALES
+' ============================================
+
+package "Core Entities" {
+  
+  entity "USERS" as users {
+    * _id : ObjectId <<PK>>
+    --
+    * name : string <<encrypted>>
+    * email : string <<UK>>
+    * password : string <<encrypted>>
+    * role : enum <<patient,doctor,admin>>
+    avatar : string <<encrypted>>
+    phone : string <<encrypted>>
+    * isActive : boolean
+    lastLogin : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: email(UK), role, isActive
+  }
+
+  entity "MEDICAL_HISTORY" as medical_history {
+    * _id : ObjectId <<PK>>
+    --
+    * patientId : string <<FK>>
+    * doctorId : string <<FK>>
+    * patientName : string <<encrypted>>
+    * age : number
+    * diagnosis : string <<encrypted>>
+    symptoms : Array<Symptom>
+    description : string <<encrypted>>
+    * date : Date
+    location : {lat, lng, address}
+    images : Array<string>
+    audioNotes : string <<encrypted>>
+    isOffline : boolean
+    * syncStatus : enum <<pending,synced,error>>
+    geoLocation : GeoJSON
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: patientId, doctorId, date, syncStatus, geoLocation(2dsphere)
+  }
+
+  entity "APPOINTMENTS" as appointments {
+    * _id : ObjectId <<PK>>
+    --
+    * patientId : string <<FK>>
+    * doctorId : string <<FK>>
+    * createdBy : string <<FK>>
+    * scheduledAt : Date
+    * durationMinutes : number
+    * status : enum <<scheduled,completed,cancelled,rescheduled,no_show>>
+    reason : string <<encrypted>>
+    notes : string <<encrypted>>
+    location : {type, address, meetingLink}
+    reminderMinutesBefore : number
+    reminderSentAt : Date
+    tags : Array<string>
+    rescheduledFrom : string
+    cancellationReason : string <<encrypted>>
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: patientId, doctorId, scheduledAt, status
+  }
+
+  entity "PRESCRIPTIONS" as prescriptions {
+    * _id : ObjectId <<PK>>
+    --
+    * patientId : string <<FK>>
+    * doctorId : string <<FK>>
+    * createdBy : string <<FK>>
+    diagnosis : string <<encrypted>>
+    observations : string <<encrypted>>
+    * medications : Array<Medication>
+    interactions : Array<DrugInteraction>
+    * status : enum <<draft,pending_validation,active,completed,cancelled,rejected>>
+    validatedBy : string <<FK>>
+    validatedAt : Date
+    validationNotes : string <<encrypted>>
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: patientId, doctorId, status
+  }
+
+  entity "ALERTS" as alerts {
+    * _id : ObjectId <<PK>>
+    --
+    * userId : string <<FK>>
+    patientId : string <<FK>>
+    doctorId : string <<FK>>
+    * title : string <<encrypted>>
+    * message : string <<encrypted>>
+    * category : enum
+    * channels : Array<enum>
+    * priority : enum <<low,medium,high,critical>>
+    * status : enum
+    trigger : {source, referenceId, metadata}
+    scheduledAt : Date
+    dispatchedAt : Date
+    acknowledgedAt : Date
+    expiresAt : Date
+    retries : number
+    lastError : string <<encrypted>>
+    priorityWeight : number
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: userId, status, scheduledAt, priorityWeight
+  }
+}
+
+' ============================================
+' ENTIDADES DE ANÁLISIS Y REPORTES
+' ============================================
+
+package "Analysis & Reports" {
+  
+  entity "AI_ANALYSES" as ai_analyses {
+    * _id : ObjectId <<PK>>
+    --
+    * medicalHistoryId : string <<FK>>
+    * symptoms : Array<Symptom>
+    * possibleDiagnoses : Array<PossibleDiagnosis>
+    * urgency : enum <<low,medium,high,critical>>
+    * confidence : number (0-100)
+    * timestamp : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: medicalHistoryId, urgency, confidence, timestamp
+  }
+
+  entity "SYMPTOM_REPORTS" as symptom_reports {
+    * _id : ObjectId <<PK>>
+    --
+    patientId : string <<FK>> (opcional)
+    * location : {district, coordinates, address}
+    * symptoms : Array<Symptom>
+    * category : enum <<respiratory,fever,pain,digestive,fatigue,neurological>>
+    * overallSeverity : enum <<low,medium,high>>
+    suspectedDisease : enum
+    temperature : number
+    oxygenSaturation : number
+    hasPreexistingConditions : boolean
+    preexistingConditions : Array<string>
+    contactInfo : {phone, email}
+    * status : enum <<pending,reviewed,urgent,resolved>>
+    medicalAttentionRequired : boolean
+    medicalAttentionReceived : boolean
+    notes : string
+    reportedBy : enum
+    * source : enum <<web,mobile,phone,hospital>>
+    isAnonymous : boolean
+    reportedAt : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: patientId, location.district, overallSeverity, status, createdAt
+  }
+
+  entity "CHAT_CONVERSATIONS" as chat_conversations {
+    * _id : ObjectId <<PK>>
+    --
+    * sessionId : string <<UK>>
+    userId : string <<FK>> (opcional)
+    * messages : Array<Message>
+    userInfo : {name, email, phone, age, gender}
+    location : {district, city, country}
+    metadata : {userAgent, ipAddress, language, source}
+    * summary : {totalMessages, detectedDiseases, highestUrgency, averageConfidence}
+    * status : enum <<active,completed,abandoned>>
+    requiresFollowUp : boolean
+    followUpNotes : string
+    * startedAt : Date
+    lastActivityAt : Date
+    completedAt : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: sessionId(UK), userId, status, lastActivityAt
+  }
+
+  entity "AUTOMATIC_REPORTS" as automatic_reports {
+    * _id : ObjectId <<PK>>
+    --
+    * reportType : enum <<daily,weekly,monthly>>
+    * period : {startDate, endDate}
+    * status : enum <<pending,generating,completed,failed,exported>>
+    * metrics : Object
+    anomalies : Array<Anomaly>
+    filePath : string
+    exportedAt : Date
+    exportFormat : enum <<pdf,csv,json>>
+    generatedBy : string <<FK>>
+    * generatedAt : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: reportType, status, period.startDate
+  }
+}
+
+' ============================================
+' ENTIDADES DE WEARABLES Y ML
+' ============================================
+
+package "Wearables & ML" {
+  
+  entity "WEARABLE_DATA" as wearable_data {
+    * _id : ObjectId <<PK>>
+    --
+    * patientId : ObjectId <<FK>>
+    heartRate : number (BPM)
+    oxygenSaturation : number (SpO2 %)
+    steps : number
+    distance : number (metros)
+    respiratoryRate : number (rpm)
+    sleepHours : number
+    * timestamp : Date
+    * source : enum <<apple_health,google_fit,manual>>
+    syncedAt : Date
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: patientId, timestamp, (patientId, timestamp)
+  }
+
+  entity "ML_EXPERIMENTS" as ml_experiments {
+    * _id : ObjectId <<PK>>
+    --
+    * experimentId : string <<UK>>
+    * experimentType : enum
+    * modelName : string
+    modelVersion : string
+    * status : enum <<pending,running,completed,failed,cancelled>>
+    metadata : Object
+    inputs : Object
+    outputs : Object
+    logs : Array<LogEntry>
+    errors : Array<ErrorEntry>
+    performance : Object
+    results : Object
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: experimentId(UK), experimentType, status, modelName
+  }
+}
+
+' ============================================
+' ENTIDADES DE SEGURIDAD Y AUDITORÍA
+' ============================================
+
+package "Security & Audit" {
+  
+  entity "AUDIT_LOGS" as audit_logs {
+    * _id : ObjectId <<PK>>
+    --
+    userId : string <<FK>> (opcional)
+    * method : string
+    * route : string
+    * statusCode : number
+    ip : string
+    userAgent : string
+    payloadHash : string
+    redactedPayload : Object
+    * createdAt : Date
+    --
+    Índices: userId, createdAt, (method, route)
+  }
+
+  entity "CONSENT_LOGS" as consent_logs {
+    * _id : ObjectId <<PK>>
+    --
+    * userId : string <<FK>>
+    * consents : Array<Consent>
+    * version : string
+    ipAddress : string
+    userAgent : string
+    * timestamp : Date
+    revokedAt : Date
+    revokedReason : string
+    * createdAt : Date
+    * updatedAt : Date
+    --
+    Índices: userId, version, timestamp
+  }
+}
+
+' ============================================
+' RELACIONES PRINCIPALES
+' ============================================
+
+' Relaciones con USERS (centro del sistema)
+users ||--o{ medical_history : "doctor crea para paciente"
+users ||--o{ appointments : "paciente/doctor programa"
+users ||--o{ alerts : "usuario recibe"
+users ||--o{ prescriptions : "doctor prescribe a paciente"
+users ||--o{ chat_conversations : "usuario participa"
+users ||--o{ symptom_reports : "paciente reporta (opcional)"
+users ||--o{ wearable_data : "paciente genera datos"
+users ||--o{ audit_logs : "usuario genera logs"
+users ||--o{ consent_logs : "usuario consiente"
+users ||--o{ automatic_reports : "admin genera reportes"
+
+' Relaciones entre entidades médicas
+medical_history ||--o| ai_analyses : "tiene análisis IA"
+medical_history }o--o{ appointments : "puede estar relacionada"
+appointments ||--o{ prescriptions : "puede resultar en prescripción"
+
+' Relaciones de agregación
+automatic_reports ..> medical_history : "agrega datos"
+automatic_reports ..> alerts : "agrega datos"
+automatic_reports ..> appointments : "agrega datos"
+automatic_reports ..> symptom_reports : "agrega datos"
+
+' ============================================
+' NOTAS INFORMATIVAS
+' ============================================
+
+note right of users
+  <b>Roles:</b>
+  • patient: Paciente del sistema
+  • doctor: Médico que atiende
+  • admin: Administrador DIRESA
+  
+  <b>Campos Cifrados:</b>
+  name, avatar, phone
+  
+  <b>Índices Únicos:</b>
+  email
+end note
+
+note right of medical_history
+  <b>Relaciones:</b>
+  • patientId → USERS (paciente)
+  • doctorId → USERS (doctor)
+  
+  <b>Sync Status:</b>
+  • pending: Pendiente de sincronización
+  • synced: Sincronizado
+  • error: Error en sincronización
+  
+  <b>Campos Cifrados:</b>
+  patientName, diagnosis, description,
+  audioNotes, location.address
+end note
+
+note right of ai_analyses
+  <b>Relación:</b>
+  • medicalHistoryId → MEDICAL_HISTORY
+  
+  <b>Urgency Levels:</b>
+  • low: Baja urgencia
+  • medium: Urgencia media
+  • high: Alta urgencia
+  • critical: Crítica
+  
+  <b>Confidence:</b>
+  0-100% de confianza en el análisis
+end note
+
+note right of wearable_data
+  <b>Relación:</b>
+  • patientId → USERS (ObjectId)
+  
+  <b>Fuentes:</b>
+  • apple_health: HealthKit (iOS)
+  • google_fit: Google Fit (Android)
+  • manual: Ingreso manual
+  
+  <b>Métricas:</b>
+  • heartRate: Frecuencia cardíaca (BPM)
+  • oxygenSaturation: SpO2 (%)
+  • respiratoryRate: Frecuencia respiratoria (rpm)
+  • steps, distance, sleepHours
+end note
+
+note right of symptom_reports
+  <b>Relación:</b>
+  • patientId → USERS (opcional, puede ser anónimo)
+  
+  <b>Categorías:</b>
+  respiratory, fever, pain, digestive,
+  fatigue, neurological
+  
+  <b>Severidad:</b>
+  low, medium, high
+  
+  <b>Distritos Tacna:</b>
+  Centro, Gregorio Albarracín, Ciudad Nueva,
+  Pocollay, Alto de la Alianza, Calana,
+  Pachia, Boca del Río
+end note
+
+note right of chat_conversations
+  <b>Relación:</b>
+  • userId → USERS (opcional, puede ser anónimo)
+  
+  <b>Status:</b>
+  • active: Conversación activa
+  • completed: Completada
+  • abandoned: Abandonada
+  
+  <b>Summary contiene:</b>
+  totalMessages, detectedDiseases,
+  detectedSymptoms, highestUrgency,
+  averageConfidence
+end note
+
+note right of appointments
+  <b>Relaciones:</b>
+  • patientId → USERS (paciente)
+  • doctorId → USERS (doctor)
+  • createdBy → USERS (quien creó)
+  
+  <b>Status:</b>
+  scheduled, completed, cancelled,
+  rescheduled, no_show
+  
+  <b>Duración:</b>
+  15-240 minutos
+end note
+
+note right of prescriptions
+  <b>Relaciones:</b>
+  • patientId → USERS (paciente)
+  • doctorId → USERS (doctor que prescribe)
+  • createdBy → USERS (quien creó)
+  • validatedBy → USERS (doctor que valida)
+  
+  <b>Status:</b>
+  draft, pending_validation, active,
+  completed, cancelled, rejected
+  
+  <b>Contiene:</b>
+  Array de medications y interactions
+end note
+
+note right of alerts
+  <b>Relaciones:</b>
+  • userId → USERS (destinatario)
+  • patientId → USERS (opcional, paciente relacionado)
+  • doctorId → USERS (opcional, doctor relacionado)
+  
+  <b>Categorías:</b>
+  critical_symptom, medication_reminder,
+  follow_up, doctor_notification,
+  system, emergency
+  
+  <b>Canales:</b>
+  in_app, push, email, sms
+  
+  <b>Priority:</b>
+  low, medium, high, critical
+end note
+
+@enduml

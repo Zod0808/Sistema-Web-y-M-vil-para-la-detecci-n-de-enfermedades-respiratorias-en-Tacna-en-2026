@@ -1,0 +1,7 @@
+# Ignore generated diagram outputs
+output/
+*.png
+*.svg
+*.pdf
+*.eps
+

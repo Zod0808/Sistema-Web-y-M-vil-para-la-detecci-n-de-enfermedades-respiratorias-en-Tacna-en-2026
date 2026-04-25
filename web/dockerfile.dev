@@ -1,0 +1,27 @@
+# web/Dockerfile.dev
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependencias del sistema necesarias
+RUN apk add --no-cache git
+
+# Copiar archivos de dependencias primero (para mejor cacheo)
+COPY package*.json ./
+
+# Instalar dependencias (sin --production para incluir devDependencies)
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+# Copiar código fuente
+COPY . .
+
+# Exponer puerto
+EXPOSE 3000
+
+# Configurar variables de entorno para React
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+ENV FAST_REFRESH=true
+
+# Comando para iniciar el servidor de desarrollo
+CMD ["npm", "start"]

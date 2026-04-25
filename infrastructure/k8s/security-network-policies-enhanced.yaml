@@ -1,0 +1,278 @@
+# Network Policies Mejoradas para Seguridad Base
+# Define políticas de red más restrictivas y específicas
+
+---
+# Network Policy para Backend - Solo permite tráfico desde Ingress y servicios internos
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy-enhanced
+  namespace: respicare-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Permitir tráfico desde Ingress Controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3001
+  # Permitir tráfico desde servicios internos del namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: core-domains-service
+    ports:
+    - protocol: TCP
+      port: 3001
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: ai-services
+    ports:
+    - protocol: TCP
+      port: 3001
+  egress:
+  # Permitir conexión a MongoDB
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Permitir conexión a Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Permitir conexión a AI Services
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: ai-services
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Permitir DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # Permitir NTP (opcional, para sincronización de tiempo)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 123
+---
+# Network Policy para AI Services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-services-network-policy-enhanced
+  namespace: respicare-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-services
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Permitir tráfico desde Backend
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Permitir tráfico desde Core Domains
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: core-domains-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Permitir tráfico desde Ingress (para endpoints públicos)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Permitir conexión a MongoDB
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Permitir conexión a Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Permitir DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Network Policy para MongoDB - Solo permite conexiones desde servicios autorizados
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongodb-network-policy-enhanced
+  namespace: respicare-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Solo permitir conexiones desde Backend
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Permitir conexiones desde AI Services
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: ai-services
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Permitir conexiones entre réplicas de MongoDB
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  egress:
+  # Permitir DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # Permitir comunicación entre réplicas
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+---
+# Network Policy para Redis - Solo permite conexiones desde servicios autorizados
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-network-policy-enhanced
+  namespace: respicare-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Solo permitir conexiones desde Backend
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Permitir conexiones desde AI Services
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: respicare-prod
+      podSelector:
+        matchLabels:
+          app: ai-services
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  # Permitir DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+

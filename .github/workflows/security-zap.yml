@@ -1,0 +1,191 @@
+name: security-zap-baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL objetivo para escanear (ej: https://api.respicare.dev)"
+        required: false
+        default: ""
+      start_backend:
+        description: "Iniciar backend localmente antes del escaneo"
+        required: false
+        type: boolean
+        default: true
+  schedule:
+    # Ejecutar semanalmente (lunes 2 AM UTC)
+    - cron: '0 2 * * 1'
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/src/**'
+      - '.github/workflows/security-zap.yml'
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .zap directory if needed
+        run: |
+          mkdir -p .zap
+          if [ ! -f ".zap/rules.tsv" ]; then
+            echo "⚠️ Archivo de reglas no encontrado, ZAP usará reglas por defecto"
+            touch .zap/rules.tsv
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Determine if backend should start
+        id: should-start-backend
+        run: |
+          should_start="false"
+          # Para workflow_dispatch, verificar inputs
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            start_backend="${{ github.event.inputs.start_backend }}"
+            target_url="${{ github.event.inputs.target_url }}"
+            if [ "$start_backend" != "false" ] && ([ -z "$target_url" ] || [ "$target_url" = "http://localhost:3001" ]); then
+              should_start="true"
+            fi
+          else
+            # Para push/schedule, siempre iniciar backend (usa localhost por defecto)
+            should_start="true"
+          fi
+          echo "should_start=$should_start" >> $GITHUB_OUTPUT
+          echo "🔍 ¿Iniciar backend? $should_start"
+
+      - name: Install backend dependencies
+        if: steps.should-start-backend.outputs.should_start == 'true'
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Start backend server
+        if: steps.should-start-backend.outputs.should_start == 'true'
+        working-directory: ./backend
+        run: |
+          echo "🚀 Iniciando backend en segundo plano..."
+          npm run dev > backend.log 2>&1 &
+          echo $! > backend.pid
+          sleep 10
+          echo "✅ Backend iniciado"
+        continue-on-error: true
+
+      - name: Wait for backend to be ready
+        if: steps.should-start-backend.outputs.should_start == 'true'
+        run: |
+          echo "⏳ Esperando que el backend esté listo..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
+              echo "✅ Backend está listo"
+              exit 0
+            fi
+            echo "Intento $i/30..."
+            sleep 2
+          done
+          echo "⚠️ Backend no respondió, continuando de todas formas..."
+        continue-on-error: true
+
+      - name: Determine target URL
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.target_url }}" ]; then
+            echo "target=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "target=http://localhost:3001" >> $GITHUB_OUTPUT
+          fi
+          echo "🎯 URL objetivo: $(cat $GITHUB_OUTPUT | grep target | cut -d'=' -f2)"
+
+      - name: Check if rules file exists
+        id: check-rules
+        run: |
+          if [ -f ".zap/rules.tsv" ] && [ -s ".zap/rules.tsv" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Archivo de reglas encontrado"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Archivo de reglas no encontrado o vacío, ZAP usará reglas por defecto"
+          fi
+
+      - name: ZAP Baseline Scan (with rules file)
+        if: steps.check-rules.outputs.exists == 'true'
+        uses: zaproxy/action-baseline@v0.10.0
+        continue-on-error: true
+        with:
+          target: ${{ steps.target.outputs.target }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -m 5 -I'
+          fail_action: true
+          allow_issue_writing: false
+
+      - name: ZAP Baseline Scan (without rules file)
+        if: steps.check-rules.outputs.exists != 'true'
+        uses: zaproxy/action-baseline@v0.10.0
+        continue-on-error: true
+        with:
+          target: ${{ steps.target.outputs.target }}
+          cmd_options: '-a -m 5 -I'
+          fail_action: true
+          allow_issue_writing: false
+
+      - name: Stop backend server
+        if: always() && steps.should-start-backend.outputs.should_start == 'true'
+        run: |
+          if [ -f backend/backend.pid ]; then
+            echo "🛑 Deteniendo backend..."
+            kill $(cat backend/backend.pid) || true
+            rm -f backend/backend.pid
+          fi
+
+      - name: Publicar reporte HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-html
+          path: report_html.html
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Publicar reporte Markdown
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-md
+          path: report_md.md
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Publicar reporte JSON
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-json
+          path: report_json.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comentar en PR (si aplica)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('report_md.md')) {
+              const report = fs.readFileSync('report_md.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🔒 OWASP ZAP Security Scan\n\n${report}`
+              });
+            }
+
+

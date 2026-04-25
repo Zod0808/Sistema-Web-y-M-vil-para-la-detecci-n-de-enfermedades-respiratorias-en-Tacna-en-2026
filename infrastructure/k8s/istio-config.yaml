@@ -1,0 +1,188 @@
+# Istio Virtual Service para Clinical Service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: clinical-service
+  namespace: respicare-prod
+spec:
+  hosts:
+  - clinical-service
+  - clinical-service.respicare-prod.svc.cluster.local
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/medical-histories
+    route:
+    - destination:
+        host: clinical-service
+        subset: v1
+      weight: 90
+    - destination:
+        host: clinical-service
+        subset: v2
+      weight: 10
+  - match:
+    - uri:
+        prefix: /api/v1/appointments
+    route:
+    - destination:
+        host: clinical-service
+        subset: v1
+      weight: 100
+  - match:
+    - uri:
+        prefix: /api/v1/prescriptions
+    route:
+    - destination:
+        host: clinical-service
+        subset: v1
+      weight: 100
+---
+# Destination Rule para Clinical Service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: clinical-service
+  namespace: respicare-prod
+spec:
+  host: clinical-service
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 10
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# Virtual Service para ML Service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-service
+  namespace: respicare-prod
+spec:
+  hosts:
+  - ml-service
+  - ml-service.respicare-prod.svc.cluster.local
+  http:
+  - route:
+    - destination:
+        host: ml-service
+        subset: v1
+      weight: 100
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+---
+# Destination Rule para ML Service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ml-service
+  namespace: respicare-prod
+spec:
+  host: ml-service
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_CONN
+---
+# Virtual Service para ML Advanced Service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-advanced-service
+  namespace: respicare-prod
+spec:
+  hosts:
+  - ml-advanced-service
+  - ml-advanced-service.respicare-prod.svc.cluster.local
+  http:
+  - route:
+    - destination:
+        host: ml-advanced-service
+        subset: v1
+      weight: 100
+    timeout: 60s
+    retries:
+      attempts: 2
+      perTryTimeout: 30s
+---
+# Destination Rule para ML Advanced Service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ml-advanced-service
+  namespace: respicare-prod
+spec:
+  host: ml-advanced-service
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 10
+      http:
+        http1MaxPendingRequests: 5
+        maxRequestsPerConnection: 1
+---
+# Peer Authentication (mTLS)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: respicare-prod
+spec:
+  mtls:
+    mode: STRICT
+---
+# Authorization Policy
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: respicare-policy
+  namespace: respicare-prod
+spec:
+  selector:
+    matchLabels:
+      app: clinical-service
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/respicare-prod/sa/backend"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/respicare-prod/sa/kong"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+

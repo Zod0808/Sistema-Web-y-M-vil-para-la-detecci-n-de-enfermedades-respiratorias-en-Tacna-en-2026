@@ -1,0 +1,81 @@
+name: Mobile CI (Lint, Tests, Coverage)
+
+on:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  mobile-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No se encontró script lint; saltando."
+          fi
+
+      - name: Run tests with coverage
+        env:
+          CI: true
+        run: |
+          if npm run | grep -q "test"; then
+            npm test -- --coverage
+          else
+            echo "No se encontró script test; saltando."
+          fi
+
+      - name: Upload test reports (JUnit XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-test-reports
+          path: |
+            mobile/coverage/junit.xml
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-coverage-reports
+          path: |
+            mobile/coverage/coverage-final.json
+            mobile/coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./mobile/coverage/lcov.info
+          flags: mobile
+          name: mobile-coverage
+          fail_ci_if_error: false
+
+

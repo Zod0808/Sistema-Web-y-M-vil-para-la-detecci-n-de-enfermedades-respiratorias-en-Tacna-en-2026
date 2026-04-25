@@ -1,0 +1,158 @@
+---
+# Auto-scaling Agresivo para GPU Nodes
+# Scale down rápido para optimizar costos
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-services-gpu-hpa-aggressive
+  namespace: ml-gpu
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-services-gpu
+  minReplicas: 0  # Permitir scale a 0
+  maxReplicas: 10
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60  # Scale down rápido (1 minuto)
+      policies:
+      - type: Percent
+        value: 50  # Reducir 50% a la vez
+        periodSeconds: 60
+      - type: Pods
+        value: 2  # O reducir 2 pods a la vez
+        periodSeconds: 60
+      selectPolicy: Min  # Usar la política más conservadora
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Scale up inmediato
+      policies:
+      - type: Percent
+        value: 100  # Duplicar capacidad
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max  # Usar la política más agresiva
+  metrics:
+  - type: Resource
+    resource:
+      name: nvidia.com/gpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Escalar cuando GPU > 70%
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: gpu_queue_length
+      target:
+        type: AverageValue
+        averageValue: "5"  # Escalar si hay más de 5 trabajos en cola
+---
+# Vertical Pod Autoscaler para optimizar recursos por pod
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: ai-services-gpu-vpa
+  namespace: ml-gpu
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-services-gpu
+  updatePolicy:
+    updateMode: "Auto"  # Auto-ajustar recursos
+  resourcePolicy:
+    containerPolicies:
+    - containerName: ai-services
+      minAllowed:
+        memory: "2Gi"
+        cpu: "1"
+        nvidia.com/gpu: "1"
+      maxAllowed:
+        memory: "32Gi"
+        cpu: "8"
+        nvidia.com/gpu: "1"
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+# Cluster Autoscaler para GPU Nodes (scale nodes)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-gpu-config
+  namespace: kube-system
+data:
+  cluster-autoscaler-config.yaml: |
+    # Configuración para Cluster Autoscaler con GPU
+    # Para GKE:
+    # gcloud container clusters update respicare-cluster \
+    #   --enable-autoscaling \
+    #   --min-nodes=0 \
+    #   --max-nodes=10 \
+    #   --node-pool=gpu-pool \
+    #   --autoscaling-profile optimize-utilization
+    
+    # Para EKS:
+    # aws eks update-nodegroup-config \
+    #   --cluster-name respicare-cluster \
+    #   --nodegroup-name gpu-pool \
+    #   --scaling-config minSize=0,maxSize=10 \
+    #   --taints spot-instance=true:NoSchedule
+    
+    # Configuración de scale down agresivo
+    scale-down-delay-after-add: "2m"
+    scale-down-unneeded-time: "1m"  # Scale down después de 1 minuto sin uso
+    scale-down-utilization-threshold: "0.3"  # 30% de utilización mínima
+    max-node-provision-time: "10m"
+    max-empty-bulk-delete: "10"  # Eliminar hasta 10 nodos vacíos a la vez
+---
+# KEDA ScaledObject para auto-scaling basado en cola de trabajos
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ai-services-gpu-queue-scaler
+  namespace: ml-gpu
+spec:
+  scaleTargetRef:
+    name: ai-services-gpu
+  minReplicaCount: 0
+  maxReplicaCount: 10
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: gpu_job_queue_length
+      threshold: '5'
+      query: 'sum(gpu_job_queue_length)'
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "70"
+  - type: memory
+    metadata:
+      type: Utilization
+      value: "80"
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+

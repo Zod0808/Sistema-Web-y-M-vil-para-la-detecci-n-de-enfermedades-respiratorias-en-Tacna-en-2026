@@ -1,0 +1,715 @@
+openapi: 3.0.3
+info:
+  title: RespiCare API - MDSD Enhanced
+  description: |
+    Sistema Integral de Enfermedades Respiratorias
+    
+    **Model-Driven API Design:**
+    - Schemas derived from domain models
+    - Consistent transformation patterns
+    - Type-safe contracts
+    - Auto-generated documentation
+    
+    **Key Features:**
+    - User authentication and management
+    - Medical history management
+    - AI-powered symptom analysis
+    - Offline sync capabilities
+  version: 2.0.0
+  contact:
+    name: RespiCare Team
+    email: support@respicare.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Development server
+  - url: https://api.respicare.com/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Users
+    description: User management
+  - name: Medical Histories
+    description: Medical history management
+  - name: Symptoms
+    description: Symptom analysis
+  - name: Health
+    description: System health checks
+
+# Security
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+
+  # Domain Model Schemas (from PIM)
+  schemas:
+    # User Entity Schema
+    User:
+      type: object
+      description: User domain entity (derived from UserEntity)
+      required:
+        - id
+        - name
+        - email
+        - role
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User full name
+          example: "Dr. Juan Pérez"
+        email:
+          type: string
+          format: email
+          description: User email address (unique)
+          example: "juan.perez@hospital.com"
+        role:
+          $ref: '#/components/schemas/UserRole'
+        avatar:
+          type: string
+          format: uri
+          description: Profile picture URL
+          example: "https://storage.respicare.com/avatars/user123.jpg"
+          nullable: true
+        isActive:
+          type: boolean
+          description: Account active status
+          example: true
+        lastLogin:
+          type: string
+          format: date-time
+          description: Last login timestamp
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    UserRole:
+      type: string
+      enum:
+        - patient
+        - doctor
+        - admin
+      description: User role in the system
+      example: "doctor"
+
+    # Medical History Entity Schema
+    MedicalHistory:
+      type: object
+      description: Medical history domain entity (derived from MedicalHistoryEntity)
+      required:
+        - id
+        - patientId
+        - doctorId
+        - patientName
+        - age
+        - diagnosis
+        - symptoms
+        - date
+        - syncStatus
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique history identifier
+        patientId:
+          type: string
+          description: Patient identifier
+        doctorId:
+          type: string
+          description: Doctor who created the history
+        patientName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Patient full name
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+          description: Patient age in years
+          example: 45
+        diagnosis:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Medical diagnosis
+          example: "Bronquitis aguda"
+        symptoms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptom'
+          minItems: 1
+          maxItems: 20
+          description: List of patient symptoms (max 20)
+        description:
+          type: string
+          maxLength: 1000
+          description: Additional clinical notes
+          nullable: true
+        date:
+          type: string
+          format: date-time
+          description: History creation date
+        location:
+          $ref: '#/components/schemas/Location'
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Medical images URLs
+          nullable: true
+        audioNotes:
+          type: string
+          format: uri
+          description: Audio notes URL
+          nullable: true
+        isOffline:
+          type: boolean
+          description: Created offline flag
+          default: false
+        syncStatus:
+          $ref: '#/components/schemas/SyncStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Symptom Value Object Schema
+    Symptom:
+      type: object
+      description: Symptom value object (derived from SymptomValueObject)
+      required:
+        - name
+        - severity
+        - duration
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Symptom name
+          example: "Tos seca persistente"
+        severity:
+          $ref: '#/components/schemas/SymptomSeverity'
+        duration:
+          type: string
+          description: How long the symptom has lasted
+          example: "2 semanas"
+        description:
+          type: string
+          maxLength: 500
+          description: Additional symptom details
+          nullable: true
+
+    SymptomSeverity:
+      type: string
+      enum:
+        - mild
+        - moderate
+        - severe
+      description: Symptom severity level
+      example: "moderate"
+
+    # Location Value Object Schema
+    Location:
+      type: object
+      description: Geographic location value object (derived from LocationValueObject)
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitude coordinate
+          example: -18.0151
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitude coordinate
+          example: -70.2508
+        address:
+          type: string
+          maxLength: 200
+          description: Human-readable address
+          example: "Hospital Regional Tacna"
+          nullable: true
+
+    SyncStatus:
+      type: string
+      enum:
+        - pending
+        - synced
+        - error
+      description: Synchronization status
+      default: pending
+
+    # Request DTOs (PSM - API Layer)
+    RegisterUserRequest:
+      type: object
+      description: Request to register a new user
+      required:
+        - name
+        - email
+        - password
+        - role
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Dr. Juan Pérez"
+        email:
+          type: string
+          format: email
+          example: "juan.perez@hospital.com"
+        password:
+          type: string
+          minLength: 8
+          format: password
+          example: "SecurePass123!"
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    CreateMedicalHistoryRequest:
+      type: object
+      description: Request to create a medical history
+      required:
+        - patientId
+        - doctorId
+        - patientName
+        - age
+        - diagnosis
+        - symptoms
+      properties:
+        patientId:
+          type: string
+        doctorId:
+          type: string
+        patientName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+        diagnosis:
+          type: string
+          minLength: 1
+          maxLength: 200
+        symptoms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptom'
+          minItems: 1
+          maxItems: 20
+        description:
+          type: string
+          maxLength: 1000
+        location:
+          $ref: '#/components/schemas/Location'
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        audioNotes:
+          type: string
+          format: uri
+        isOffline:
+          type: boolean
+          default: false
+
+    UpdateMedicalHistoryRequest:
+      type: object
+      description: Request to update a medical history
+      properties:
+        diagnosis:
+          type: string
+          maxLength: 200
+        symptoms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptom'
+          maxItems: 20
+        description:
+          type: string
+          maxLength: 1000
+
+    # Response DTOs (PSM - API Layer)
+    AuthResponse:
+      type: object
+      required:
+        - user
+        - token
+        - refreshToken
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT access token (15 min validity)
+        refreshToken:
+          type: string
+          description: Refresh token (7 days validity)
+
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [up, down]
+            cache:
+              type: string
+              enum: [up, down]
+            ai_services:
+              type: string
+              enum: [up, down]
+
+# API Endpoints
+paths:
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account in the system
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticates user and returns JWT tokens
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Medical History Endpoints
+  /medical-histories:
+    get:
+      tags:
+        - Medical Histories
+      summary: Get all medical histories
+      description: Returns a list of all medical histories (filtered by role)
+      operationId: getMedicalHistories
+      parameters:
+        - name: patientId
+          in: query
+          description: Filter by patient ID
+          schema:
+            type: string
+        - name: doctorId
+          in: query
+          description: Filter by doctor ID
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of results to return
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MedicalHistory'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Medical Histories
+      summary: Create medical history
+      description: Creates a new medical history record
+      operationId: createMedicalHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicalHistoryRequest'
+      responses:
+        '201':
+          description: Medical history created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/MedicalHistory'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /medical-histories/{id}:
+    get:
+      tags:
+        - Medical Histories
+      summary: Get medical history by ID
+      description: Returns a specific medical history
+      operationId: getMedicalHistoryById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Medical history ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/MedicalHistory'
+        '404':
+          description: Medical history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Medical Histories
+      summary: Update medical history
+      description: Updates an existing medical history
+      operationId: updateMedicalHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMedicalHistoryRequest'
+      responses:
+        '200':
+          description: Medical history updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/MedicalHistory'
+        '404':
+          description: Medical history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Health Check
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns system health status
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: System health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+

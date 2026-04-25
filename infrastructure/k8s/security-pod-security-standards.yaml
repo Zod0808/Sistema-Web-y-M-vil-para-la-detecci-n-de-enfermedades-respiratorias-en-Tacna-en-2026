@@ -1,0 +1,112 @@
+# Pod Security Standards y Security Contexts
+# Define políticas de seguridad para pods según estándares de Kubernetes
+
+---
+# Namespace con Pod Security Standards
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: respicare-prod
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+# Security Context para Backend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-security-context
+  namespace: respicare-prod
+data:
+  security-context.yaml: |
+    # Security Context para Backend
+    securityContext:
+      # No ejecutar como root
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      # Capabilities mínimas
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_BIND_SERVICE  # Solo para binding de puertos
+      # Read-only root filesystem
+      readOnlyRootFilesystem: true
+      # Seccomp profile restrictivo
+      seccompProfile:
+        type: RuntimeDefault
+      # Allow privilege escalation deshabilitado
+      allowPrivilegeEscalation: false
+    # Container Security Context
+    containerSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+---
+# Security Context para AI Services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-services-security-context
+  namespace: respicare-prod
+data:
+  security-context.yaml: |
+    # Security Context para AI Services
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      allowPrivilegeEscalation: false
+    containerSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+---
+# Security Context para Core Domains
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-domains-security-context
+  namespace: respicare-prod
+data:
+  security-context.yaml: |
+    # Security Context para Core Domains
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      allowPrivilegeEscalation: false
+    containerSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+

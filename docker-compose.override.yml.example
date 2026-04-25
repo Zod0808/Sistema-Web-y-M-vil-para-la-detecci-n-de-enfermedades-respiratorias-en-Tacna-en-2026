@@ -1,0 +1,36 @@
+# Docker Compose Override Example
+# Copy this file to docker-compose.override.yml to customize your local setup
+# This file is ignored by git and won't affect other developers
+
+version: '3.8'
+
+services:
+  # Ejemplo: Agregar puerto de depuración para backend
+  backend:
+    ports:
+      - "9229:9229"  # Node.js debugger
+    environment:
+      - NODE_OPTIONS=--inspect=0.0.0.0:9229
+    
+  # Ejemplo: Montar código fuente para desarrollo
+  # backend:
+  #   volumes:
+  #     - ./backend:/app
+  #     - /app/node_modules
+  
+  # Ejemplo: Variables de entorno adicionales
+  # ai-services:
+  #   environment:
+  #     - DEBUG=true
+  #     - LOG_LEVEL=DEBUG
+  
+  # Ejemplo: Exponer MongoDB directamente (solo para debugging)
+  # mongodb:
+  #   ports:
+  #     - "27017:27017"
+  
+  # Ejemplo: Exponer Redis directamente (solo para debugging)
+  # redis:
+  #   ports:
+  #     - "6379:6379"
+

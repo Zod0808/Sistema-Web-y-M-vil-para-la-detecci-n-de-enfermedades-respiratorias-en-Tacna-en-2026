@@ -1,0 +1,217 @@
+.hl7-page {
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--color-background, #fff);
+}
+
+.hl7-page-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--color-divider, #e0e0e0);
+}
+
+.hl7-page-header h1 {
+  margin: 0 0 10px 0;
+  color: var(--color-text-primary, #333);
+  font-size: 2rem;
+}
+
+.hl7-page-header p {
+  margin: 0;
+  color: var(--color-text-secondary, #666);
+  font-size: 1rem;
+}
+
+.hl7-page-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .hl7-page-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hl7-input-panel,
+.hl7-viewer-panel {
+  background: var(--color-background-paper, #f5f5f5);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.hl7-input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.hl7-input-header h3 {
+  margin: 0;
+  color: var(--color-text-primary, #333);
+  font-size: 1.25rem;
+}
+
+.hl7-input-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.hl7-format-selector {
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider, #e0e0e0);
+  border-radius: 4px;
+  background: var(--color-background, #fff);
+  color: var(--color-text-primary, #333);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.hl7-example-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--color-primary, #1976d2);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-primary, #1976d2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.hl7-example-btn:hover {
+  background: var(--color-primary, #1976d2);
+  color: white;
+}
+
+.hl7-message-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-divider, #e0e0e0);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  resize: vertical;
+  background: var(--color-background, #fff);
+  color: var(--color-text-primary, #333);
+  margin-bottom: 15px;
+}
+
+.hl7-message-input:focus {
+  outline: 2px solid var(--color-primary, #1976d2);
+  outline-offset: 2px;
+  border-color: var(--color-primary, #1976d2);
+}
+
+.hl7-input-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hl7-convert-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-primary, #1976d2);
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.hl7-convert-button:hover:not(:disabled) {
+  background: var(--color-primary-dark, #1565c0);
+}
+
+.hl7-convert-button:disabled {
+  background: var(--color-divider, #e0e0e0);
+  color: var(--color-text-secondary, #999);
+  cursor: not-allowed;
+}
+
+.hl7-error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  color: #c62828;
+  font-size: 0.9rem;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+.hl7-viewer-section,
+.hl7-fhir-result {
+  margin-bottom: 20px;
+}
+
+.hl7-viewer-section h3,
+.hl7-fhir-result h3 {
+  margin: 0 0 15px 0;
+  color: var(--color-text-primary, #333);
+  font-size: 1.1rem;
+}
+
+.hl7-fhir-content {
+  background: var(--color-background, #fff);
+  border: 1px solid var(--color-divider, #e0e0e0);
+  border-radius: 4px;
+  padding: 15px;
+  overflow-x: auto;
+}
+
+.hl7-fhir-json {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text-primary, #333);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.hl7-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-secondary, #666);
+}
+
+.hl7-empty-state p {
+  margin: 10px 0;
+}
+
+.hl7-empty-hint {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #999);
+}
+
+/* Dark theme support */
+.theme-dark .hl7-page {
+  background: var(--color-background, #121212);
+}
+
+.theme-dark .hl7-input-panel,
+.theme-dark .hl7-viewer-panel {
+  background: var(--color-background-paper, #1e1e1e);
+}
+
+.theme-dark .hl7-message-input {
+  background: var(--color-background, #121212);
+  border-color: var(--color-divider, #424242);
+  color: var(--color-text-primary, #fff);
+}
+
+.theme-dark .hl7-fhir-content {
+  background: var(--color-background, #121212);
+  border-color: var(--color-divider, #424242);
+}
+

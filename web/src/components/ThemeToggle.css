@@ -1,0 +1,45 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-divider, rgba(0, 0, 0, 0.12));
+  border-radius: 4px;
+  background: var(--color-background, #ffffff);
+  color: var(--color-text-primary, rgba(0, 0, 0, 0.87));
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--color-action-hover, rgba(0, 0, 0, 0.04));
+  border-color: var(--color-primary, #1976d2);
+}
+
+.theme-toggle:focus {
+  outline: 2px solid var(--color-primary, #1976d2);
+  outline-offset: 2px;
+}
+
+.theme-toggle__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.theme-toggle__text {
+  font-weight: 500;
+}
+
+/* Dark theme */
+.theme-dark .theme-toggle {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--color-background, #121212);
+  color: var(--color-text-primary, rgba(255, 255, 255, 0.87));
+}
+
+.theme-dark .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary, #1976d2);
+}
+

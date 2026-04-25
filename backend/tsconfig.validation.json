@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Relax strict rules for validation
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": false,
+    // Keep important checks
+    "noImplicitAny": true,
+    "strict": true,
+    "noImplicitReturns": false
+  },
+  "include": [
+    "src/domain/**/*",
+    "src/models/**/*",
+    "src/interface-adapters/dtos/**/*",
+    "src/types/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/generators/**/*",
+    "**/interface-adapters/**/*.generated.ts",
+    "**/infrastructure/repositories/generated/**"
+  ]
+}
+

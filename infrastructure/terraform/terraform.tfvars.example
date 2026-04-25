@@ -1,0 +1,28 @@
+# Example Terraform Variables
+# Copy this file to terraform.tfvars and fill in the actual values
+# terraform.tfvars should be in .gitignore
+
+environment = "staging"
+cluster_name = "respicare-cluster"
+region = "us-east-1"
+node_count = 3
+node_instance_type = "t3.medium"
+
+kubeconfig_path = "~/.kube/config"
+kube_context = "respicare-cluster"
+
+# Sensitive variables (should be set via environment variables or secret management)
+# mongodb_uri = "mongodb://..."
+# jwt_secret = "..."
+# jwt_refresh_secret = "..."
+# field_encryption_key = "..."
+
+domain_name = "respicare.dev"
+staging_domain = "staging.respicare.dev"
+production_domain = "respicare.dev"
+cert_manager_email = "admin@respicare.dev"
+
+enable_monitoring = true
+enable_logging = true
+enable_tracing = true
+

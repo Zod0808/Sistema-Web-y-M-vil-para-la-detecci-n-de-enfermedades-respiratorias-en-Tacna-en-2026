@@ -1,0 +1,250 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/respicare-backend
+  AI_SERVICES_IMAGE: ${{ github.repository }}/ai-services
+  WEB_IMAGE: ${{ github.repository }}/respicare-web
+  KUBERNETES_NAMESPACE: respicare-staging
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+      ai-services-image: ${{ steps.meta-ai.outputs.tags }}
+      web-image: ${{ steps.meta-web.outputs.tags }}
+      image-tag: ${{ steps.meta-backend.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Backend Image
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ github.event.inputs.image_tag || 'staging-latest' }}
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+      
+      # AI Services Image
+      - name: Extract metadata for AI Services
+        id: meta-ai
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.AI_SERVICES_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ github.event.inputs.image_tag || 'staging-latest' }}
+      
+      - name: Build and push AI Services image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-services
+          push: true
+          tags: ${{ steps.meta-ai.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=3.10
+      
+      # Web Image
+      - name: Extract metadata for Web
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.WEB_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ github.event.inputs.image_tag || 'staging-latest' }}
+      
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+  deploy-staging:
+    name: Deploy to Staging Environment
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.respicare.dev
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      
+      - name: Deploy Backend
+        run: |
+          IMAGE_TAG="${{ needs.build-and-push.outputs.image-tag }}"
+          sed -i "s|ghcr.io/your-org/respicare-backend:\${IMAGE_TAG:-latest}|${{ needs.build-and-push.outputs.backend-image }}|g" infrastructure/k8s/backend-deployment.yaml
+          kubectl apply -f infrastructure/k8s/backend-deployment.yaml -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+      
+      - name: Deploy AI Services
+        run: |
+          sed -i "s|ghcr.io/your-org/ai-services:latest|${{ needs.build-and-push.outputs.ai-services-image }}|g" infrastructure/k8s/ai-services-deployment.yaml
+          kubectl apply -f infrastructure/k8s/ai-services-deployment.yaml -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/ai-services -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+      
+      - name: Deploy Web (if exists)
+        run: |
+          if [ -f infrastructure/k8s/web-deployment.yaml ]; then
+            sed -i "s|ghcr.io/your-org/respicare-web:latest|${{ needs.build-and-push.outputs.web-image }}|g" infrastructure/k8s/web-deployment.yaml
+            kubectl apply -f infrastructure/k8s/web-deployment.yaml -n ${{ env.KUBERNETES_NAMESPACE }}
+            kubectl rollout status deployment/web -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+          fi
+
+  smoke-tests:
+    name: Smoke Tests Post-Deploy
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 30
+      
+      - name: Test Backend Health
+        run: |
+          BACKEND_URL="${{ secrets.STAGING_BACKEND_URL || 'https://staging-api.respicare.dev' }}"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/health)
+          if [ "$response" != "200" ]; then
+            echo "❌ Backend health check failed (HTTP $response)"
+            exit 1
+          fi
+          echo "✅ Backend health check passed"
+      
+      - name: Test AI Services Health
+        run: |
+          AI_URL="${{ secrets.STAGING_AI_URL || 'https://staging-ai.respicare.dev' }}"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $AI_URL/api/v1/health)
+          if [ "$response" != "200" ]; then
+            echo "❌ AI Services health check failed (HTTP $response)"
+            exit 1
+          fi
+          echo "✅ AI Services health check passed"
+      
+      - name: Run API Smoke Tests
+        run: |
+          BACKEND_URL="${{ secrets.STAGING_BACKEND_URL || 'https://staging-api.respicare.dev' }}"
+          # Test basic endpoints
+          curl -f $BACKEND_URL/api/v1/health || exit 1
+          echo "✅ API smoke tests passed"
+
+  rollback-on-failure:
+    name: Rollback on Failure
+    needs: [deploy-staging, smoke-tests]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Rollback Backend
+        run: |
+          kubectl rollout undo deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+          echo "✅ Backend rolled back"
+      
+      - name: Rollback AI Services
+        run: |
+          kubectl rollout undo deployment/ai-services -n ${{ env.KUBERNETES_NAMESPACE }}
+          kubectl rollout status deployment/ai-services -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+          echo "✅ AI Services rolled back"
+      
+      - name: Rollback Web
+        run: |
+          if kubectl get deployment/web -n ${{ env.KUBERNETES_NAMESPACE }} &>/dev/null; then
+            kubectl rollout undo deployment/web -n ${{ env.KUBERNETES_NAMESPACE }}
+            kubectl rollout status deployment/web -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+            echo "✅ Web rolled back"
+          fi
+      
+      - name: Notify rollback
+        run: |
+          echo "🚨 Deployment failed and rolled back automatically"
+          echo "Please check the logs and fix the issues before retrying"
+

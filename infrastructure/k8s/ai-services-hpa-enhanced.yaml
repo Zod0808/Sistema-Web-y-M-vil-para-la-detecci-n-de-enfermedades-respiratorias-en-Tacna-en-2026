@@ -1,0 +1,57 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-services-hpa
+  namespace: respicare-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-services
+  minReplicas: 2
+  maxReplicas: 15
+  metrics:
+    # CPU-based scaling (ML models can be CPU-intensive)
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+    # Memory-based scaling
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    # Custom metric: Prediction queue length (si está disponible)
+    # - type: Pods
+    #   pods:
+    #     metric:
+    #       name: prediction_queue_length
+    #     target:
+    #       type: AverageValue
+    #       averageValue: "50"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # Más conservador para ML
+      policies:
+        - type: Percent
+          value: 33
+          periodSeconds: 120
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+        - type: Pods
+          value: 3
+          periodSeconds: 60
+      selectPolicy: Max
+

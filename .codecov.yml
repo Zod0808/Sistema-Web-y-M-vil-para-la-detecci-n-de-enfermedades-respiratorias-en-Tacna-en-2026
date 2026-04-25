@@ -1,0 +1,142 @@
+# Configuración de Codecov para RespiCare
+# Analítica de cobertura por módulo y reportes
+
+codecov:
+  token: ${CODECOV_TOKEN}  # Token se configura en CI/CD secrets
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
+# Configuración de flags por módulo
+flags:
+  backend:
+    paths:
+      - backend/src/
+    carryforward: true
+  frontend-web:
+    paths:
+      - web/src/
+    carryforward: true
+  mobile:
+    paths:
+      - mobile/src/
+    carryforward: true
+  ai-services:
+    paths:
+      - ai-services/
+    carryforward: true
+
+# Umbrales de cobertura por módulo
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  
+  # Umbrales mínimos por módulo
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        base: auto
+      backend:
+        target: 80%
+        threshold: 1%
+        base: auto
+        flags:
+          - backend
+      frontend-web:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - frontend-web
+      mobile:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - mobile
+      ai-services:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - ai-services
+    
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+        base: auto
+      backend:
+        target: 80%
+        threshold: 1%
+        base: auto
+        flags:
+          - backend
+      frontend-web:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - frontend-web
+      mobile:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - mobile
+      ai-services:
+        target: 70%
+        threshold: 1%
+        base: auto
+        flags:
+          - ai-services
+
+# Comentarios en PRs
+comment:
+  layout: "reach, diff, flags, files, footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  branches: null
+  paths: null
+
+# Ignorar archivos de configuración y tests
+ignore:
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/__tests__/**"
+  - "**/tests/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/coverage/**"
+  - "**/.next/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/android/**"
+  - "**/ios/**"
+  - "**/*.config.*"
+  - "**/jest.config.*"
+  - "**/pytest.ini"
+  - "**/setup.py"
+  - "**/requirements*.txt"
+  - "**/package*.json"
+  - "**/tsconfig*.json"
+  - "**/.eslintrc*"
+  - "**/.prettierrc*"
+
+# Reportes por módulo
+report:
+  format: lcov,cobertura,html,json
+  output: coverage/
+
+# Configuración de archivos de cobertura
+files:
+  - "backend/coverage/coverage-final.json"
+  - "web/coverage/coverage-final.json"
+  - "mobile/coverage/coverage-final.json"
+  - "ai-services/coverage.xml"
+

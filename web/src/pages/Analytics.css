@@ -1,0 +1,133 @@
+.analytics-page {
+  min-height: 100vh;
+  background: #f8f9ff;
+}
+
+.analytics-header {
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+  color: white;
+  padding: 40px 24px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3);
+}
+
+.analytics-header h1 {
+  margin: 0 0 12px 0;
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.analytics-header p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+.analytics-tabs {
+  display: flex;
+  justify-content: center;
+  background: white;
+  border-bottom: 2px solid #e3f2fd;
+  padding: 0 24px;
+  gap: 0;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.tab-button {
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #666666;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: #000000;
+  background: #f8f9ff;
+}
+
+.tab-button.active {
+  color: #1976d2;
+  border-bottom-color: #2196f3;
+  background: #f8f9ff;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #2196f3;
+}
+
+.analytics-content {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .analytics-header {
+    padding: 24px 16px;
+  }
+  
+  .analytics-header h1 {
+    font-size: 2rem;
+  }
+  
+  .analytics-header p {
+    font-size: 1rem;
+  }
+  
+  .analytics-tabs {
+    flex-direction: column;
+    padding: 0;
+  }
+  
+  .tab-button {
+    border-bottom: 1px solid #e3f2fd;
+    border-radius: 0;
+    text-align: left;
+  }
+  
+  .tab-button.active::after {
+    display: none;
+  }
+  
+  .analytics-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}

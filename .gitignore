@@ -1,0 +1,165 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+!.env.example
+!env.example
+!.env.production
+!.env.staging
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+jspm_packages/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Docker
+docker-compose.override.yml
+.dockerignore.local
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+.jest/
+*.test.js.snap
+
+# Backups
+backups/
+*.backup
+*.bak
+
+# SSL/Certificates
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+
+# Android Signing — NUNCA commitear keystore ni contraseñas
+*.keystore
+*.jks
+keystore.properties
+mobile/medical-app/android/keystore.properties
+mobile/medical-app/android/app/*.keystore
+mobile/medical-app/android/app/*.jks
+certbot/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# MongoDB data
+data/db/
+
+# Redis data
+dump.rdb
+
+# AI Models (large files)
+# Exclude AI model directories but allow source code models
+ai-services/models/
+*.model
+*.pkl
+*.h5
+*.pt
+*.pth
+
+# Cache
+cache/
+.cache/
+*.cache
+
+# Uploads
+uploads/
+
+# Documentation builds
+docs/_build/
+docs/api/
+
+# Package managers
+package-lock.json
+yarn.lock
+Pipfile.lock
+poetry.lock
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Webpack
+.webpack/
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# Gatsby
+.cache/
+public/
+
+# React Native
+.expo/
+.expo-shared/
+
+# Mobile
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+metro.config.js.bak
+
+# Misc
+.turbo
+*.local

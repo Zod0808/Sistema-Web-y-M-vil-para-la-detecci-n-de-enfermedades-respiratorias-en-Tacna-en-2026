@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+  namespace: respicare-prod
+data:
+  kong.yml: |
+    _format_version: "3.0"
+    
+    services:
+      - name: auth-service
+        url: http://auth-service.respicare-prod.svc.cluster.local:3000
+        routes:
+          - name: auth-routes
+            paths:
+              - /api/v1/auth
+            strip_path: false
+            plugins:
+              - name: rate-limiting
+                config:
+                  minute: 100
+                  hour: 1000
+      
+      - name: clinical-service
+        url: http://clinical-service.respicare-prod.svc.cluster.local:3000
+        routes:
+          - name: clinical-routes
+            paths:
+              - /api/v1/medical-histories
+              - /api/v1/appointments
+              - /api/v1/prescriptions
+              - /api/v1/alerts
+            strip_path: false
+            plugins:
+              - name: rate-limiting
+                config:
+                  minute: 100
+                  hour: 1000
+              - name: cors
+                config:
+                  origins:
+                    - "*"
+                  methods:
+                    - GET
+                    - POST
+                    - PUT
+                    - PATCH
+                    - DELETE
+                    - OPTIONS
+                  headers:
+                    - Accept
+                    - Authorization
+                    - Content-Type
+                  exposed_headers:
+                    - X-Request-ID
+                  credentials: true
+                  max_age: 3600
+      
+      - name: ml-service
+        url: http://ml-service.respicare-prod.svc.cluster.local:8000
+        routes:
+          - name: ml-routes
+            paths:
+              - /api/v1/ml
+            strip_path: false
+            plugins:
+              - name: rate-limiting
+                config:
+                  minute: 50
+                  hour: 500
+      
+      - name: ml-advanced-service
+        url: http://ml-advanced-service.respicare-prod.svc.cluster.local:8000
+        routes:
+          - name: ml-advanced-routes
+            paths:
+              - /api/v1/ml/advanced
+            strip_path: false
+            plugins:
+              - name: rate-limiting
+                config:
+                  minute: 20
+                  hour: 200
+      
+      - name: analytics-service
+        url: http://analytics-service.respicare-prod.svc.cluster.local:3000
+        routes:
+          - name: analytics-routes
+            paths:
+              - /api/v1/analytics
+              - /api/v1/bi
+            strip_path: false
+      
+      - name: notification-service
+        url: http://notification-service.respicare-prod.svc.cluster.local:3000
+        routes:
+          - name: notification-routes
+            paths:
+              - /api/v1/notifications
+            strip_path: false
+      
+      - name: integration-service
+        url: http://integration-service.respicare-prod.svc.cluster.local:3000
+        routes:
+          - name: integration-routes
+            paths:
+              - /api/v1/fhir
+              - /api/v1/integrations
+            strip_path: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-gateway
+  namespace: respicare-prod
+  labels:
+    app: kong
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 8443
+    protocol: TCP
+    name: https
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: admin
+  selector:
+    app: kong
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  namespace: respicare-prod
+  labels:
+    app: kong
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      containers:
+      - name: kong
+        image: kong:3.4
+        env:
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: "/kong/declarative/kong.yml"
+        - name: KONG_PROXY_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_PROXY_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_LISTEN
+          value: "0.0.0.0:8001"
+        - name: KONG_PROXY_LISTEN
+          value: "0.0.0.0:8000"
+        - name: KONG_ADMIN_GUI_LISTEN
+          value: "0.0.0.0:8002"
+        ports:
+        - containerPort: 8000
+          name: proxy
+        - containerPort: 8443
+          name: proxy-ssl
+        - containerPort: 8001
+          name: admin
+        - containerPort: 8002
+          name: admin-gui
+        volumeMounts:
+        - name: kong-config
+          mountPath: /kong/declarative
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /status/ready
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: kong-config
+        configMap:
+          name: kong-config
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kong-hpa
+  namespace: respicare-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kong
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+

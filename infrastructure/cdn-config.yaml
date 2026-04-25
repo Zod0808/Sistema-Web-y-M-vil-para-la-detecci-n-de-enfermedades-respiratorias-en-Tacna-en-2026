@@ -1,0 +1,507 @@
+---
+# CDN Configuration for RespiCare
+# Configuración de CDN para assets estáticos (CloudFlare, AWS CloudFront, etc.)
+# Este archivo contiene configuraciones de ejemplo para diferentes proveedores CDN
+
+# ============================================================================
+# CloudFlare Configuration
+# ============================================================================
+# Para usar CloudFlare, configura los siguientes DNS records:
+# - A record: @ -> IP del Load Balancer
+# - CNAME record: www -> dominio principal
+# - CNAME record: cdn -> dominio principal (para assets estáticos)
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-cdn-config
+  namespace: default
+  labels:
+    app: cdn-config
+    provider: cloudflare
+data:
+  # CloudFlare Page Rules (configurar en el dashboard de CloudFlare)
+  page-rules.yaml: |
+    # Regla 1: Cache agresivo para assets estáticos
+    - url: "*.respicare.example.com/static/*"
+      settings:
+        cache_level: "cache_everything"
+        edge_cache_ttl: 31536000  # 1 año
+        browser_cache_ttl: 31536000
+    
+    # Regla 2: Cache para imágenes
+    - url: "*.respicare.example.com/images/*"
+      settings:
+        cache_level: "cache_everything"
+        edge_cache_ttl: 2592000  # 30 días
+        browser_cache_ttl: 2592000
+    
+    # Regla 3: Cache para fuentes
+    - url: "*.respicare.example.com/fonts/*"
+      settings:
+        cache_level: "cache_everything"
+        edge_cache_ttl: 31536000  # 1 año
+        browser_cache_ttl: 31536000
+    
+    # Regla 4: No cache para API
+    - url: "*.respicare.example.com/api/*"
+      settings:
+        cache_level: "bypass"
+        browser_cache_ttl: 0
+    
+    # Regla 5: Cache para archivos JS/CSS
+    - url: "*.respicare.example.com/*.js"
+      settings:
+        cache_level: "cache_everything"
+        edge_cache_ttl: 604800  # 7 días
+        browser_cache_ttl: 604800
+    
+    - url: "*.respicare.example.com/*.css"
+      settings:
+        cache_level: "cache_everything"
+        edge_cache_ttl: 604800  # 7 días
+        browser_cache_ttl: 604800
+  
+  # CloudFlare Workers (opcional, para transformaciones en edge)
+  worker-script.js: |
+    addEventListener('fetch', event => {
+      event.respondWith(handleRequest(event.request))
+    })
+    
+    async function handleRequest(request) {
+      const url = new URL(request.url)
+      
+      // Agregar headers de cache para assets estáticos
+      if (url.pathname.startsWith('/static/') || 
+          url.pathname.startsWith('/images/') ||
+          url.pathname.startsWith('/fonts/')) {
+        const response = await fetch(request)
+        const newResponse = new Response(response.body, response)
+        newResponse.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+        newResponse.headers.set('CDN-Cache-Control', 'public, max-age=31536000')
+        return newResponse
+      }
+      
+      return fetch(request)
+    }
+  
+  # CloudFlare Transform Rules (configurar en dashboard)
+  transform-rules.yaml: |
+    - name: "Add Cache Headers for Static Assets"
+      expression: '(http.request.uri.path matches "^/static/.*" or http.request.uri.path matches "^/images/.*" or http.request.uri.path matches "^/fonts/.*")'
+      action: "set_http_response_header"
+      action_parameters:
+        header: "Cache-Control"
+        value: "public, max-age=31536000, immutable"
+    
+    - name: "Add Security Headers"
+      expression: 'true'
+      action: "set_http_response_header"
+      action_parameters:
+        header: "X-Content-Type-Options"
+        value: "nosniff"
+        header: "X-Frame-Options"
+        value: "SAMEORIGIN"
+        header: "X-XSS-Protection"
+        value: "1; mode=block"
+
+---
+# ============================================================================
+# AWS CloudFront Configuration
+# ============================================================================
+# Para usar CloudFront, crea una distribución en AWS Console o usa Terraform
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudfront-cdn-config
+  namespace: default
+  labels:
+    app: cdn-config
+    provider: aws-cloudfront
+data:
+  # CloudFront Distribution Configuration (Terraform/CloudFormation)
+  cloudfront-distribution.tf: |
+    resource "aws_cloudfront_distribution" "respicare_cdn" {
+      enabled             = true
+      is_ipv6_enabled     = true
+      comment             = "RespiCare CDN Distribution"
+      default_root_object = "index.html"
+      price_class         = "PriceClass_All"
+      
+      aliases = ["cdn.respicare.example.com"]
+      
+      origin {
+        domain_name = "api.respicare.example.com"
+        origin_id   = "respicare-origin"
+        
+        custom_origin_config {
+          http_port              = 80
+          https_port             = 443
+          origin_protocol_policy = "https-only"
+          origin_ssl_protocols   = ["TLSv1.2", "TLSv1.3"]
+        }
+        
+        custom_header {
+          name  = "X-Forwarded-Host"
+          value = "cdn.respicare.example.com"
+        }
+      }
+      
+      # Cache Behavior para assets estáticos
+      default_cache_behavior {
+        allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+        cached_methods   = ["GET", "HEAD"]
+        target_origin_id = "respicare-origin"
+        
+        forwarded_values {
+          query_string = false
+          cookies {
+            forward = "none"
+          }
+        }
+        
+        viewer_protocol_policy = "redirect-to-https"
+        min_ttl                = 0
+        default_ttl            = 86400      # 1 día
+        max_ttl                = 31536000    # 1 año
+        compress               = true
+        
+        # Headers de cache
+        response_headers_policy_id = aws_cloudfront_response_headers_policy.static_assets.id
+      }
+      
+      # Cache Behavior para API (no cache)
+      ordered_cache_behavior {
+        path_pattern     = "/api/*"
+        allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods   = ["GET", "HEAD"]
+        target_origin_id = "respicare-origin"
+        
+        forwarded_values {
+          query_string = true
+          headers      = ["Authorization", "Content-Type", "X-Request-ID"]
+          cookies {
+            forward = "all"
+          }
+        }
+        
+        viewer_protocol_policy = "https-only"
+        min_ttl                = 0
+        default_ttl            = 0
+        max_ttl                = 0
+        compress               = true
+      }
+      
+      # Cache Behavior para imágenes
+      ordered_cache_behavior {
+        path_pattern     = "/images/*"
+        allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+        cached_methods   = ["GET", "HEAD"]
+        target_origin_id = "respicare-origin"
+        
+        forwarded_values {
+          query_string = false
+          cookies {
+            forward = "none"
+          }
+        }
+        
+        viewer_protocol_policy = "redirect-to-https"
+        min_ttl                = 0
+        default_ttl            = 2592000    # 30 días
+        max_ttl                = 31536000   # 1 año
+        compress               = true
+        
+        response_headers_policy_id = aws_cloudfront_response_headers_policy.static_assets.id
+      }
+      
+      # Cache Behavior para static files
+      ordered_cache_behavior {
+        path_pattern     = "/static/*"
+        allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+        cached_methods   = ["GET", "HEAD"]
+        target_origin_id = "respicare-origin"
+        
+        forwarded_values {
+          query_string = false
+          cookies {
+            forward = "none"
+          }
+        }
+        
+        viewer_protocol_policy = "redirect-to-https"
+        min_ttl                = 0
+        default_ttl            = 604800      # 7 días
+        max_ttl                = 31536000    # 1 año
+        compress               = true
+        
+        response_headers_policy_id = aws_cloudfront_response_headers_policy.static_assets.id
+      }
+      
+      restrictions {
+        geo_restriction {
+          restriction_type = "none"
+        }
+      }
+      
+      viewer_certificate {
+        acm_certificate_arn      = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERT_ID"
+        ssl_support_method       = "sni-only"
+        minimum_protocol_version = "TLSv1.2_2021"
+      }
+      
+      tags = {
+        Environment = "production"
+        Application = "respicare"
+      }
+    }
+    
+    # Response Headers Policy para assets estáticos
+    resource "aws_cloudfront_response_headers_policy" "static_assets" {
+      name = "respicare-static-assets-headers"
+      
+      cors_config {
+        access_control_allow_origins {
+          items = ["https://respicare.example.com"]
+        }
+        
+        access_control_allow_headers {
+          items = ["*"]
+        }
+        
+        access_control_allow_methods {
+          items = ["GET", "HEAD", "OPTIONS"]
+        }
+        
+        access_control_allow_credentials = false
+        origin_override                  = true
+      }
+      
+      security_headers_config {
+        strict_transport_security {
+          access_control_max_age_sec = 31536000
+          include_subdomains          = true
+          preload                     = true
+          override                    = true
+        }
+        
+        content_type_options {
+          override = true
+        }
+        
+        frame_options {
+          frame_option = "SAMEORIGIN"
+          override     = true
+        }
+        
+        xss_protection {
+          mode_block = true
+          protection = true
+          override   = true
+        }
+      }
+      
+      custom_headers_config {
+        items {
+          header   = "X-Content-Type-Options"
+          value    = "nosniff"
+          override = true
+        }
+        
+        items {
+          header   = "X-Frame-Options"
+          value    = "SAMEORIGIN"
+          override = true
+        }
+      }
+    }
+
+---
+# ============================================================================
+# Nginx Ingress con Cache Headers para CDN
+# ============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-cdn-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Cache Headers para assets estáticos
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Assets estáticos - cache largo
+      if ($uri ~* "^/static/.*\.(js|css|woff|woff2|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)$") {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header CDN-Cache-Control "public, max-age=31536000";
+        add_header X-Content-Type-Options "nosniff";
+      }
+      
+      # Imágenes - cache medio
+      if ($uri ~* "^/images/.*\.(png|jpg|jpeg|gif|ico|webp|svg)$") {
+        add_header Cache-Control "public, max-age=2592000";
+        add_header CDN-Cache-Control "public, max-age=2592000";
+      }
+      
+      # Fuentes - cache largo
+      if ($uri ~* "^/fonts/.*\.(woff|woff2|ttf|eot|otf)$") {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header CDN-Cache-Control "public, max-age=31536000";
+      }
+      
+      # HTML - no cache
+      if ($uri ~* "\.(html|htm)$") {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+      }
+      
+      # API - no cache
+      if ($uri ~* "^/api/") {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+      }
+      
+      # Security headers
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    # Compression
+    nginx.ingress.kubernetes.io/enable-gzip: "true"
+    nginx.ingress.kubernetes.io/gzip-level: "6"
+    nginx.ingress.kubernetes.io/gzip-types: "application/javascript application/json application/xml text/css text/javascript text/plain text/xml image/svg+xml font/woff font/woff2"
+    
+    # Brotli compression
+    nginx.ingress.kubernetes.io/enable-brotli: "true"
+    nginx.ingress.kubernetes.io/brotli-level: "6"
+    
+    # SSL/TLS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/hsts-preload: "true"
+spec:
+  tls:
+    - hosts:
+        - cdn.respicare.example.com
+        - www.respicare.example.com
+      secretName: web-tls
+  rules:
+    - host: cdn.respicare.example.com
+      http:
+        paths:
+          - path: /static
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+          - path: /images
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+          - path: /fonts
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+    - host: www.respicare.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+
+---
+# ============================================================================
+# ConfigMap para optimización de assets
+# ============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: asset-optimization-config
+  namespace: default
+data:
+  # Script de optimización de assets (ejecutar en CI/CD)
+  optimize-assets.sh: |
+    #!/bin/bash
+    # Script para optimizar assets antes de subir a CDN
+    
+    set -e
+    
+    echo "Optimizando assets para CDN..."
+    
+    # Optimizar imágenes
+    find ./public/images -type f \( -name "*.jpg" -o -name "*.jpeg" \) -exec jpegoptim --max=85 --strip-all {} \;
+    find ./public/images -type f -name "*.png" -exec optipng -o7 {} \;
+    find ./public/images -type f -name "*.svg" -exec svgo {} \;
+    
+    # Minificar CSS
+    find ./public/static/css -type f -name "*.css" -exec cleancss --level 2 -o {} {} \;
+    
+    # Minificar JS
+    find ./public/static/js -type f -name "*.js" -exec terser {} -o {} --compress --mangle \;
+    
+    # Generar versiones con hash para cache busting
+    ./scripts/generate-asset-hashes.sh
+    
+    echo "Assets optimizados y listos para CDN"
+  
+  # Configuración de Webpack para producción con CDN
+  webpack.cdn.config.js: |
+    const path = require('path');
+    const { DefinePlugin } = require('webpack');
+    
+    module.exports = {
+      mode: 'production',
+      output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: '[name].[contenthash].js',
+        chunkFilename: '[name].[contenthash].chunk.js',
+        publicPath: process.env.CDN_URL || 'https://cdn.respicare.example.com/',
+        clean: true,
+      },
+      optimization: {
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: 10,
+            },
+            common: {
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+        moduleIds: 'deterministic',
+        runtimeChunk: 'single',
+      },
+      plugins: [
+        new DefinePlugin({
+          'process.env.CDN_URL': JSON.stringify(process.env.CDN_URL || 'https://cdn.respicare.example.com/'),
+        }),
+      ],
+    };
+

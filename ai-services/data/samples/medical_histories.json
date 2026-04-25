@@ -1,0 +1,47 @@
+[
+  {
+    "patient_id": "P001",
+    "text": "Paciente de 45 años con tos seca persistente de 2 semanas, dificultad respiratoria leve, fiebre intermitente de 38°C. Antecedentes de tabaquismo por 20 años. No alergias conocidas.",
+    "language": "es",
+    "metadata": {
+      "source": "emergency_room",
+      "doctor": "Dr. García"
+    }
+  },
+  {
+    "patient_id": "P002",
+    "text": "Mujer de 32 años con dolor de cabeza severo, náuseas y vómitos de 3 días. Fiebre de 39°C. Antecedentes familiares de migraña. Sin signos de rigidez nucal.",
+    "language": "es",
+    "metadata": {
+      "source": "clinic",
+      "doctor": "Dr. López"
+    }
+  },
+  {
+    "patient_id": "P003",
+    "text": "Varón de 58 años diabético con dolor abdominal, diarrea y fiebre de 37.5°C. Antecedentes de hipertensión arterial. Medicación: metformina, losartán.",
+    "language": "es",
+    "metadata": {
+      "source": "hospital",
+      "doctor": "Dr. Martínez"
+    }
+  },
+  {
+    "patient_id": "P004",
+    "text": "Paciente de 28 años con sibilancias, opresión en el pecho y tos nocturna. Antecedentes de asma en la infancia. Alergia a polen. Mejora con inhalador de salbutamol.",
+    "language": "es",
+    "metadata": {
+      "source": "clinic",
+      "doctor": "Dr. Rodríguez"
+    }
+  },
+  {
+    "patient_id": "P005",
+    "text": "Mujer de 65 años con fatiga extrema, debilidad muscular y pérdida de peso de 5 kg en 2 meses. Antecedentes de diabetes tipo 2. Glucosa en ayunas: 180 mg/dL.",
+    "language": "es",
+    "metadata": {
+      "source": "hospital",
+      "doctor": "Dr. Silva"
+    }
+  }
+]

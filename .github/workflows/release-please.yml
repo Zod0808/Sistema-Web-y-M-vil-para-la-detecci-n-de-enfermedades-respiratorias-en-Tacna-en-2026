@@ -1,0 +1,27 @@
+name: Release Please (Semantic Versioning & Changelog)
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        uses: google-github-actions/release-please-action@v4
+        with:
+          release-type: simple
+          package-name: respicare
+          default-branch: ${{ github.ref_name }}
+          manifest-file: .release-please-manifest.json
+          config-file: release-please-config.json
+
+

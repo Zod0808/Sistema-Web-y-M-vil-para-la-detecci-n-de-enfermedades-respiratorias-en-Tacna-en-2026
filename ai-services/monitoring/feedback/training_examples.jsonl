@@ -1,0 +1,2 @@
+{"symptoms": ["tos", "sibilancias", "dificultad respiratoria"], "correct_disease": "asma bronquial", "correct_urgency": "high", "correct_severity": null, "source": "medical_feedback", "feedback_id": "fb_20251103_122530_968639", "timestamp": "2025-11-03T12:25:30.968639"}
+{"symptoms": ["fiebre", "tos", "dificultad respiratoria", "dolor toracico"], "correct_disease": "neumonía", "correct_urgency": "high", "correct_severity": null, "source": "medical_feedback", "feedback_id": "fb_20251103_122530_969638", "timestamp": "2025-11-03T12:25:30.969638"}
