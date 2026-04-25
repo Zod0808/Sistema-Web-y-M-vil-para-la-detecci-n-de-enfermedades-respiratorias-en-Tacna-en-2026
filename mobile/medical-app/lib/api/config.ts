@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     logout: buildEndpoint('/auth/logout'),
     profile: buildEndpoint('/auth/profile'),
     changePassword: buildEndpoint('/auth/change-password'),
+    users: buildEndpoint('/auth/users'),
   },
   
   // Historias Médicas

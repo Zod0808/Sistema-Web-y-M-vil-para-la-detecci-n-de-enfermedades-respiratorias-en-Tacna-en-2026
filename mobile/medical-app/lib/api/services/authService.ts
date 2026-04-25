@@ -66,11 +66,18 @@ export class AuthService {
       API_ENDPOINTS.auth.refreshToken,
       { refreshToken }
     )
-    
+
     setAuthTokens(response.token, response.refreshToken)
     setUser(response.user)
-    
+
     return response
+  }
+
+  async listByRole(role: 'doctor' | 'patient' | 'admin'): Promise<Pick<User, '_id' | 'name' | 'email' | 'role'>[]> {
+    const response = await apiClient.get<{ data: Pick<User, '_id' | 'name' | 'email' | 'role'>[] }>(
+      `${API_ENDPOINTS.auth.users}?role=${role}`
+    )
+    return Array.isArray(response) ? response : (response as any)?.data ?? []
   }
 }
 

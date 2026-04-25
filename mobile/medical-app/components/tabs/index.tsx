@@ -106,7 +106,11 @@ export function DashboardView({ t, setCurrentView }: DashboardViewProps) {
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-primary text-xl font-bold border-2 border-background shadow-lg">
-              CR
+              {user?.avatar
+                ? <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                : user?.name
+                  ? user.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+                  : '?'}
             </div>
             <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
           </div>

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Moon, Languages, ChevronRight, LogOut } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Moon, Languages, ChevronRight, LogOut, Loader2 } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import { ModernCard } from "@/components/ui/ModernCard"
 import type { Translation, Language, ViewState } from "@/lib/translations"
 import { useAppStore } from "@/store/useAppStore"
+import { medicalHistoryService } from "@/lib/api/services/medicalHistoryService"
 import { toast } from "sonner"
 
 interface ProfileViewProps {
@@ -34,6 +35,25 @@ export function ProfileView({
   const user = useAppStore((state) => state.user)
   const logout = useAppStore((state) => state.logout)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [healthProfile, setHealthProfile] = useState<{ age: number | null; diagnosis: string | null } | null>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    setIsLoadingProfile(true)
+    medicalHistoryService
+      .list({ patientId: user._id, limit: 1 })
+      .then((res) => {
+        const histories = Array.isArray(res) ? res : res.data ?? []
+        if (histories.length > 0) {
+          setHealthProfile({ age: histories[0].age ?? null, diagnosis: histories[0].diagnosis ?? null })
+        } else {
+          setHealthProfile({ age: null, diagnosis: null })
+        }
+      })
+      .catch(() => setHealthProfile({ age: null, diagnosis: null }))
+      .finally(() => setIsLoadingProfile(false))
+  }, [user?._id])
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -136,20 +156,24 @@ export function ProfileView({
 
         <h4 className="text-sm font-semibold text-muted-foreground uppercase ml-1 mt-6">{t.profile.health_profile}</h4>
         <ModernCard className="p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">{t.profile.age}</label>
-              <p className="font-medium text-lg">34 años</p>
+          {isLoadingProfile ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Tipo de Sangre</label>
-              <p className="font-medium text-lg">O+</p>
-            </div>
-          </div>
-          <div className="pt-2 border-t">
-            <label className="text-xs text-muted-foreground block mb-1">{t.profile.diagnosis}</label>
-            <p className="font-medium">Asma Leve Intermitente</p>
-          </div>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">{t.profile.age}</label>
+                <p className="font-medium text-lg">
+                  {healthProfile?.age ? `${healthProfile.age} años` : "—"}
+                </p>
+              </div>
+              <div className="pt-2 border-t">
+                <label className="text-xs text-muted-foreground block mb-1">{t.profile.diagnosis}</label>
+                <p className="font-medium">{healthProfile?.diagnosis ?? "—"}</p>
+              </div>
+            </>
+          )}
         </ModernCard>
 
         <ModernButton 

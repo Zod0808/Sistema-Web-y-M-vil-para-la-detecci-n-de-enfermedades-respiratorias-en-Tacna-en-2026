@@ -343,5 +343,36 @@ router.post('/refresh-token', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/v1/auth/users
+ * @desc    List users, optionally filtered by role (e.g. ?role=doctor)
+ * @access  Private
+ */
+router.get('/users', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Token requerido' });
+    }
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+    jwt.verify(token, secret);
+
+    UserModel = initializeUserModel();
+    if (!UserModel) {
+      return res.status(500).json({ success: false, message: 'Sistema no disponible' });
+    }
+
+    const query = { isActive: true };
+    if (req.query.role) query.role = req.query.role;
+
+    const users = await UserModel.find(query).select('name email role avatar');
+
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'No autorizado', error: error.message });
+  }
+});
+
 module.exports = router;
 

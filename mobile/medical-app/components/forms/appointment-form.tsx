@@ -5,19 +5,15 @@ import {
   Save,
   X,
   Calendar,
-  Clock,
-  User,
-  Stethoscope,
-  FileText,
   Loader2,
   MapPin,
   Video,
-  Bell,
-  AlertCircle
+  Bell
 } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import type { Translation, ViewState } from "@/lib/translations"
 import { appointmentService, type CreateAppointmentRequest } from "@/lib/api/services/appointmentService"
+import { authService } from "@/lib/api/services/authService"
 import { createAppointmentOffline, updateAppointmentOffline } from "@/lib/services/offlineOperations"
 import { useAppStore } from "@/store/useAppStore"
 import { toast } from "sonner"
@@ -50,12 +46,12 @@ const REMINDER_OPTIONS = [
   { value: 1440, label: '1 día antes' }
 ]
 
-export function AppointmentForm({ 
-  t, 
-  appointmentToEdit, 
-  onSave, 
+export function AppointmentForm({
+  t: _t,
+  appointmentToEdit,
+  onSave,
   onCancel,
-  setCurrentView 
+  setCurrentView
 }: AppointmentFormProps) {
   const user = useAppStore((state) => state.user)
   const { isOnline } = useNetworkStatus()
@@ -92,17 +88,24 @@ export function AppointmentForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
-  const [availableDoctors, setAvailableDoctors] = useState<Array<{ _id: string; name: string }>>([])
+  const [doctors, setDoctors] = useState<Array<{ _id: string; name: string; email: string }>>([])
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false)
 
-  // Cargar doctores disponibles (simplificado - en producción vendría del backend)
   useEffect(() => {
-    // Por ahora, si el usuario es doctor, puede usar su propio ID
-    // En producción, cargarías una lista de doctores disponibles
     if (user?.role === 'doctor') {
-      setAvailableDoctors([{ _id: user._id, name: user.name }])
+      setDoctors([{ _id: user._id, name: user.name, email: user.email }])
       setDoctorId(user._id)
+    } else {
+      setIsLoadingDoctors(true)
+      authService.listByRole('doctor')
+        .then((list) => {
+          setDoctors(list.map(d => ({ _id: d._id, name: d.name, email: d.email })))
+          if (!doctorId && list.length > 0) setDoctorId(list[0]._id)
+        })
+        .catch(() => setDoctors([]))
+        .finally(() => setIsLoadingDoctors(false))
     }
-  }, [user])
+  }, [user?._id])
 
   // Validación del formulario
   const validateForm = (): boolean => {
@@ -270,9 +273,13 @@ export function AppointmentForm({
                 <p className="text-sm dark:text-white">{user.name}</p>
                 <p className="text-xs text-muted-foreground">Tu perfil médico</p>
               </div>
+            ) : isLoadingDoctors ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 dark:border-slate-700 bg-secondary/20">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Cargando doctores...</span>
+              </div>
             ) : (
-              <input
-                type="text"
+              <select
                 value={doctorId}
                 onChange={(e) => {
                   setDoctorId(e.target.value)
@@ -281,8 +288,12 @@ export function AppointmentForm({
                 className={`w-full px-3 py-2 rounded-lg border ${
                   errors.doctorId ? 'border-red-500' : 'border-border/50 dark:border-slate-700'
                 } bg-background dark:bg-slate-900 text-foreground focus:outline-none focus:ring-2 focus:ring-primary`}
-                placeholder="ID del doctor"
-              />
+              >
+                <option value="">— Selecciona un doctor —</option>
+                {doctors.map(d => (
+                  <option key={d._id} value={d._id}>{d.name}</option>
+                ))}
+              </select>
             )}
             {errors.doctorId && (
               <p className="text-xs text-red-500 mt-1">{errors.doctorId}</p>
