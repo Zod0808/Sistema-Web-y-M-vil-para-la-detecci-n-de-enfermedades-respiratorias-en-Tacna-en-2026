@@ -6,17 +6,19 @@ const TemporalTrends = lazy(() => import('../components/TemporalTrends'));
 const DiseaseReports = lazy(() => import('../components/DiseaseReports'));
 const ShapDashboard = lazy(() => import('../components/ShapDashboard'));
 const AutomaticReportsDashboard = lazy(() => import('../components/AutomaticReportsDashboard'));
+const PatientMonitoringReport = lazy(() => import('../components/PatientMonitoringReport'));
 
 const ANALYTICS_TABS = [
+  { id: 'monitoring', label: '❤️ Monitoreo del Paciente', component: PatientMonitoringReport },
+  { id: 'reports', label: '📋 Reportes Automáticos', component: AutomaticReportsDashboard },
   { id: 'dashboard', label: '📊 Dashboard', component: AnalyticsDashboard },
   { id: 'trends', label: '📈 Tendencias', component: TemporalTrends },
   { id: 'diseases', label: '🦠 Enfermedades', component: DiseaseReports },
   { id: 'shap', label: '🧠 Explicabilidad', component: ShapDashboard },
-  { id: 'reports', label: '📋 Reportes Automáticos', component: AutomaticReportsDashboard },
 ];
 
 function Analytics() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('monitoring');
 
   const handleTabChange = useCallback((tabId) => {
     setActiveTab(tabId);
@@ -25,19 +27,19 @@ function Analytics() {
   const tabs = useMemo(() => ANALYTICS_TABS, []);
 
   const ActiveComponent = useMemo(
-    () => tabs.find(tab => tab.id === activeTab)?.component ?? null,
+    () => tabs.find((tab) => tab.id === activeTab)?.component ?? null,
     [tabs, activeTab]
   );
 
   return (
     <div className="analytics-page">
       <div className="analytics-header">
-        <h1>📊 Centro de Análisis</h1>
-        <p>Herramientas avanzadas para el análisis de datos médicos y tendencias</p>
+        <h1>Centro de Análisis y Monitoreo</h1>
+        <p>Seguimiento de salud del paciente y análisis de datos médicos</p>
       </div>
 
       <div className="analytics-tabs">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
