@@ -16,8 +16,20 @@ import { MemoryRouter } from 'react-router-dom';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import '@testing-library/jest-dom';
 import Navbar from '../../components/Navbar';
+import * as i18nService from '../../services/i18nService';
 
 expect.extend(toHaveNoViolations);
+
+const NAV_TRANSLATIONS = {
+  'nav.brandName': 'RespiCare',
+  'nav.brandSubtitle': 'Sistema de Enfermedades',
+  'nav.home': 'Inicio',
+  'nav.dashboard': 'Estado del Sistema',
+  'nav.analytics': 'Análisis',
+  'nav.map': 'Mapa',
+  'nav.fhir': 'FHIR',
+  'nav.hl7': 'HL7',
+};
 
 // ─── Mock i18n ────────────────────────────────────────────────────────────────
 
@@ -38,6 +50,28 @@ jest.mock('../../services/i18nService', () => ({
   getCurrentLanguage: jest.fn(() => 'es'),
   setLanguage: jest.fn(),
 }));
+
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ isAuthenticated: false, user: null, logout: jest.fn(), loading: false }),
+}));
+
+jest.mock('../../components/ThemeToggle', () =>
+  function MockThemeToggle() {
+    return <div data-testid="theme-toggle" />;
+  }
+);
+
+jest.mock('../../components/LanguageSelector', () =>
+  function MockLanguageSelector() {
+    return <div data-testid="language-selector" />;
+  }
+);
+
+// Re-set t() mock after resetMocks:true clears implementations between tests
+beforeEach(() => {
+  i18nService.t.mockImplementation((key) => NAV_TRANSLATIONS[key] || key);
+  i18nService.getCurrentLanguage.mockReturnValue('es');
+});
 
 const renderNavbar = (path = '/') =>
   render(

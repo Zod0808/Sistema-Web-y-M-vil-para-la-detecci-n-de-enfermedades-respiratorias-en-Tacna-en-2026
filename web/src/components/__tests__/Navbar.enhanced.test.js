@@ -6,6 +6,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import '@testing-library/jest-dom';
 import Navbar from '../Navbar';
 import * as i18nService from '../../services/i18nService';
 
@@ -29,6 +30,15 @@ jest.mock('../LanguageSelector', () => {
   };
 });
 
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    user: null,
+    logout: jest.fn(),
+    loading: false,
+  }),
+}));
+
 const renderWithRouter = (component, initialEntries = ['/']) => {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
@@ -40,6 +50,9 @@ const renderWithRouter = (component, initialEntries = ['/']) => {
 describe('Navbar Enhanced Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // resetMocks:true (react-scripts default) clears jest.fn() implementations
+    // between tests — re-set them here so t() returns the key for link names
+    i18nService.t.mockImplementation((key) => key);
     i18nService.getCurrentLanguage.mockReturnValue('es');
   });
 

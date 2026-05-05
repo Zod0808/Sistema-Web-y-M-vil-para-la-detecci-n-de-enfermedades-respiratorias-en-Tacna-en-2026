@@ -7,6 +7,57 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import Navbar from '../Navbar';
+import * as i18nService from '../../services/i18nService';
+
+const NAV_TRANSLATIONS = {
+  'nav.brandName': 'RespiCare',
+  'nav.brandSubtitle': 'Sistema de Enfermedades Respiratorias',
+  'nav.home': 'Inicio',
+  'nav.dashboard': 'Estado del Sistema',
+  'nav.analytics': 'Análisis',
+  'nav.map': 'Mapa',
+  'nav.fhir': 'FHIR',
+  'nav.hl7': 'HL7',
+};
+
+jest.mock('../../services/i18nService', () => ({
+  t: jest.fn((key) => {
+    const map = {
+      'nav.brandName': 'RespiCare',
+      'nav.brandSubtitle': 'Sistema de Enfermedades Respiratorias',
+      'nav.home': 'Inicio',
+      'nav.dashboard': 'Estado del Sistema',
+      'nav.analytics': 'Análisis',
+      'nav.map': 'Mapa',
+      'nav.fhir': 'FHIR',
+      'nav.hl7': 'HL7',
+    };
+    return map[key] || key;
+  }),
+  getCurrentLanguage: jest.fn(() => 'es'),
+  setLanguage: jest.fn(),
+}));
+
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    user: null,
+    logout: jest.fn(),
+    loading: false,
+  }),
+}));
+
+jest.mock('../ThemeToggle', () =>
+  function MockThemeToggle() {
+    return <div data-testid="theme-toggle" />;
+  }
+);
+
+jest.mock('../LanguageSelector', () =>
+  function MockLanguageSelector() {
+    return <div data-testid="language-selector" />;
+  }
+);
 
 const renderWithRouter = (component) => {
   return render(
@@ -15,6 +66,11 @@ const renderWithRouter = (component) => {
     </BrowserRouter>
   );
 };
+
+beforeEach(() => {
+  i18nService.t.mockImplementation((key) => NAV_TRANSLATIONS[key] || key);
+  i18nService.getCurrentLanguage.mockReturnValue('es');
+});
 
 describe('Navbar Component', () => {
   describe('Component Rendering', () => {

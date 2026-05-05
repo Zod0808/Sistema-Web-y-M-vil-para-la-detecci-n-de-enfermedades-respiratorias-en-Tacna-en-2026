@@ -1,66 +1,86 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Analytics from '../Analytics';
 
-jest.mock('../../components/AnalyticsDashboardSimple', () => ({
+jest.mock('../../components/PatientMonitoringReport', () => ({
   __esModule: true,
-  default: () => <div data-testid="analytics-dashboard">Módulo Dashboard</div>,
+  default: () => <div data-testid="patient-monitoring">Monitoreo Paciente</div>,
+}));
+
+jest.mock('../../components/AutomaticReportsDashboard', () => ({
+  __esModule: true,
+  default: () => <div data-testid="automatic-reports">Reportes Automáticos</div>,
+}));
+
+jest.mock('../../components/AnalyticsDashboard', () => ({
+  __esModule: true,
+  default: () => <div data-testid="analytics-dashboard">Dashboard Análisis</div>,
 }));
 
 jest.mock('../../components/TemporalTrends', () => ({
   __esModule: true,
-  default: () => <div data-testid="temporal-trends">Módulo Tendencias</div>,
+  default: () => <div data-testid="temporal-trends">Tendencias</div>,
 }));
 
 jest.mock('../../components/DiseaseReports', () => ({
   __esModule: true,
-  default: () => <div data-testid="disease-reports">Módulo Enfermedades</div>,
+  default: () => <div data-testid="disease-reports">Enfermedades</div>,
 }));
 
 jest.mock('../../components/ShapDashboard', () => ({
   __esModule: true,
-  default: () => <div data-testid="shap-dashboard">Módulo SHAP</div>,
+  default: () => <div data-testid="shap-dashboard">Explicabilidad</div>,
 }));
 
 describe('Analytics page', () => {
-  it('muestra el encabezado y el dashboard por defecto', async () => {
+  it('renders main heading', () => {
     render(<Analytics />);
-
     expect(screen.getByRole('heading', { name: /Centro de Análisis/i })).toBeInTheDocument();
-    expect(screen.getByText(/Herramientas avanzadas/i)).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('analytics-dashboard')).toBeInTheDocument();
-    });
   });
 
-  it('permite cambiar entre pestañas mostrando el módulo correspondiente', async () => {
+  it('renders subtitle text', () => {
     render(<Analytics />);
-    const user = userEvent.setup();
+    expect(screen.getByText(/Seguimiento de salud/i)).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('analytics-dashboard')).toBeInTheDocument();
-    });
+  it('shows default monitoring tab content after load', async () => {
+    render(<Analytics />);
+    await waitFor(() =>
+      expect(screen.getByTestId('patient-monitoring')).toBeInTheDocument()
+    );
+  });
 
-    await user.click(screen.getByRole('button', { name: /Tendencias/i }));
+  it('switches to Dashboard tab on click', async () => {
+    render(<Analytics />);
+    await waitFor(() => screen.getByTestId('patient-monitoring'));
+    fireEvent.click(screen.getByText(/Dashboard/i));
+    await waitFor(() =>
+      expect(screen.getByTestId('analytics-dashboard')).toBeInTheDocument()
+    );
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('temporal-trends')).toBeInTheDocument();
-    });
+  it('switches to Tendencias tab on click', async () => {
+    render(<Analytics />);
+    await waitFor(() => screen.getByTestId('patient-monitoring'));
+    fireEvent.click(screen.getByText(/Tendencias/i));
+    await waitFor(() =>
+      expect(screen.getByTestId('temporal-trends')).toBeInTheDocument()
+    );
+  });
 
-    await user.click(screen.getByRole('button', { name: /Enfermedades/i }));
+  it('switches to Enfermedades tab on click', async () => {
+    render(<Analytics />);
+    await waitFor(() => screen.getByTestId('patient-monitoring'));
+    fireEvent.click(screen.getByText(/Enfermedades/i));
+    await waitFor(() =>
+      expect(screen.getByTestId('disease-reports')).toBeInTheDocument()
+    );
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('disease-reports')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /Explicabilidad/i }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('shap-dashboard')).toBeInTheDocument();
-    });
+  it('renders tab buttons for all tabs', () => {
+    render(<Analytics />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThanOrEqual(6);
   });
 });
-

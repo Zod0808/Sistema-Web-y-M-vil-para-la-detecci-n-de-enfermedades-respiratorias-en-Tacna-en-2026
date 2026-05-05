@@ -7,6 +7,7 @@ Esta carpeta contiene la documentación técnica de la aplicación móvil.
 ### Documentación Principal
 - **[INICIO_RAPIDO_APK.md](INICIO_RAPIDO_APK.md)** - Guía rápida para generar APK
 - **[GUIA_GENERAR_APK.md](GUIA_GENERAR_APK.md)** - Guía completa para generar APK de Android
+- **[GUIA_EMULADOR_ANDROID.md](GUIA_EMULADOR_ANDROID.md)** - Guía para ejecutar la app en emulador Android
 - **[ANALISIS_ROADMAP.md](ANALISIS_ROADMAP.md)** - Análisis del roadmap y estado de funcionalidades
 
 ### Documentación Adicional

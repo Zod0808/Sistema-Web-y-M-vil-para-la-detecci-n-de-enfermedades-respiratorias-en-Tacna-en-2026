@@ -70,7 +70,7 @@ describe('InteractiveHeatMap component', () => {
       expect(screen.queryByText(/Pocollay/i)).not.toBeInTheDocument();
     });
 
-    expect(axios.get).toHaveBeenCalledWith('http://localhost:3001/api/symptom-reports/heatmap');
+    expect(axios.get).toHaveBeenCalledWith('http://localhost:3001/api/symptom-reports/heatmap', expect.any(Object));
   });
 
   it('muestra mensaje de error y permite reintentar la carga', async () => {

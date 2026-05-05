@@ -1,0 +1,46 @@
+.admin-stats {
+  max-width: 1200px;
+  margin: 0 auto 24px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.admin-stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.1);
+  border: 1px solid #e3f2fd;
+}
+
+.admin-stat-icon {
+  font-size: 2rem;
+}
+
+.admin-stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1565c0;
+  line-height: 1;
+}
+
+.admin-stat-label {
+  font-size: 0.8rem;
+  color: #546e7a;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.admin-current-user {
+  background: #f0f7ff;
+}
+
+.admin-you-badge {
+  font-size: 0.75rem;
+  color: #1565c0;
+  font-weight: 600;
+}

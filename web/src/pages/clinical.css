@@ -1,0 +1,187 @@
+.clinical-page {
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+  padding: 30px 20px;
+}
+
+.clinical-page-header {
+  max-width: 1200px;
+  margin: 0 auto 24px auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.clinical-page-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1565c0;
+  margin: 0;
+}
+
+.clinical-count {
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.clinical-error {
+  max-width: 1200px;
+  margin: 0 auto 20px auto;
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-weight: 500;
+}
+
+.clinical-loading {
+  max-width: 1200px;
+  margin: 60px auto;
+  text-align: center;
+  color: #546e7a;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e3f2fd;
+  border-top-color: #2196f3;
+  border-radius: 50%;
+  animation: clinical-spin 0.8s linear infinite;
+  margin: 0 auto 16px auto;
+}
+
+@keyframes clinical-spin {
+  to { transform: rotate(360deg); }
+}
+
+.clinical-table-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.12);
+  overflow: hidden;
+}
+
+.clinical-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.clinical-table thead {
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+}
+
+.clinical-table thead th {
+  padding: 14px 18px;
+  text-align: left;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.clinical-table tbody tr {
+  border-bottom: 1px solid #f0f4ff;
+  transition: background 0.15s;
+}
+
+.clinical-table tbody tr:hover {
+  background: #f5f9ff;
+}
+
+.clinical-table tbody td {
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  color: #37474f;
+}
+
+.clinical-empty {
+  text-align: center;
+  color: #90a4ae;
+  font-style: italic;
+  padding: 40px !important;
+}
+
+.badge {
+  display: inline-block;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.status-active,
+.status-scheduled,
+.status-completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-inactive,
+.status-cancelled,
+.status-rejected {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-pending,
+.status-rescheduled {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.status-critical,
+.status-emergency {
+  background: #fce4ec;
+  color: #880e4f;
+}
+
+.clinical-pagination {
+  max-width: 1200px;
+  margin: 20px auto 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.clinical-pagination button {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.clinical-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.clinical-pagination span {
+  color: #546e7a;
+  font-size: 0.9rem;
+}
