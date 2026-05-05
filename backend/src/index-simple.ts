@@ -1,6 +1,7 @@
 /**
- * RespiCare Backend API - Simplified Version for Development
- * Temporary version while fixing TypeScript errors
+ * @deprecated — Stub de desarrollo, NO usar en producción.
+ * Entry point de producción: src/index.ts
+ * Este archivo fue un placeholder temporal para validar TypeScript.
  */
 
 import express, { Request, Response, Application } from 'express';

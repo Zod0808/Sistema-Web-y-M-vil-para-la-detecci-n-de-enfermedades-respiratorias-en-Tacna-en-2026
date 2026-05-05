@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
 import { AuthProvider } from './contexts/AuthContext';
+import { I18nProvider } from './contexts/I18nContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initAccessibility } from './utils/accessibility';
 import './App.css';
@@ -38,48 +39,50 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <Suspense fallback={<AppFallback />}>
-            <div className="App">
-              <Navbar />
-              <main role="main" id="main-content">
-                <Routes>
-                  {/* Rutas públicas */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
+    <I18nProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <Suspense fallback={<AppFallback />}>
+              <div className="App">
+                <Navbar />
+                <main role="main" id="main-content">
+                  <Routes>
+                    {/* Rutas públicas */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
 
-                  {/* Rutas protegidas — requieren autenticación */}
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/heatmap" element={<ProtectedRoute><HeatMapPage /></ProtectedRoute>} />
-                  <Route path="/fhir" element={<ProtectedRoute><FhirPage /></ProtectedRoute>} />
-                  <Route path="/hl7" element={<ProtectedRoute><Hl7Page /></ProtectedRoute>} />
+                    {/* Rutas protegidas — requieren autenticación */}
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/heatmap" element={<ProtectedRoute><HeatMapPage /></ProtectedRoute>} />
+                    <Route path="/fhir" element={<ProtectedRoute><FhirPage /></ProtectedRoute>} />
+                    <Route path="/hl7" element={<ProtectedRoute><Hl7Page /></ProtectedRoute>} />
 
-                  {/* Gestión clínica */}
-                  <Route path="/medical-history" element={<ProtectedRoute><MedicalHistoryPage /></ProtectedRoute>} />
-                  <Route path="/appointments" element={<ProtectedRoute><AppointmentsPage /></ProtectedRoute>} />
-                  <Route path="/prescriptions" element={<ProtectedRoute><PrescriptionsPage /></ProtectedRoute>} />
-                  <Route path="/emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
-                  <Route path="/lab-results" element={<ProtectedRoute><LabResultsPage /></ProtectedRoute>} />
-                  <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
-                  <Route path="/consents" element={<ProtectedRoute><ConsentsPage /></ProtectedRoute>} />
-                  <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
+                    {/* Gestión clínica */}
+                    <Route path="/medical-history" element={<ProtectedRoute><MedicalHistoryPage /></ProtectedRoute>} />
+                    <Route path="/appointments" element={<ProtectedRoute><AppointmentsPage /></ProtectedRoute>} />
+                    <Route path="/prescriptions" element={<ProtectedRoute><PrescriptionsPage /></ProtectedRoute>} />
+                    <Route path="/emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
+                    <Route path="/lab-results" element={<ProtectedRoute><LabResultsPage /></ProtectedRoute>} />
+                    <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+                    <Route path="/consents" element={<ProtectedRoute><ConsentsPage /></ProtectedRoute>} />
+                    <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
 
-                  {/* Solo administradores */}
-                  <Route
-                    path="/admin"
-                    element={<ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute>}
-                  />
-                </Routes>
-              </main>
-            </div>
-          </Suspense>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+                    {/* Solo administradores */}
+                    <Route
+                      path="/admin"
+                      element={<ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute>}
+                    />
+                  </Routes>
+                </main>
+              </div>
+            </Suspense>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 

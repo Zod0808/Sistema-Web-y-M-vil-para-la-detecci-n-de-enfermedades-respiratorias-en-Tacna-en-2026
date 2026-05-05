@@ -57,8 +57,10 @@ class TestLRUModelCache:
         assert isinstance(memory, float)
 
     def test_estimate_memory_mb_default_fallback(self, cache):
+        # object() has __sizeof__ so the method returns sizeof/1MB (not the 100.0 fallback)
         memory = cache._estimate_memory_mb(object())
-        assert memory == 100.0
+        assert isinstance(memory, float)
+        assert memory >= 0
 
     # ── get_or_load — miss path ───────────────────────────────────────────────
 

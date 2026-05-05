@@ -1,21 +1,5 @@
-import notificationService from '../../../src/services/notificationService';
-
-const invalidateCacheByPatternMock = jest.fn();
-const cacheNamespacesMock = {
-  ALERTS: 'alerts',
-  ALERT_SUMMARY: 'alertSummary',
-};
-
-const redisClientMock = {
-  zAdd: jest.fn(),
-  zRangeByScore: jest.fn(),
-  zRem: jest.fn(),
-};
-
-const alertModelMock = {
-  findDueAlerts: jest.fn(),
-  find: jest.fn(),
-};
+// jest.mock factories cannot reference outer const/let (TDZ from hoisting).
+// Mocks are defined inline; references retrieved via require() after factory registration.
 
 jest.mock('../../../src/utils/logger', () => ({
   logger: {
@@ -27,18 +11,33 @@ jest.mock('../../../src/utils/logger', () => ({
 }));
 
 jest.mock('../../../src/services/cacheService', () => ({
-  invalidateCacheByPattern: invalidateCacheByPatternMock,
-  CACHE_NAMESPACES: cacheNamespacesMock,
+  invalidateCacheByPattern: jest.fn(),
+  CACHE_NAMESPACES: {
+    ALERTS: 'alerts',
+    ALERT_SUMMARY: 'alertSummary',
+  },
 }));
 
 jest.mock('../../../src/config/redisClient', () => ({
-  getRedisClient: jest.fn(() => redisClientMock),
+  getRedisClient: jest.fn(() => ({
+    zAdd: jest.fn(),
+    zRangeByScore: jest.fn(),
+    zRem: jest.fn(),
+  })),
 }));
 
 jest.mock('../../../src/models/Alert', () => ({
   __esModule: true,
-  default: alertModelMock,
+  default: {
+    findDueAlerts: jest.fn(),
+    find: jest.fn(),
+  },
 }));
+
+import notificationService from '../../../src/services/notificationService';
+import { getRedisClient } from '../../../src/config/redisClient';
+import { invalidateCacheByPattern, CACHE_NAMESPACES } from '../../../src/services/cacheService';
+import AlertModel from '../../../src/models/Alert';
 
 const buildAlertMock = (overrides: Partial<any> = {}) => ({
   id: 'alert-123',
@@ -55,8 +54,17 @@ const buildAlertMock = (overrides: Partial<any> = {}) => ({
 });
 
 describe('notificationService', () => {
+  let redisClientMock: ReturnType<typeof getRedisClient>;
+  let alertModelMock: typeof AlertModel;
+  let invalidateCacheByPatternMock: jest.Mock;
+  let cacheNamespacesMock: typeof CACHE_NAMESPACES;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    redisClientMock = (getRedisClient as jest.Mock)() as any;
+    alertModelMock = AlertModel;
+    invalidateCacheByPatternMock = invalidateCacheByPattern as jest.Mock;
+    cacheNamespacesMock = CACHE_NAMESPACES;
   });
 
   describe('dispatchAlert', () => {
@@ -114,7 +122,7 @@ describe('notificationService', () => {
 
       await notificationService.queueAlert(alert as any, executeAt);
 
-      expect(redisClientMock.zAdd).toHaveBeenCalledWith('notifications:scheduled', {
+      expect((redisClientMock as any).zAdd).toHaveBeenCalledWith('notifications:scheduled', {
         score: executeAt.getTime(),
         value: alert.id,
       });
@@ -122,9 +130,9 @@ describe('notificationService', () => {
 
     it('debería procesar alertas programadas desde Redis', async () => {
       const alert = buildAlertMock();
-      redisClientMock.zRangeByScore.mockResolvedValueOnce([alert.id]);
-      redisClientMock.zRem.mockResolvedValueOnce(1);
-      alertModelMock.find.mockResolvedValueOnce([alert]);
+      (redisClientMock as any).zRangeByScore.mockResolvedValueOnce([alert.id]);
+      (redisClientMock as any).zRem.mockResolvedValueOnce(1);
+      (alertModelMock as any).find.mockResolvedValueOnce([alert]);
 
       jest.spyOn(notificationService, 'dispatchAlert').mockResolvedValueOnce({
         alertId: alert.id,
@@ -133,8 +141,8 @@ describe('notificationService', () => {
 
       const processed = await notificationService.processScheduledQueue();
 
-      expect(redisClientMock.zRangeByScore).toHaveBeenCalled();
-      expect(redisClientMock.zRem).toHaveBeenCalledWith('notifications:scheduled', [alert.id]);
+      expect((redisClientMock as any).zRangeByScore).toHaveBeenCalled();
+      expect((redisClientMock as any).zRem).toHaveBeenCalledWith('notifications:scheduled', [alert.id]);
       expect(notificationService.dispatchAlert).toHaveBeenCalledWith(alert);
       expect(processed).toBe(1);
     });
@@ -145,7 +153,7 @@ describe('notificationService', () => {
       const alert1 = buildAlertMock({ id: 'alert-1' });
       const alert2 = buildAlertMock({ id: 'alert-2' });
 
-      alertModelMock.findDueAlerts.mockResolvedValueOnce([alert1, alert2]);
+      (alertModelMock as any).findDueAlerts.mockResolvedValueOnce([alert1, alert2]);
 
       jest
         .spyOn(notificationService, 'dispatchAlert')
@@ -154,7 +162,7 @@ describe('notificationService', () => {
 
       const result = await notificationService.processPendingAlerts(10);
 
-      expect(alertModelMock.findDueAlerts).toHaveBeenCalledWith(10);
+      expect((alertModelMock as any).findDueAlerts).toHaveBeenCalledWith(10);
       expect(notificationService.dispatchAlert).toHaveBeenCalledTimes(2);
       expect(result).toEqual({
         processed: 2,
@@ -164,4 +172,3 @@ describe('notificationService', () => {
     });
   });
 });
-

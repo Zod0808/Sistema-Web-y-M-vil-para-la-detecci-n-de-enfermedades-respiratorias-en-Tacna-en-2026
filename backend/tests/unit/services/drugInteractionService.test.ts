@@ -1,4 +1,5 @@
-import drugInteractionService, { drugInteractionService as namedExport } from '../../../src/services/drugInteractionService';
+// jest.mock factories are hoisted before const declarations.
+// The mock post fn is stored inside the factory and exposed via _mockPost.
 
 jest.mock('../../../src/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
@@ -12,18 +13,26 @@ jest.mock('../../../src/config/config', () => ({
   },
 }));
 
-const mockPost = jest.fn();
-jest.mock('axios', () => ({
-  create: jest.fn().mockReturnValue({ post: mockPost }),
-}));
+jest.mock('axios', () => {
+  const post = jest.fn();
+  return {
+    create: jest.fn(() => ({ post })),
+    _mockPost: post,
+  };
+});
 
-const axios = require('axios');
+import drugInteractionService, { drugInteractionService as namedExport } from '../../../src/services/drugInteractionService';
+
+const axiosMock = require('axios') as any;
 
 describe('drugInteractionService', () => {
+  let mockPost: jest.Mock;
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset the client so it's recreated with the mock
     (drugInteractionService as any).client = null;
+    mockPost = axiosMock._mockPost;
   });
 
   describe('checkInteractions', () => {

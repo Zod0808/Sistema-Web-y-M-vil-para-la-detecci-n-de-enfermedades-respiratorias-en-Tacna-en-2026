@@ -185,6 +185,15 @@ export function enhanceFocusIndicators() {
 }
 
 /**
+ * Actualiza el atributo lang del documento (necesario para lectores de pantalla)
+ */
+export function setDocumentLang(langCode) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = langCode;
+  }
+}
+
+/**
  * Inicializa mejoras de accesibilidad
  */
 export function initAccessibility() {

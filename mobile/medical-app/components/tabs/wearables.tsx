@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import {
   HeartPulse, Activity, Moon, RefreshCw, Zap, Bed, AlertTriangle,
-  Play, Pause, Watch, Smartphone, Database, CheckCircle2,
+  Play, Pause, Watch, Smartphone, Database, CheckCircle2, Wifi, WifiOff,
 } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import { ModernCard } from "@/components/ui/ModernCard"
@@ -12,6 +12,8 @@ import { wearableService, type WearableHistoryEntry } from "@/lib/api/services/w
 import { useAppStore } from "@/store/useAppStore"
 import { toast } from "sonner"
 import { emulatorSensors, type Scenario } from "@/lib/services/emulatorSensors"
+import { wearableWs, type WsAlert } from "@/lib/services/wearableWebSocket"
+import { healthConnect } from "@/lib/services/healthConnectService"
 
 interface WearablesViewProps {
   t: Translation
@@ -26,8 +28,8 @@ const SCENARIOS: { id: Scenario; label: string; icon: React.ReactNode; color: st
   { id: 'alert_spo2', label: 'Alerta',    icon: <AlertTriangle className="w-4 h-4" />,  color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',             desc: '105 BPM · SpO2 88%' },
 ]
 
-const TICK_MS = 3000
-const SYNC_MS = 30000
+const TICK_MS = 3000   // Genera nueva lectura local cada 3 s
+const HC_POLL_MS = 5000 // Intenta leer Health Connect cada 5 s cuando está activo
 
 export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps) {
   const user = useAppStore((state) => state.user)
@@ -42,13 +44,40 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true)
   const [activeScenario, setActiveScenario] = useState<Scenario>('active')
   const [isLive, setIsLive] = useState(false)
+  const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected')
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [history, setHistory] = useState<WearableHistoryEntry[]>([])
   const [dbCount, setDbCount] = useState<number>(0)
+  const [hcAvailable, setHcAvailable] = useState(false)
+  const [activeAlerts, setActiveAlerts] = useState<WsAlert[]>([])
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const syncRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hcRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // ── Health Connect check ──────────────────────────────────────────────────
+  useEffect(() => {
+    healthConnect.isAvailable().then(setHcAvailable)
+  }, [])
+
+  // ── WebSocket setup ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const unsubStatus = wearableWs.onStatus(setWsStatus)
+    const unsubAlert = wearableWs.onAlert((alert) => {
+      setActiveAlerts((prev) => [alert, ...prev].slice(0, 5))
+      const toastFn = alert.level === 'critical' ? toast.error : toast.warning
+      toastFn(`${alert.title}: ${alert.message}`, { duration: alert.level === 'critical' ? 8000 : 5000 })
+    })
+
+    wearableWs.connect()
+
+    return () => {
+      unsubStatus()
+      unsubAlert()
+      wearableWs.disconnect()
+    }
+  }, [])
+
+  // ── Load initial data ─────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
     const entries = await wearableService.getHistory(5)
     setHistory(entries)
@@ -83,42 +112,50 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
 
   useEffect(() => { loadMetrics() }, [loadMetrics])
 
+  // ── Live mode ─────────────────────────────────────────────────────────────
+  const startLive = useCallback(() => {
+    setIsLive(true)
+    if (tickRef.current) clearInterval(tickRef.current)
+
+    // Tick: genera lectura local Y la envía por WebSocket
+    tickRef.current = setInterval(() => {
+      const r = emulatorSensors.tick()
+      setMetrics({ heartRate: r.heartRate, steps: r.steps, spO2: r.spO2, lastSync: r.lastSync, provider: r.provider })
+      // Envía por WebSocket (en tiempo real al backend)
+      wearableWs.sendReading(r)
+    }, TICK_MS)
+
+    // Health Connect: lee datos reales si está disponible (cada 5 s)
+    if (hcAvailable) {
+      hcRef.current = setInterval(async () => {
+        const hcReading = await healthConnect.getLatestReading(1)
+        if (hcReading) {
+          setMetrics({ heartRate: hcReading.heartRate, steps: hcReading.steps, spO2: hcReading.spO2, lastSync: hcReading.lastSync, provider: hcReading.provider })
+          wearableWs.sendReading(hcReading)
+        }
+      }, HC_POLL_MS)
+    }
+  }, [hcAvailable])
+
+  const stopLive = useCallback(() => {
+    setIsLive(false)
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+    if (hcRef.current) { clearInterval(hcRef.current); hcRef.current = null }
+  }, [])
+
+  useEffect(() => () => { stopLive() }, [stopLive])
+
   const handleScenario = (id: Scenario) => {
     setActiveScenario(id)
     const reading = emulatorSensors.applyScenario(id)
     setMetrics({ heartRate: reading.heartRate, steps: reading.steps, spO2: reading.spO2, lastSync: reading.lastSync, provider: reading.provider })
+    wearableWs.sendReading(reading) // envío inmediato al cambiar escenario
     if (!isLive) startLive()
-  }
-
-  const startLive = () => {
-    setIsLive(true)
-    if (tickRef.current) clearInterval(tickRef.current)
-    if (syncRef.current) clearInterval(syncRef.current)
-
-    tickRef.current = setInterval(() => {
-      const r = emulatorSensors.tick()
-      setMetrics({ heartRate: r.heartRate, steps: r.steps, spO2: r.spO2, lastSync: r.lastSync, provider: r.provider })
-    }, TICK_MS)
-
-    syncRef.current = setInterval(async () => {
-      const r = emulatorSensors.current
-      if (!r) return
-      try {
-        await wearableService.syncMetrics({ heartRate: r.heartRate, spO2: r.spO2, steps: r.steps, lastSync: r.lastSync })
-        setDbCount(c => c + 1)
-        loadHistory()
-      } catch { /* silenciar */ }
-    }, SYNC_MS)
-  }
-
-  const stopLive = () => {
-    setIsLive(false)
-    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
-    if (syncRef.current) { clearInterval(syncRef.current); syncRef.current = null }
   }
 
   const toggleLive = () => isLive ? stopLive() : startLive()
 
+  // ── Sincronización manual (fallback HTTP) ─────────────────────────────────
   const handleSync = async () => {
     setIsLoading(true)
     setSyncStatus('idle')
@@ -139,8 +176,7 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
     }
   }
 
-  useEffect(() => () => { stopLive() }, [])
-
+  // ── Colors ────────────────────────────────────────────────────────────────
   const hrColor =
     (metrics.heartRate ?? 0) > 130 ? 'text-red-500' :
     (metrics.heartRate ?? 0) > 100 ? 'text-orange-500' :
@@ -151,7 +187,6 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
     (metrics.spO2 ?? 100) < 94 ? 'text-orange-500' :
     'text-blue-500'
 
-  // Colores para el watch face (fondo oscuro → versiones más claras)
   const watchHrColor =
     (metrics.heartRate ?? 0) > 130 ? 'text-red-400' :
     (metrics.heartRate ?? 0) > 100 ? 'text-orange-400' :
@@ -161,6 +196,8 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
     (metrics.spO2 ?? 100) < 90 ? 'text-red-400' :
     (metrics.spO2 ?? 100) < 94 ? 'text-orange-400' :
     'text-blue-300'
+
+  const wsConnected = wsStatus === 'connected'
 
   return (
     <div className="p-6 space-y-5 pb-32 animate-in slide-in-from-bottom-8 duration-500">
@@ -172,11 +209,22 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
             <Watch className="w-6 h-6 text-primary" />
             {t.wearables?.title ?? 'Wearables'}
           </h2>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-3 mt-1">
             <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
             <p className="text-xs font-medium text-muted-foreground">
-              {isLive ? 'En vivo · Wear OS Emulator' : 'Pausado'}
+              {isLive
+                ? (hcAvailable ? 'En vivo · Health Connect' : 'En vivo · Wear OS Emulator')
+                : 'Pausado'}
             </p>
+            {/* Indicador WebSocket */}
+            <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+              wsConnected
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+            }`}>
+              {wsConnected ? <Wifi className="w-2.5 h-2.5" /> : <WifiOff className="w-2.5 h-2.5" />}
+              {wsConnected ? 'WS' : 'WS off'}
+            </span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -188,6 +236,34 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
           </ModernButton>
         </div>
       </div>
+
+      {/* ── Alertas activas ── */}
+      {activeAlerts.length > 0 && (
+        <div className="space-y-2">
+          {activeAlerts.map((alert, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-3 p-3 rounded-xl border text-sm ${
+                alert.level === 'critical'
+                  ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300'
+                  : 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/30 dark:border-orange-800 dark:text-orange-300'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-bold leading-tight">{alert.title}</p>
+                <p className="text-[11px] mt-0.5 opacity-80">{alert.message}</p>
+              </div>
+              <button
+                className="ml-auto text-xs opacity-60 hover:opacity-100"
+                onClick={() => setActiveAlerts(prev => prev.filter((_, j) => j !== i))}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Emulador Wear OS — flujo de datos ── */}
       <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 p-4 shadow-xl">
@@ -207,11 +283,13 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
             )}
           </div>
 
-          {/* Flujo: Watch → Phone → DB */}
+          {/* Flujo: Watch → Phone → WS → DB */}
           <div className="flex-1 flex items-center justify-between">
             <div className="flex flex-col items-center gap-1">
               <Watch className="w-5 h-5 text-blue-300" />
-              <span className="text-[9px] text-blue-300 font-medium">Wear OS</span>
+              <span className="text-[9px] text-blue-300 font-medium">
+                {hcAvailable ? 'Health\nConnect' : 'Wear OS'}
+              </span>
             </div>
 
             <div className="flex items-center gap-0.5 flex-1 justify-center px-1">
@@ -226,31 +304,33 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
 
             <div className="flex flex-col items-center gap-1">
               <Smartphone className="w-5 h-5 text-slate-300" />
-              <span className="text-[9px] text-slate-300 font-medium">Teléfono</span>
+              <span className="text-[9px] text-slate-300 font-medium">App</span>
             </div>
 
             <div className="flex items-center gap-0.5 flex-1 justify-center px-1">
               {[0, 150, 300].map(delay => (
                 <span
                   key={delay}
-                  className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'success' ? 'bg-green-400 animate-bounce' : syncStatus === 'error' ? 'bg-red-400' : 'bg-slate-600'}`}
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    wsConnected ? 'bg-green-400 animate-bounce' :
+                    wsStatus === 'error' ? 'bg-red-400' : 'bg-slate-600'
+                  }`}
                   style={{ animationDelay: `${delay}ms` }}
                 />
               ))}
             </div>
 
             <div className="flex flex-col items-center gap-1">
-              <Database className={`w-5 h-5 ${syncStatus === 'success' ? 'text-green-400' : 'text-slate-400'}`} />
-              <span className={`text-[9px] font-medium ${syncStatus === 'success' ? 'text-green-400' : 'text-slate-400'}`}>
-                Backend
+              <Database className={`w-5 h-5 ${wsConnected ? 'text-green-400' : 'text-slate-400'}`} />
+              <span className={`text-[9px] font-medium ${wsConnected ? 'text-green-400' : 'text-slate-400'}`}>
+                {wsConnected ? 'WS' : 'HTTP'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Contador de registros en BD */}
         <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2">
-          <span className="text-[10px] text-slate-400">Registros en BD (paciente actual)</span>
+          <span className="text-[10px] text-slate-400">Lecturas guardadas · paciente actual</span>
           <div className="flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3 text-green-400" />
             <span className="text-[11px] font-bold text-green-400">{dbCount} lecturas</span>
@@ -313,7 +393,10 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
             {metrics.spO2 != null && <span className="text-sm font-normal text-muted-foreground">%</span>}
           </p>
           {(metrics.spO2 ?? 100) < 90 && (
-            <p className="text-[10px] text-red-500 font-bold">Nivel bajo</p>
+            <p className="text-[10px] text-red-500 font-bold animate-pulse">⚠ Nivel crítico</p>
+          )}
+          {(metrics.spO2 ?? 100) >= 90 && (metrics.spO2 ?? 100) < 94 && (
+            <p className="text-[10px] text-orange-500 font-bold">Nivel bajo</p>
           )}
         </ModernCard>
         <ModernCard variant="glass" className="p-4 space-y-2">
@@ -350,16 +433,16 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
         </div>
       )}
 
-      {/* ── Última sincronización ── */}
+      {/* ── Proveedor activo ── */}
       {metrics.lastSync && (
         <p className="text-xs text-center text-muted-foreground">
-          Última lectura: {new Date(metrics.lastSync).toLocaleString('es-ES', {
+          {metrics.provider ?? 'Sensor'} · {new Date(metrics.lastSync).toLocaleString('es-ES', {
             day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
           })}
         </p>
       )}
 
-      {/* ── Botón sincronizar manual ── */}
+      {/* ── Botón sincronizar manual (fallback HTTP) ── */}
       <ModernButton
         className="w-full h-14 text-lg shadow-xl shadow-primary/10 rounded-2xl"
         onClick={handleSync}
@@ -371,7 +454,7 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
         ) : syncStatus === 'success' ? (
           <><CheckCircle2 className="w-5 h-5 mr-2 text-green-500" />Guardado en BD</>
         ) : (
-          <><Database className="w-5 h-5 mr-2" />Sincronizar con backend</>
+          <><Database className="w-5 h-5 mr-2" />Sincronizar (HTTP)</>
         )}
       </ModernButton>
     </div>

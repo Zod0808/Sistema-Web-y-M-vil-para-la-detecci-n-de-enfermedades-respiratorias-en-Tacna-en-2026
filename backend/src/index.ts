@@ -1,3 +1,10 @@
+/**
+ * ENTRY POINT DE PRODUCCIÓN — RespiCare Backend API
+ * Contiene todas las rutas, middleware, jobs, telemetría y observabilidad.
+ * Scripts: "npm start" (prod) | "npm run dev:original" (dev con nodemon)
+ */
+
+import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -61,9 +68,11 @@ import { percentileMetricsMiddleware } from './metrics/percentileMetrics';
 import { initMongoDBMonitoring } from './monitoring/mongodbMonitoring';
 import { initTelemetry, shutdownTelemetry } from './telemetry/tracing';
 import { initSentry } from './utils/sentry';
+import { attachWearableWebSocket } from './sockets/wearableSocketHandler';
 
 class App {
   public app: express.Application;
+  private httpServer: ReturnType<typeof createServer>;
 
   constructor() {
     // Iniciar Sentry (no bloqueante si falla)
@@ -72,12 +81,14 @@ class App {
     // Iniciar Telemetría (no bloqueante si falla)
     initTelemetry().catch(() => {});
     this.app = express();
+    this.httpServer = createServer(this.app);
     this.initializeMiddlewares();
     this.initializeRoutes();
     this.initializeErrorHandling();
     this.initializeDatabase();
     this.initializeCache();
     this.initializeJobs();
+    attachWearableWebSocket(this.httpServer);
   }
 
   private initializeMiddlewares(): void {
@@ -333,17 +344,18 @@ class App {
     const port = config.server.port;
     const host = config.server.host;
 
-    this.app.listen(port, host, () => {
+    this.httpServer.listen(port, host, () => {
       logger.info(`🚀 Servidor ejecutándose en http://${host}:${port}`);
       logger.info(`📚 Documentación disponible en http://${host}:${port}/api/docs`);
       logger.info(`🏥 Health check disponible en http://${host}:${port}/health`);
+      logger.info(`🔌 WebSocket wearables en ws://${host}:${port}/ws/wearables`);
       logger.info(`🌍 Entorno: ${config.server.env}`);
     });
   }
 }
 
 // Crear instancia de la aplicación
-const app = new App();
+const appInstance = new App();
 
 // Manejar errores no capturados
 process.on('uncaughtException', (err: Error) => {
@@ -379,7 +391,12 @@ process.on('SIGINT', () => {
 
 // Iniciar servidor solo si no estamos en modo test
 if (process.env.NODE_ENV !== 'test') {
-  app.listen();
+  appInstance.listen();
 }
 
-export default app;
+// Some tests use `request(app)` (expects Express app).
+// Others use `const app = appInstance.app` (expects App class with .app property).
+// Adding a self-referencing .app property satisfies both patterns.
+const expressApp = appInstance.app as typeof appInstance.app & { app: typeof appInstance.app };
+expressApp.app = expressApp;
+export default expressApp;

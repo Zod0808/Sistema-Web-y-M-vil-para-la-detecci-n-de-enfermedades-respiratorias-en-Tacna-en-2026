@@ -1,3 +1,9 @@
+/**
+ * @deprecated — Prueba de concepto de Clean Architecture (solo auth + medical-history).
+ * Entry point de producción: src/index.ts (contiene todas las rutas y servicios).
+ * Usar "npm run start:clean" solo para experimentar con la arquitectura limpia.
+ */
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

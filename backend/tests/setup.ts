@@ -1,33 +1,9 @@
 /**
- * Jest test setup configuration
- * IMPORTANT: Environment variables must be set BEFORE any imports
+ * Jest test setup — env vars are pre-loaded by tests/env.setup.ts via setupFiles.
+ * This file runs after the Jest framework is available (setupFilesAfterEnv).
  */
 
-// ============================================
-// SET ENVIRONMENT VARIABLES FIRST (before any imports)
-// ============================================
-process.env.NODE_ENV = 'test';
-process.env.PORT = '3001';
-process.env.HOST = 'localhost';
-process.env.JWT_SECRET = 'test-jwt-secret';
-process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret';
-process.env.JWT_EXPIRE = '7d';
-process.env.JWT_REFRESH_EXPIRE = '30d';
-process.env.MONGODB_URI = 'mongodb://localhost:27017/respicare-test';
-process.env.REDIS_URL = 'redis://localhost:6379';
-process.env.CORS_ORIGINS = 'http://localhost:3000';
-process.env.AI_SERVICE_URL = 'http://localhost:8000';
-process.env.AI_SERVICE_API_KEY = 'test-api-key';
-process.env.RATE_LIMIT_WINDOW_MS = '60000';
-process.env.RATE_LIMIT_MAX_REQUESTS = '100000';
-process.env.INTERNAL_SERVICE_TOKENS = 'internal-test-token';
-process.env.CRITICAL_ALERT_ROLES = 'doctor,admin';
-process.env.ALERTS_SCHEDULED_INTERVAL_MS = '15000';
-process.env.ALERTS_PENDING_INTERVAL_MS = '20000';
-
-// ============================================
-// NOW WE CAN IMPORT MODULES
-// ============================================
+// ── Mocks & test framework setup ─────────────────────────────────────────────
 type RedisEntry = { value: string; expiresAt?: number };
 const redisStore = new Map<string, RedisEntry>();
 
