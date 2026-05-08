@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import {
   HeartPulse, Activity, Moon, RefreshCw, Zap, Bed, AlertTriangle,
   Play, Pause, Watch, Smartphone, Database, CheckCircle2, Wifi, WifiOff,
+  Bluetooth, BluetoothConnected, BluetoothOff, BluetoothSearching,
 } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import { ModernCard } from "@/components/ui/ModernCard"
@@ -13,7 +14,7 @@ import { useAppStore } from "@/store/useAppStore"
 import { toast } from "sonner"
 import { emulatorSensors, type Scenario } from "@/lib/services/emulatorSensors"
 import { wearableWs, type WsAlert } from "@/lib/services/wearableWebSocket"
-import { healthConnect } from "@/lib/services/healthConnectService"
+import { useVitalsSource } from "@/lib/services/useVitalsSource"
 
 interface WearablesViewProps {
   t: Translation
@@ -28,36 +29,30 @@ const SCENARIOS: { id: Scenario; label: string; icon: React.ReactNode; color: st
   { id: 'alert_spo2', label: 'Alerta',    icon: <AlertTriangle className="w-4 h-4" />,  color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',             desc: '105 BPM · SpO2 88%' },
 ]
 
-const TICK_MS = 3000   // Genera nueva lectura local cada 3 s
-const HC_POLL_MS = 5000 // Intenta leer Health Connect cada 5 s cuando está activo
-
 export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps) {
   const user = useAppStore((state) => state.user)
 
-  const [metrics, setMetrics] = useState({
-    heartRate: null as number | null,
-    steps:     null as number | null,
-    spO2:      null as number | null,
-    lastSync:  null as string | null,
-    provider:  null as string | null,
-  })
+  // ── Fuente de vitales A+B+C ───────────────────────────────────────────────
+  const {
+    metrics,
+    source,
+    bleStatus,
+    isLive,
+    hcAvailable,
+    startLive,
+    stopLive,
+    connectBle,
+    disconnectBle,
+    applyScenario: applyVitalsScenario,
+  } = useVitalsSource()
+
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true)
   const [activeScenario, setActiveScenario] = useState<Scenario>('active')
-  const [isLive, setIsLive] = useState(false)
   const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected')
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [history, setHistory] = useState<WearableHistoryEntry[]>([])
   const [dbCount, setDbCount] = useState<number>(0)
-  const [hcAvailable, setHcAvailable] = useState(false)
   const [activeAlerts, setActiveAlerts] = useState<WsAlert[]>([])
-
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const hcRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // ── Health Connect check ──────────────────────────────────────────────────
-  useEffect(() => {
-    healthConnect.isAvailable().then(setHcAvailable)
-  }, [])
 
   // ── WebSocket setup ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -88,20 +83,11 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
     setIsLoadingMetrics(true)
     try {
       const data = await wearableService.getMetrics()
-      if (data.heartRate) {
-        const base = {
-          heartRate: data.heartRate,
-          steps:     data.steps ?? 4000,
-          spO2:      data.spO2 ?? 97,
-          lastSync:  data.lastSync ?? new Date().toISOString(),
-          provider:  'Wear OS Emulator',
-        }
-        emulatorSensors.init(base)
-        setMetrics(base)
-        setDbCount(data.dataPoints ?? 0)
-      } else {
-        emulatorSensors.init({ heartRate: 78, steps: 4000, spO2: 97 })
-      }
+      const base = data.heartRate
+        ? { heartRate: data.heartRate, steps: data.steps ?? 4000, spO2: data.spO2 ?? 97 }
+        : { heartRate: 78, steps: 4000, spO2: 97 }
+      emulatorSensors.init(base)
+      setDbCount(data.dataPoints ?? 0)
     } catch {
       emulatorSensors.init({ heartRate: 78, steps: 4000, spO2: 97 })
     } finally {
@@ -112,48 +98,25 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
 
   useEffect(() => { loadMetrics() }, [loadMetrics])
 
-  // ── Live mode ─────────────────────────────────────────────────────────────
-  const startLive = useCallback(() => {
-    setIsLive(true)
-    if (tickRef.current) clearInterval(tickRef.current)
-
-    // Tick: genera lectura local Y la envía por WebSocket
-    tickRef.current = setInterval(() => {
-      const r = emulatorSensors.tick()
-      setMetrics({ heartRate: r.heartRate, steps: r.steps, spO2: r.spO2, lastSync: r.lastSync, provider: r.provider })
-      // Envía por WebSocket (en tiempo real al backend)
-      wearableWs.sendReading(r)
-    }, TICK_MS)
-
-    // Health Connect: lee datos reales si está disponible (cada 5 s)
-    if (hcAvailable) {
-      hcRef.current = setInterval(async () => {
-        const hcReading = await healthConnect.getLatestReading(1)
-        if (hcReading) {
-          setMetrics({ heartRate: hcReading.heartRate, steps: hcReading.steps, spO2: hcReading.spO2, lastSync: hcReading.lastSync, provider: hcReading.provider })
-          wearableWs.sendReading(hcReading)
-        }
-      }, HC_POLL_MS)
-    }
-  }, [hcAvailable])
-
-  const stopLive = useCallback(() => {
-    setIsLive(false)
-    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
-    if (hcRef.current) { clearInterval(hcRef.current); hcRef.current = null }
-  }, [])
-
-  useEffect(() => () => { stopLive() }, [stopLive])
-
   const handleScenario = (id: Scenario) => {
     setActiveScenario(id)
-    const reading = emulatorSensors.applyScenario(id)
-    setMetrics({ heartRate: reading.heartRate, steps: reading.steps, spO2: reading.spO2, lastSync: reading.lastSync, provider: reading.provider })
-    wearableWs.sendReading(reading) // envío inmediato al cambiar escenario
-    if (!isLive) startLive()
+    applyVitalsScenario(id)
   }
 
   const toggleLive = () => isLive ? stopLive() : startLive()
+
+  // ── BLE helpers ───────────────────────────────────────────────────────────
+  const handleConnectBle = async () => {
+    toast.info('Buscando wearable BLE...')
+    const ok = await connectBle()
+    if (ok === false) toast.error('No se encontró ningún wearable BLE')
+    else if (bleStatus === 'connected') toast.success('Wearable BLE conectado')
+  }
+
+  const handleDisconnectBle = async () => {
+    await disconnectBle()
+    toast.info('Wearable BLE desconectado')
+  }
 
   // ── Sincronización manual (fallback HTTP) ─────────────────────────────────
   const handleSync = async () => {
@@ -161,7 +124,13 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
     setSyncStatus('idle')
     try {
       const r = emulatorSensors.current ?? emulatorSensors.applyScenario(activeScenario)
-      await wearableService.syncMetrics({ heartRate: r.heartRate, spO2: r.spO2, steps: r.steps, lastSync: new Date().toISOString() })
+      const payload = {
+        heartRate: metrics.heartRate ?? r.heartRate,
+        spO2:      metrics.spO2      ?? r.spO2,
+        steps:     metrics.steps     ?? r.steps,
+        lastSync:  new Date().toISOString(),
+      }
+      await wearableService.syncMetrics(payload)
       setSyncStatus('success')
       setDbCount(c => c + 1)
       loadHistory()
@@ -209,13 +178,24 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
             <Watch className="w-6 h-6 text-primary" />
             {t.wearables?.title ?? 'Wearables'}
           </h2>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
             <p className="text-xs font-medium text-muted-foreground">
               {isLive
-                ? (hcAvailable ? 'En vivo · Health Connect' : 'En vivo · Wear OS Emulator')
+                ? source === 'ble'          ? 'En vivo · BLE Wearable'
+                : source === 'healthconnect' ? 'En vivo · Health Connect'
+                :                             'En vivo · Emulador'
                 : 'Pausado'}
             </p>
+            {/* Indicador fuente A+B+C */}
+            <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+              source === 'ble'           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+              : source === 'healthconnect' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+              :                             'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+            }`}>
+              {source === 'ble' ? <BluetoothConnected className="w-2.5 h-2.5" /> : <Watch className="w-2.5 h-2.5" />}
+              {source === 'ble' ? 'BLE' : source === 'healthconnect' ? 'HC' : 'EMU'}
+            </span>
             {/* Indicador WebSocket */}
             <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
               wsConnected
@@ -286,9 +266,11 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
           {/* Flujo: Watch → Phone → WS → DB */}
           <div className="flex-1 flex items-center justify-between">
             <div className="flex flex-col items-center gap-1">
-              <Watch className="w-5 h-5 text-blue-300" />
-              <span className="text-[9px] text-blue-300 font-medium">
-                {hcAvailable ? 'Health\nConnect' : 'Wear OS'}
+              {source === 'ble'
+                ? <BluetoothConnected className="w-5 h-5 text-blue-300" />
+                : <Watch className="w-5 h-5 text-blue-300" />}
+              <span className="text-[9px] text-blue-300 font-medium text-center leading-tight">
+                {source === 'ble' ? 'BLE\nGATT' : source === 'healthconnect' ? 'Health\nConnect' : 'Wear OS\nEmu'}
               </span>
             </div>
 
@@ -336,6 +318,75 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
             <span className="text-[11px] font-bold text-green-400">{dbCount} lecturas</span>
           </div>
         </div>
+      </div>
+
+      {/* ── Panel BLE (Opción A) ── */}
+      <div className="rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {bleStatus === 'connected'  ? <BluetoothConnected className="w-4 h-4 text-blue-600 dark:text-blue-400" /> :
+             bleStatus === 'scanning' || bleStatus === 'connecting'
+                                        ? <BluetoothSearching className="w-4 h-4 text-blue-500 animate-pulse" /> :
+             bleStatus === 'error'      ? <BluetoothOff className="w-4 h-4 text-red-500" /> :
+                                          <Bluetooth className="w-4 h-4 text-blue-400" />}
+            <span className="text-sm font-bold text-blue-800 dark:text-blue-200">
+              BLE Wearable (Opción A)
+            </span>
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+            bleStatus === 'connected'  ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
+            bleStatus === 'scanning'   ? 'bg-yellow-100 text-yellow-700' :
+            bleStatus === 'connecting' ? 'bg-orange-100 text-orange-700' :
+            bleStatus === 'error'      ? 'bg-red-100 text-red-700' :
+            bleStatus === 'unavailable'? 'bg-gray-100 text-gray-500' :
+                                         'bg-gray-100 text-gray-500'
+          }`}>
+            {bleStatus === 'connected'   ? 'Conectado'  :
+             bleStatus === 'scanning'    ? 'Buscando…'  :
+             bleStatus === 'connecting'  ? 'Conectando…':
+             bleStatus === 'error'       ? 'Error'       :
+             bleStatus === 'unavailable' ? 'No disponible' : 'Desconectado'}
+          </span>
+        </div>
+
+        <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
+          Conexión directa GATT — Heart Rate (0x2A37) + SpO₂ (0x2A5F).
+          {hcAvailable
+            ? ' Health Connect activo como respaldo (Opción B).'
+            : ' Emulador activo como respaldo (Opción C).'}
+        </p>
+
+        <div className="flex gap-2">
+          {bleStatus === 'connected' ? (
+            <ModernButton
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
+              onClick={handleDisconnectBle}
+            >
+              <BluetoothOff className="w-3.5 h-3.5 mr-1" /> Desconectar BLE
+            </ModernButton>
+          ) : (
+            <ModernButton
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
+              disabled={bleStatus === 'scanning' || bleStatus === 'connecting' || bleStatus === 'unavailable'}
+              onClick={handleConnectBle}
+            >
+              {bleStatus === 'scanning' || bleStatus === 'connecting'
+                ? <><BluetoothSearching className="w-3.5 h-3.5 mr-1 animate-pulse" /> Buscando...</>
+                : <><Bluetooth className="w-3.5 h-3.5 mr-1" /> Conectar wearable BLE</>}
+            </ModernButton>
+          )}
+        </div>
+
+        {source === 'ble' && (
+          <div className="flex items-center gap-1.5 text-[10px] text-green-700 dark:text-green-400 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Fuente activa — datos BLE en tiempo real (~1-3 s)
+          </div>
+        )}
       </div>
 
       {/* ── Escenarios ── */}

@@ -54,10 +54,7 @@ class NotificationService {
             });
             break;
           case 'email':
-            logger.info('Email channel not yet implemented, skipping', {
-              channel,
-              alertId: alert.id,
-            });
+            await this.sendEmailNotification(alert);
             break;
           case 'sms':
             await this.sendSMSNotification(alert);
@@ -170,6 +167,66 @@ class NotificationService {
       delivered,
       failed,
     };
+  }
+
+  private async sendEmailNotification(alert: AlertDocument): Promise<void> {
+    try {
+      const { config } = await import('../config/config');
+
+      if (!config.email.user || !config.email.pass) {
+        logger.warn('SMTP credentials not configured, skipping email notification', {
+          alertId: alert.id,
+        });
+        return;
+      }
+
+      const UserModel = (await import('../models/User')).default;
+      const user = await UserModel.findById(alert.userId);
+      const recipientEmail = (user as any)?.email;
+
+      if (!recipientEmail) {
+        logger.warn('No email found for user, skipping email notification', {
+          alertId: alert.id,
+          userId: alert.userId,
+        });
+        return;
+      }
+
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: config.email.host,
+        port: config.email.port,
+        secure: config.email.port === 465,
+        auth: { user: config.email.user, pass: config.email.pass },
+      });
+
+      await transporter.sendMail({
+        from: `"RespiCare" <${config.email.from}>`,
+        to: recipientEmail,
+        subject: `[RespiCare] ${alert.title}`,
+        text: `${alert.message}\n\nCategoría: ${alert.category}\nID de alerta: ${alert.id}`,
+        html: `
+          <h2 style="color:#0f172a;">${alert.title}</h2>
+          <p>${alert.message}</p>
+          <hr>
+          <p><strong>Categoría:</strong> ${alert.category}</p>
+          <p style="color:#64748b;font-size:12px;">ID: ${alert.id}</p>
+        `.trim(),
+      });
+
+      logger.info('Email notification dispatched', {
+        alertId: alert.id,
+        userId: alert.userId,
+        category: alert.category,
+      });
+    } catch (error: any) {
+      logger.error(`Error al enviar email: ${error.message}`, {
+        alertId: alert.id,
+        userId: alert.userId,
+        error: error.message,
+      });
+      // No lanzar: no bloquear otros canales de notificación
+    }
   }
 
   /**

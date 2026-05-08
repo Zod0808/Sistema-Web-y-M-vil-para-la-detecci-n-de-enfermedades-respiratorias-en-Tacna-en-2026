@@ -6,189 +6,237 @@ import { useTranslation } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import './Navbar.css';
 
-const CLINICAL_LINK_DEFS = [
-  { to: '/medical-history', labelKey: 'nav.medicalHistory', icon: '📋' },
-  { to: '/appointments',    labelKey: 'nav.appointments',   icon: '📅' },
-  { to: '/prescriptions',   labelKey: 'nav.prescriptions',  icon: '💊' },
-  { to: '/emergency',       labelKey: 'nav.emergency',      icon: '🚨' },
-  { to: '/lab-results',     labelKey: 'nav.labResults',     icon: '🔬' },
-  { to: '/alerts',          labelKey: 'nav.alerts',         icon: '🔔' },
-  { to: '/consents',        labelKey: 'nav.consents',       icon: '📝' },
-  { to: '/referrals',       labelKey: 'nav.referrals',      icon: '🔗' },
+/* ── Nav link definitions by role ──────────────────────────────────────────── */
+
+// Rutas accesibles para pacientes
+const PATIENT_HEALTH_LINKS = [
+  { to: '/medical-history', label: 'Mi Historial',    icon: '📋' },
+  { to: '/appointments',    label: 'Mis Citas',        icon: '📅' },
+  { to: '/prescriptions',   label: 'Mis Recetas',      icon: '💊' },
+  { to: '/lab-results',     label: 'Resultados de Lab',icon: '🔬' },
+  { to: '/consents',        label: 'Consentimientos',  icon: '📝' },
 ];
 
-const NAV_LINK_DEFS = [
-  { to: '/',          labelKey: 'nav.home',      icon: '🏠' },
-  { to: '/dashboard', labelKey: 'nav.dashboard', icon: '⚙️' },
-  { to: '/analytics', labelKey: 'nav.analytics', icon: '📊' },
-  { to: '/heatmap',   labelKey: 'nav.map',       icon: '🗺️' },
-  { to: '/fhir',      labelKey: 'nav.fhir',      icon: '📋' },
-  { to: '/hl7',       labelKey: 'nav.hl7',       icon: '🔬' },
+// Dashboard + analítica para médico/admin
+const STAFF_ANALYTICS_LINKS = [
+  { to: '/analytics', label: 'Analítica Epidemiológica', icon: '📊' },
+  { to: '/heatmap',   label: 'Mapa de Calor',            icon: '🗺️' },
+  { to: '/fhir',      label: 'Recursos FHIR',            icon: '📋' },
+  { to: '/hl7',       label: 'Mensajería HL7',           icon: '🔬' },
 ];
 
-function Navbar() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
-  const { t } = useTranslation();
-  const [clinicOpen, setClinicOpen] = useState(false);
-  const [userOpen, setUserOpen] = useState(false);
-  const clinicRef = useRef(null);
-  const userRef = useRef(null);
+// Gestión clínica de pacientes (médico/admin)
+const STAFF_CLINICAL_LINKS = [
+  { to: '/medical-history', label: 'Historiales',     icon: '📋' },
+  { to: '/appointments',    label: 'Citas',            icon: '📅' },
+  { to: '/prescriptions',   label: 'Recetas',          icon: '💊' },
+  { to: '/lab-results',     label: 'Resultados Lab',   icon: '🔬' },
+  { to: '/alerts',          label: 'Alertas Clínicas', icon: '🔔' },
+  { to: '/referrals',       label: 'Derivaciones',     icon: '🔗' },
+  { to: '/emergency',       label: 'Emergencias',      icon: '🚨' },
+  { to: '/consents',        label: 'Consentimientos',  icon: '📝' },
+];
+
+/* ── Dropdown component ─────────────────────────────────────────────────────── */
+function NavDropdown({ label, icon, links, activePathname }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const isActive = links.some(l => l.to === activePathname);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (clinicRef.current && !clinicRef.current.contains(e.target)) {
-        setClinicOpen(false);
-      }
-      if (userRef.current && !userRef.current.contains(e.target)) {
-        setUserOpen(false);
-      }
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => { setOpen(false); }, [activePathname]);
+
+  return (
+    <div className="nav-dropdown" ref={ref}>
+      <button
+        className={`nav-link nav-dropdown-btn ${isActive ? 'active' : ''}`}
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <span className="nav-icon" aria-hidden="true">{icon}</span>
+        <span>{label}</span>
+        <span className={`nav-chevron ${open ? 'nav-chevron--open' : ''}`} aria-hidden="true">›</span>
+      </button>
+      {open && (
+        <div className="nav-dropdown-menu" role="menu">
+          {links.map(l => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className={`nav-dropdown-item ${activePathname === l.to ? 'active' : ''}`}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span className="nav-dropdown-item-icon" aria-hidden="true">{l.icon}</span>
+              <span>{l.label}</span>
+              {activePathname === l.to && <span className="nav-dropdown-active-dot" aria-hidden="true" />}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main Navbar ─────────────────────────────────────────────────────────────── */
+function Navbar() {
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { t } = useTranslation();
+  const [userOpen, setUserOpen] = useState(false);
+  const userRef = useRef(null);
+  const path = location.pathname;
+
+  const isStaff  = ['doctor', 'admin'].includes(user?.role);
+  const isAdmin  = user?.role === 'admin';
+  const isPatient = user?.role === 'patient';
+
   useEffect(() => {
-    setClinicOpen(false);
-    setUserOpen(false);
-  }, [location.pathname]);
+    const handler = (e) => {
+      if (userRef.current && !userRef.current.contains(e.target)) setUserOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  const links = useMemo(
-    () =>
-      NAV_LINK_DEFS.map((def) => ({
-        ...def,
-        label: t(def.labelKey),
-        isActive: location.pathname === def.to,
-      })),
-    [t, location.pathname]
-  );
-
-  const clinicalLinks = useMemo(
-    () =>
-      CLINICAL_LINK_DEFS.map((def) => ({
-        ...def,
-        label: t(def.labelKey),
-        isActive: location.pathname === def.to,
-      })),
-    [t, location.pathname]
-  );
-
-  const isClinicalActive = clinicalLinks.some((l) => l.isActive);
+  useEffect(() => { setUserOpen(false); }, [path]);
 
   const handleLogout = useCallback(() => {
     logout();
     navigate('/');
   }, [logout, navigate]);
 
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
+  const userInitial  = user?.name ? user.name.charAt(0).toUpperCase() : '?';
+  const roleLabel    = { patient: 'Paciente', doctor: 'Médico', admin: 'Administrador' }[user?.role] || user?.role || '';
+  const roleBadgeClass = { patient: 'role--patient', doctor: 'role--doctor', admin: 'role--admin' }[user?.role] || '';
 
   return (
-    <nav className="navbar" role="navigation" aria-label={t('nav.brandName')}>
+    <nav className="navbar" role="navigation" aria-label="Navegación principal">
       <div className="navbar-container">
-        <div className="navbar-brand">
-          <span className="brand-icon" aria-hidden="true">🏥</span>
-          <span className="brand-name">{t('nav.brandName')}</span>
-          <span className="brand-subtitle">{t('nav.brandSubtitle')}</span>
-        </div>
 
+        {/* ── Brand ── */}
+        <Link to="/" className="navbar-brand" aria-label="RespiCare — Inicio">
+          <span className="brand-icon" aria-hidden="true">🫁</span>
+          <div className="brand-text">
+            <span className="brand-name">RespiCare</span>
+            <span className="brand-sub">Sistema Respiratorio</span>
+          </div>
+        </Link>
+
+        {/* ── Navigation by role ── */}
         <div className="navbar-menu">
-          {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`nav-link ${link.isActive ? 'active' : ''}`}
-              aria-current={link.isActive ? 'page' : undefined}
-            >
-              <span className="nav-icon" aria-hidden="true">{link.icon}</span>
-              <span>{link.label}</span>
-            </Link>
-          ))}
 
-          {/* Dropdown Gestión Clínica */}
-          {isAuthenticated && (
-            <div className="nav-dropdown" ref={clinicRef}>
-              <button
-                className={`nav-link nav-dropdown-btn ${isClinicalActive ? 'active' : ''}`}
-                onClick={() => setClinicOpen((v) => !v)}
-                aria-expanded={clinicOpen}
-                aria-haspopup="true"
-                aria-label={t('nav.clinicalManagement')}
-              >
-                <span className="nav-icon" aria-hidden="true">🏥</span>
-                <span>{t('nav.clinicalManagement')}</span>
-                <span className="dropdown-arrow" aria-hidden="true">{clinicOpen ? '▲' : '▼'}</span>
-              </button>
-              {clinicOpen && (
-                <div className="nav-dropdown-menu" role="menu" aria-label={t('nav.clinicalManagement')}>
-                  {clinicalLinks.map((cl) => (
-                    <Link
-                      key={cl.to}
-                      to={cl.to}
-                      className={`nav-dropdown-item ${cl.isActive ? 'active' : ''}`}
-                      role="menuitem"
-                      aria-current={cl.isActive ? 'page' : undefined}
-                    >
-                      <span aria-hidden="true">{cl.icon}</span>
-                      <span>{cl.label}</span>
-                    </Link>
-                  ))}
-                  {user?.role === 'admin' && (
-                    <Link
-                      to="/admin"
-                      className={`nav-dropdown-item ${location.pathname === '/admin' ? 'active' : ''}`}
-                      role="menuitem"
-                      aria-current={location.pathname === '/admin' ? 'page' : undefined}
-                    >
-                      <span aria-hidden="true">⚙️</span>
-                      <span>{t('nav.admin')}</span>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
+          {/* Inicio (chatbot) — todos */}
+          <Link to="/" className={`nav-link ${path === '/' ? 'active' : ''}`}>
+            <span className="nav-icon" aria-hidden="true">💬</span>
+            <span>Chatbot</span>
+          </Link>
+
+          {/* ── PACIENTE ── */}
+          {isAuthenticated && isPatient && (
+            <NavDropdown
+              label="Mi Salud"
+              icon="❤️"
+              links={PATIENT_HEALTH_LINKS}
+              activePathname={path}
+            />
           )}
 
-          <LanguageSelector className="navbar-language-selector" />
-          <ThemeToggle className="navbar-theme-toggle" />
+          {/* ── MÉDICO / ADMIN ── */}
+          {isAuthenticated && isStaff && (
+            <>
+              <Link to="/dashboard" className={`nav-link ${path === '/dashboard' ? 'active' : ''}`}>
+                <span className="nav-icon" aria-hidden="true">⚙️</span>
+                <span>Dashboard</span>
+              </Link>
 
-          {/* Sesión de usuario */}
+              <Link to="/monitoring" className={`nav-link nav-link--highlight ${path === '/monitoring' ? 'active' : ''}`}>
+                <span className="nav-icon" aria-hidden="true">🩺</span>
+                <span>Monitoreo</span>
+                <span className="nav-live-dot" aria-hidden="true" title="Tiempo real" />
+              </Link>
+
+              <NavDropdown
+                label="Analítica"
+                icon="📊"
+                links={STAFF_ANALYTICS_LINKS}
+                activePathname={path}
+              />
+
+              <NavDropdown
+                label="Clínica"
+                icon="🏥"
+                links={STAFF_CLINICAL_LINKS}
+                activePathname={path}
+              />
+
+              {isAdmin && (
+                <Link to="/admin" className={`nav-link nav-link--admin ${path === '/admin' ? 'active' : ''}`}>
+                  <span className="nav-icon" aria-hidden="true">🛡️</span>
+                  <span>Admin</span>
+                </Link>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ── Right controls ── */}
+        <div className="navbar-controls">
+          <LanguageSelector className="navbar-lang" />
+          <ThemeToggle className="navbar-theme" />
+
           {isAuthenticated ? (
             <div className="nav-user" ref={userRef}>
               <button
                 className="nav-user-btn"
-                onClick={() => setUserOpen((v) => !v)}
+                onClick={() => setUserOpen(v => !v)}
                 aria-expanded={userOpen}
                 aria-haspopup="true"
-                aria-label={t('nav.userMenu')}
+                aria-label="Menú de usuario"
               >
                 <span className="nav-user-avatar" aria-hidden="true">{userInitial}</span>
-                <span className="nav-user-name">{user?.name?.split(' ')[0] || 'Usuario'}</span>
-                <span className="dropdown-arrow" aria-hidden="true">{userOpen ? '▲' : '▼'}</span>
+                <div className="nav-user-info-mini">
+                  <span className="nav-user-name">{user?.name?.split(' ')[0] || 'Usuario'}</span>
+                  <span className={`nav-user-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
+                </div>
+                <span className={`nav-chevron ${userOpen ? 'nav-chevron--open' : ''}`} aria-hidden="true">›</span>
               </button>
+
               {userOpen && (
-                <div className="nav-user-menu" role="menu" aria-label={t('nav.userMenu')}>
-                  <div className="nav-user-info" role="none">
-                    <strong>{user?.name}</strong>
-                    <span>{user?.email}</span>
-                    <span className="nav-user-role">{user?.role || '—'}</span>
+                <div className="nav-user-menu" role="menu" aria-label="Opciones de usuario">
+                  <div className="nav-user-menu-header" role="none">
+                    <div className="nav-user-avatar-lg" aria-hidden="true">{userInitial}</div>
+                    <div>
+                      <p className="nav-user-fullname">{user?.name}</p>
+                      <p className="nav-user-email">{user?.email}</p>
+                      <span className={`nav-user-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
+                    </div>
                   </div>
-                  <hr className="nav-user-divider" role="separator" />
+                  <div className="nav-user-divider" role="separator" />
                   <button
                     className="nav-logout-btn"
                     onClick={handleLogout}
                     role="menuitem"
-                    aria-label={t('nav.logout')}
                   >
-                    <span aria-hidden="true">🚪</span> {t('nav.logout')}
+                    <span aria-hidden="true">🚪</span>
+                    Cerrar sesión
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login" className="nav-link nav-login-btn" aria-label={t('nav.login')}>
+            <Link to="/login" className="nav-link nav-link--cta">
               <span className="nav-icon" aria-hidden="true">🔑</span>
-              <span>{t('nav.login')}</span>
+              <span>Iniciar sesión</span>
             </Link>
           )}
         </div>

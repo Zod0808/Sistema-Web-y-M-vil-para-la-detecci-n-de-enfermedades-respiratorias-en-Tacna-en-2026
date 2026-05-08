@@ -23,6 +23,7 @@ import jwt from 'jsonwebtoken';
 import WearableData from '../models/WearableData';
 import { checkThresholdsAndAlert } from '../services/wearableAlertService';
 import { logger } from '../utils/logger';
+import { vitalsEmitter } from './vitalsEmitter';
 
 type AuthenticatedSocket = WebSocket & {
   patientId?: string;
@@ -79,7 +80,8 @@ export function attachWearableWebSocket(httpServer: HttpServer): WebSocketServer
           return;
         }
         try {
-          const secret = process.env.JWT_SECRET || 'respicare-secret-key';
+          const secret = process.env.JWT_SECRET;
+          if (!secret) throw new Error('JWT_SECRET no configurado');
           const decoded = jwt.verify(token, secret) as any;
           ws.userId = decoded.id || decoded._id || decoded.userId;
           ws.patientId = ws.userId;
@@ -120,6 +122,16 @@ export function attachWearableWebSocket(httpServer: HttpServer): WebSocketServer
           });
 
           send(ws, { type: 'wearable:ack', payload: { saved: true, dataId: saved._id } });
+
+          // Broadcast vitals to subscribed doctors in real time
+          vitalsEmitter.emit('vitals', {
+            patientId: ws.patientId,
+            heartRate: reading.heartRate,
+            oxygenSaturation: reading.oxygenSaturation ?? reading.spO2,
+            respiratoryRate: reading.respiratoryRate,
+            steps: reading.steps,
+            timestamp: reading.timestamp || new Date().toISOString(),
+          });
 
           // Verificar umbrales y emitir alertas si corresponde
           const alerts = await checkThresholdsAndAlert(ws.patientId!, {

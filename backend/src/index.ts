@@ -69,6 +69,7 @@ import { initMongoDBMonitoring } from './monitoring/mongodbMonitoring';
 import { initTelemetry, shutdownTelemetry } from './telemetry/tracing';
 import { initSentry } from './utils/sentry';
 import { attachWearableWebSocket } from './sockets/wearableSocketHandler';
+import { attachDoctorWebSocket } from './sockets/doctorSocketHandler';
 
 class App {
   public app: express.Application;
@@ -89,6 +90,7 @@ class App {
     this.initializeCache();
     this.initializeJobs();
     attachWearableWebSocket(this.httpServer);
+    attachDoctorWebSocket(this.httpServer);
   }
 
   private initializeMiddlewares(): void {
@@ -349,6 +351,7 @@ class App {
       logger.info(`📚 Documentación disponible en http://${host}:${port}/api/docs`);
       logger.info(`🏥 Health check disponible en http://${host}:${port}/health`);
       logger.info(`🔌 WebSocket wearables en ws://${host}:${port}/ws/wearables`);
+      logger.info(`🩺 WebSocket doctor en ws://${host}:${port}/ws/doctor`);
       logger.info(`🌍 Entorno: ${config.server.env}`);
     });
   }

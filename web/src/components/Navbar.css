@@ -1,98 +1,169 @@
-/* Navbar con soporte de temas */
+/* ── Navbar — RespiCare ────────────────────────────────────────────────────── */
 .navbar {
-  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
-  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3);
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  box-shadow: 0 2px 16px rgba(13, 71, 161, 0.35);
   position: sticky;
   top: 0;
   z-index: 1000;
-  backdrop-filter: blur(10px);
 }
 
 .navbar-container {
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 70px;
+  height: 64px;
+  gap: 8px;
 }
 
+/* ── Brand ───────────────────────────────────────────────────────────────────── */
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  text-decoration: none;
   color: #ffffff;
   flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .brand-icon {
-  font-size: 2rem;
+  font-size: 1.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
 }
 
 .brand-name {
-  font-size: 1.8rem;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.brand-subtitle {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  margin-left: 10px;
-  border-left: 2px solid rgba(255, 255, 255, 0.3);
-  padding-left: 10px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
   color: #ffffff;
 }
 
+.brand-sub {
+  font-size: 0.67rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.2px;
+  margin-top: 1px;
+}
+
+/* ── Nav menu (centre links) ─────────────────────────────────────────────────── */
 .navbar-menu {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  flex: 1;
   flex-wrap: nowrap;
   overflow-x: auto;
+  scrollbar-width: none;
 }
 
-/* Base nav link */
+.navbar-menu::-webkit-scrollbar { display: none; }
+
+/* ── Base nav link ───────────────────────────────────────────────────────────── */
 .nav-link {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  color: #ffffff;
+  padding: 7px 12px;
+  color: rgba(255, 255, 255, 0.88);
   text-decoration: none;
   border-radius: 8px;
+  font-size: 0.83rem;
   font-weight: 600;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.18s, color 0.18s, transform 0.12s;
+  white-space: nowrap;
+  background: transparent;
   border: none;
   cursor: pointer;
-  white-space: nowrap;
+  font-family: inherit;
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .nav-link.active {
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
 }
 
 .nav-icon {
-  font-size: 1rem;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
-.dropdown-arrow {
-  font-size: 0.65rem;
-  opacity: 0.8;
+/* ── Monitoreo (highlight) ───────────────────────────────────────────────────── */
+.nav-link--highlight {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* Gestión Clínica dropdown */
+.nav-link--highlight:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Pulsing live dot */
+.nav-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #69f0ae;
+  box-shadow: 0 0 0 0 rgba(105, 240, 174, 0.7);
+  animation: live-pulse 1.8s ease-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes live-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(105, 240, 174, 0.7); }
+  70%  { box-shadow: 0 0 0 6px rgba(105, 240, 174, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(105, 240, 174, 0); }
+}
+
+/* ── Admin link ──────────────────────────────────────────────────────────────── */
+.nav-link--admin {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ffe082;
+}
+
+.nav-link--admin:hover {
+  background: rgba(255, 193, 7, 0.28);
+  color: #fff9c4;
+}
+
+.nav-link--admin.active {
+  background: rgba(255, 193, 7, 0.3);
+  color: #fff9c4;
+}
+
+/* ── Login CTA link ──────────────────────────────────────────────────────────── */
+.nav-link--cta {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #1565c0 !important;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.nav-link--cta:hover {
+  background: #ffffff !important;
+  color: #0d47a1 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ── Dropdown component ──────────────────────────────────────────────────────── */
 .nav-dropdown {
   position: relative;
 }
@@ -101,15 +172,27 @@
   font-family: inherit;
 }
 
+.nav-chevron {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  opacity: 0.8;
+}
+
+.nav-chevron--open {
+  transform: rotate(90deg);
+}
+
 .nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-  min-width: 220px;
-  padding: 8px;
+  box-shadow: 0 8px 32px rgba(13, 71, 161, 0.18), 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 230px;
+  padding: 6px;
   z-index: 2000;
   border: 1px solid #e3f2fd;
   animation: dropdown-in 0.15s ease;
@@ -124,27 +207,58 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  color: #37474f;
+  padding: 9px 12px;
+  color: #374151;
   text-decoration: none;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: background 0.15s;
+  transition: background 0.13s, color 0.13s;
+  position: relative;
 }
 
 .nav-dropdown-item:hover {
-  background: #e3f2fd;
+  background: #e8f0fe;
   color: #1565c0;
 }
 
 .nav-dropdown-item.active {
-  background: #e3f2fd;
+  background: #e8f0fe;
   color: #1565c0;
   font-weight: 600;
 }
 
-/* User session area */
+.nav-dropdown-item-icon {
+  font-size: 0.9rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-dropdown-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1565c0;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Right controls container ────────────────────────────────────────────────── */
+.navbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.navbar-lang,
+.navbar-theme {
+  flex-shrink: 0;
+}
+
+/* ── User menu ───────────────────────────────────────────────────────────────── */
 .nav-user {
   position: relative;
 }
@@ -153,25 +267,24 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 6px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 5px 10px 5px 5px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 24px;
   color: #ffffff;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s;
   font-family: inherit;
+  transition: background 0.18s, border-color 0.18s;
 }
 
 .nav-user-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .nav-user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   background: rgba(255, 255, 255, 0.9);
   color: #1565c0;
   border-radius: 50%;
@@ -179,81 +292,132 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   flex-shrink: 0;
 }
 
+.nav-user-info-mini {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 2px;
+}
+
 .nav-user-name {
-  max-width: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffffff;
+  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Role badge (used both in btn and in menu) */
+.nav-user-role-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9);
+}
+
+.role--patient  { background: rgba(76, 175, 80, 0.25);  color: #a5d6a7; }
+.role--doctor   { background: rgba(33, 150, 243, 0.25); color: #90caf9; }
+.role--admin    { background: rgba(255, 193, 7, 0.25);  color: #ffe082; }
+
+/* User dropdown menu */
 .nav-user-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-  min-width: 220px;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(13, 71, 161, 0.18), 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 240px;
   padding: 8px;
   z-index: 2000;
   border: 1px solid #e3f2fd;
   animation: dropdown-in 0.15s ease;
 }
 
-.nav-user-info {
+.nav-user-menu-header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px 12px 14px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 14px;
 }
 
-.nav-user-info strong {
-  font-size: 0.95rem;
-  color: #263238;
+.nav-user-avatar-lg {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.nav-user-info span {
-  font-size: 0.8rem;
-  color: #546e7a;
+.nav-user-fullname {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 }
 
-.nav-user-role {
-  display: inline-block;
-  background: #e3f2fd;
+.nav-user-email {
+  font-size: 0.75rem;
+  color: #6b7fa3;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+/* In the user menu, role badge overrides for light background */
+.nav-user-menu .role--patient  { background: #e8f5e9; color: #2e7d32; }
+.nav-user-menu .role--doctor   { background: #e3f2fd; color: #1565c0; }
+.nav-user-menu .role--admin    { background: #fff8e1; color: #f57f17; }
+.nav-user-menu .nav-user-role-badge {
+  background: #e8f0fe;
   color: #1565c0;
-  font-size: 0.72rem !important;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  text-transform: capitalize;
-  margin-top: 4px;
 }
 
 .nav-user-divider {
+  height: 1px;
+  background: #f0f4ff;
+  margin: 2px 0 4px;
   border: none;
-  border-top: 1px solid #f0f4ff;
-  margin: 4px 0;
 }
 
 .nav-logout-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: 10px;
+  padding: 10px 12px;
   background: none;
   border: none;
   color: #c62828;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 8px;
   text-align: left;
-  transition: background 0.15s;
+  transition: background 0.13s;
   font-family: inherit;
 }
 
@@ -261,50 +425,91 @@
   background: #ffebee;
 }
 
-/* Login button variant */
-.nav-login-btn {
-  background: rgba(255, 255, 255, 0.9) !important;
-  color: #1565c0 !important;
-  font-weight: 700;
+/* ── Dark mode ───────────────────────────────────────────────────────────────── */
+.theme-dark .nav-dropdown-menu,
+.theme-dark .nav-user-menu {
+  background: #1e2a3a;
+  border-color: #2d3f55;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
-.nav-login-btn:hover {
-  background: #ffffff !important;
-  transform: translateY(-1px);
+.theme-dark .nav-dropdown-item {
+  color: #c9d6e8;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .navbar-container {
-    flex-direction: column;
-    height: auto;
-    padding: 12px 15px;
-  }
+.theme-dark .nav-dropdown-item:hover,
+.theme-dark .nav-dropdown-item.active {
+  background: rgba(255,255,255,0.08);
+  color: #90caf9;
+}
 
-  .brand-subtitle {
-    display: none;
-  }
+.theme-dark .nav-user-fullname { color: #e8edf5; }
+.theme-dark .nav-user-email    { color: #7a94b0; }
 
-  .navbar-menu {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    gap: 4px;
-  }
+.theme-dark .nav-user-divider  { background: #2d3f55; }
+
+.theme-dark .nav-logout-btn          { color: #ef9a9a; }
+.theme-dark .nav-logout-btn:hover    { background: rgba(198, 40, 40, 0.15); }
+
+.theme-dark .nav-user-menu .role--patient { background: rgba(76,175,80,0.15);  color: #a5d6a7; }
+.theme-dark .nav-user-menu .role--doctor  { background: rgba(33,150,243,0.15); color: #90caf9; }
+.theme-dark .nav-user-menu .role--admin   { background: rgba(255,193,7,0.15);  color: #ffe082; }
+.theme-dark .nav-user-menu .nav-user-role-badge { background: rgba(255,255,255,0.1); color: #90caf9; }
+
+.theme-dark .nav-user-avatar-lg {
+  background: linear-gradient(135deg, #1e4b8a 0%, #0d3060 100%);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .navbar-container { padding: 0 16px; }
+  .brand-sub        { display: none; }
 
   .nav-link {
     padding: 7px 10px;
     font-size: 0.8rem;
   }
+}
+
+@media (max-width: 768px) {
+  .navbar-container {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 16px;
+    gap: 6px;
+  }
+
+  .navbar-menu {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    padding-top: 8px;
+  }
+
+  .navbar-controls {
+    margin-left: auto;
+  }
+
+  .nav-user-info-mini { display: none; }
 
   .nav-dropdown-menu,
   .nav-user-menu {
     position: fixed;
     top: auto;
+    bottom: 16px;
     left: 50%;
+    right: auto;
     transform: translateX(-50%);
-    width: 90vw;
-    max-width: 320px;
+    width: 92vw;
+    max-width: 340px;
   }
+
+  .nav-link--cta { padding: 7px 14px; }
+}
+
+@media (max-width: 480px) {
+  .brand-name { font-size: 1.1rem; }
 }
