@@ -118,33 +118,44 @@
   color: #1976d2;
 }
 
-/* Dark mode support */
+/* Dark mode — controlled by body.theme-dark */
+.theme-dark .fhir-resource-viewer {
+  background: #1e2433;
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.87);
+}
+
+.theme-dark .fhir-resource-header {
+  border-bottom-color: #42a5f5;
+}
+
+.theme-dark .fhir-resource-header h3 {
+  color: #90caf9;
+}
+
+.theme-dark .fhir-resource-type {
+  background: #1565c0;
+  color: #e3f2fd;
+}
+
+.theme-dark .fhir-object {
+  border-left-color: rgba(255,255,255,0.15);
+}
+
+.theme-dark .fhir-array-item {
+  border-left-color: #ff9800;
+}
+
+.theme-dark .fhir-collapsed {
+  color: #90caf9;
+}
+
+/* Fallback para sistema sin clase explícita */
 @media (prefers-color-scheme: dark) {
-  .fhir-resource-viewer {
-    background: #1e1e1e;
-    border-color: #424242;
-    color: #e0e0e0;
-  }
-
-  .fhir-resource-header {
-    border-bottom-color: #64b5f6;
-  }
-
-  .fhir-resource-header h3 {
-    color: #64b5f6;
-  }
-
-  .fhir-resource-type {
-    background: #1565c0;
-    color: #e3f2fd;
-  }
-
-  .fhir-object {
-    border-left-color: #424242;
-  }
-
-  .fhir-array-item {
-    border-left-color: #ff9800;
-  }
+  body:not(.theme-light) .fhir-resource-viewer    { background: #1e1e1e; border-color: #424242; color: #e0e0e0; }
+  body:not(.theme-light) .fhir-resource-header    { border-bottom-color: #64b5f6; }
+  body:not(.theme-light) .fhir-resource-header h3 { color: #64b5f6; }
+  body:not(.theme-light) .fhir-object             { border-left-color: #424242; }
+  body:not(.theme-light) .fhir-array-item         { border-left-color: #ff9800; }
 }
 

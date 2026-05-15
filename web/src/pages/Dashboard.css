@@ -361,3 +361,80 @@
   }
 }
 
+/* ── Dark mode ──────────────────────────────────────────────────── */
+.theme-dark .dashboard-page {
+  background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 100%);
+}
+
+.theme-dark .dashboard-container {
+  background: #1e2433;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.theme-dark .dashboard-header h1,
+.theme-dark .dashboard-subtitle,
+.theme-dark .services-section h3,
+.theme-dark .info-section h3,
+.theme-dark .admin-tools h3,
+.theme-dark .service-card h4 {
+  color: rgba(255,255,255,0.87);
+  text-shadow: none;
+}
+
+.theme-dark .service-card {
+  background: #252d3d;
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .service-card:hover {
+  border-color: #42a5f5;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.theme-dark .service-details {
+  background: #1a2030;
+}
+
+.theme-dark .service-details p {
+  color: rgba(255,255,255,0.8);
+}
+
+.theme-dark .service-details p strong {
+  color: #90caf9;
+}
+
+.theme-dark .service-link { color: #90caf9; }
+.theme-dark .service-link:hover { color: #42a5f5; }
+
+.theme-dark .service-status { color: #90caf9; }
+
+.theme-dark .info-section {
+  background: #252d3d;
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .endpoint {
+  background: #1a2030;
+}
+
+.theme-dark .endpoint a { color: #90caf9; }
+.theme-dark .endpoint a:hover { color: #42a5f5; }
+
+.theme-dark .dashboard-footer {
+  background: #1a2030;
+  color: rgba(255,255,255,0.6);
+}
+
+.theme-dark .tech-stack { color: rgba(255,255,255,0.4); }
+
+.theme-dark .error-message {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.theme-dark .spinner {
+  border-color: rgba(255,255,255,0.1);
+  border-top-color: #42a5f5;
+}
+

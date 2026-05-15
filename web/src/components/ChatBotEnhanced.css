@@ -235,3 +235,51 @@
   }
 }
 
+/* ── Dark mode ──────────────────────────────────────────────────── */
+.theme-dark .conversation-history {
+  background: #1e2433;
+  border-color: rgba(255,255,255,0.1);
+}
+
+.theme-dark .history-header {
+  background: #252d3d;
+  border-bottom-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .history-header h4 { color: rgba(255,255,255,0.87); }
+
+.theme-dark .history-header button { color: rgba(255,255,255,0.6); }
+.theme-dark .history-header button:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.87);
+}
+
+.theme-dark .history-item {
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+.theme-dark .history-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.theme-dark .history-text  { color: rgba(255,255,255,0.6); }
+.theme-dark .history-time  { color: rgba(255,255,255,0.4); }
+
+.theme-dark .contextual-suggestions {
+  background: #1a2030;
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .suggestions-title { color: rgba(255,255,255,0.6); }
+
+.theme-dark .suggestion-btn {
+  background: transparent;
+  border-color: #42a5f5;
+  color: #90caf9;
+}
+
+.theme-dark .suggestion-btn:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  color: white;
+}
+

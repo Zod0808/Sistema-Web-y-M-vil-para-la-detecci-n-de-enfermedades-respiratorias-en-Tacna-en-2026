@@ -9,7 +9,10 @@ import {
   changePassword,
   deactivateAccount,
   getUserStats,
-  getUsers
+  getUsers,
+  adminCreateUser,
+  adminUpdateUser,
+  adminToggleUserActive
 } from '../controllers/authController';
 import { authenticate, authorize } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
@@ -40,5 +43,8 @@ router.put('/deactivate', deactivateAccount);
 // Rutas de administrador
 router.get('/users', authorize('admin'), getUsers);
 router.get('/stats', authorize('admin'), getUserStats);
+router.post('/users', authorize('admin'), adminCreateUser);
+router.patch('/users/:id', authorize('admin'), adminUpdateUser);
+router.patch('/users/:id/toggle', authorize('admin'), adminToggleUserActive);
 
 export default router;

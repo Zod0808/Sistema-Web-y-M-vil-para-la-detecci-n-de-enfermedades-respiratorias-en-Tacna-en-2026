@@ -42,10 +42,14 @@ const LanguageSelector = ({ className = '' }) => {
   }, [isOpen]);
 
   const handleLanguageSelect = (langCode) => {
-    setLanguage(langCode);
+    if (langCode === currentLang) {
+      setIsOpen(false);
+      return;
+    }
+    setLanguage(langCode); // persiste en localStorage
     setIsOpen(false);
-    // No recargar la página, solo disparar el evento
-    // Los componentes que escuchan el evento se actualizarán automáticamente
+    // Recargar para que toda la UI refleje el idioma nuevo
+    window.location.reload();
   };
 
   const currentLanguageName = SUPPORTED_LANGUAGES[currentLang] || 'Español';

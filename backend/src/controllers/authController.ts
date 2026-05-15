@@ -308,7 +308,6 @@ export const getUserStats = asyncHandler(async (req: AuthenticatedRequest, res: 
 
 // Obtener lista de usuarios (solo admin)
 export const getUsers = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  // Verificar que el usuario sea admin
   if (req.user?.role !== 'admin') {
     throw new AppError('Acceso denegado. Se requieren permisos de administrador', 403);
   }
@@ -325,17 +324,91 @@ export const getUsers = asyncHandler(async (req: AuthenticatedRequest, res: Resp
 
   const total = await User.countDocuments();
 
+  // Normalizar isActive: documentos viejos sin el campo se tratan como activos
+  const normalizedUsers = users.map((u) => {
+    const obj = u.toJSON();
+    if (obj.isActive === undefined || obj.isActive === null) obj.isActive = true;
+    return obj;
+  });
+
   const response: ApiResponse = {
     success: true,
     message: 'Usuarios obtenidos exitosamente',
-    data: users,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit)
-    }
+    data: normalizedUsers,
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) }
   };
 
   res.status(200).json(response);
+});
+
+// Crear usuario (solo admin)
+export const adminCreateUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    throw new AppError('Acceso denegado', 403);
+  }
+
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password) {
+    throw new AppError('Nombre, email y contraseña son obligatorios', 400);
+  }
+
+  const existing = await User.findByEmail(email);
+  if (existing) throw new AppError('Ya existe un usuario con ese email', 400);
+
+  const user = await User.create({ name, email, password, role: role || 'patient' });
+  const safeUser = await User.findById((user as UserDocument)._id).select('-password');
+
+  logger.info(`Admin creó usuario: ${email}`, { adminId: req.user._id });
+
+  res.status(201).json({ success: true, message: 'Usuario creado exitosamente', data: safeUser });
+});
+
+// Actualizar usuario (solo admin)
+export const adminUpdateUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    throw new AppError('Acceso denegado', 403);
+  }
+
+  const { id } = req.params;
+  const { name, email, role } = req.body;
+
+  const user = await User.findById(id).select('-password') as UserDocument | null;
+  if (!user) throw new AppError('Usuario no encontrado', 404);
+
+  if (name) user.name = name;
+  if (email) user.email = email.toLowerCase();
+  if (role && ['patient', 'doctor', 'admin'].includes(role)) user.role = role as 'patient' | 'doctor' | 'admin';
+
+  await user.save();
+
+  logger.info(`Admin actualizó usuario: ${user.email}`, { adminId: req.user._id });
+
+  res.status(200).json({ success: true, message: 'Usuario actualizado', data: user });
+});
+
+// Activar / desactivar usuario (solo admin — no elimina datos)
+export const adminToggleUserActive = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    throw new AppError('Acceso denegado', 403);
+  }
+
+  const { id } = req.params;
+
+  if (id === (req.user._id as mongoose.Types.ObjectId).toString()) {
+    throw new AppError('No puedes desactivar tu propia cuenta', 400);
+  }
+
+  const user = await User.findById(id).select('-password') as UserDocument | null;
+  if (!user) throw new AppError('Usuario no encontrado', 404);
+
+  user.isActive = !user.isActive;
+  await user.save();
+
+  logger.info(`Admin cambió estado de usuario ${user.email} → isActive=${user.isActive}`, { adminId: req.user._id });
+
+  res.status(200).json({
+    success: true,
+    message: user.isActive ? 'Usuario reactivado' : 'Usuario desactivado',
+    data: user
+  });
 });

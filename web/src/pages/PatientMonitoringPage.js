@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE } from '../utils/apiBase';
 import './PatientMonitoringPage.css';
 
 function buildWsUrl() {
@@ -9,6 +11,7 @@ function buildWsUrl() {
 }
 const WS_URL = buildWsUrl();
 const RECONNECT_DELAY_MS = 3000;
+const WEARABLE_POLL_MS = 60_000; // 1 minuto
 
 const THRESHOLDS = {
   hrLow: 50,
@@ -80,15 +83,35 @@ export default function PatientMonitoringPage() {
   const { token } = useAuth();
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const pollTimer = useRef(null);
 
   const [connected, setConnected] = useState(false);
   const [patients, setPatients] = useState({}); // { patientId: { reading, lastSeen } }
   const [alertLog, setAlertLog] = useState([]);
+  const [errors, setErrors] = useState([]); // lista de mensajes de error visibles
+  const [lastPolled, setLastPolled] = useState(null);
 
+  const addError = useCallback((msg) => {
+    const id = Date.now();
+    setErrors((prev) => [...prev, { id, msg }]);
+    // Auto-dismiss después de 8 segundos
+    setTimeout(() => setErrors((prev) => prev.filter((e) => e.id !== id)), 8000);
+  }, []);
+
+  const dismissError = (id) => setErrors((prev) => prev.filter((e) => e.id !== id));
+
+  /* ── WebSocket ── */
   const connect = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState < 2) return;
 
-    const ws = new WebSocket(`${WS_URL}/ws/doctor`);
+    let ws;
+    try {
+      ws = new WebSocket(`${WS_URL}/ws/doctor`);
+    } catch (err) {
+      addError(`No se pudo crear la conexión WebSocket: ${err.message}`);
+      reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
+      return;
+    }
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -98,11 +121,24 @@ export default function PatientMonitoringPage() {
 
     ws.onmessage = (event) => {
       let msg;
-      try { msg = JSON.parse(event.data); } catch { return; }
+      try { msg = JSON.parse(event.data); } catch {
+        addError('Mensaje WebSocket malformado recibido.');
+        return;
+      }
 
       if (msg.type === 'auth:ok') {
-        // Subscribe to all patients
         ws.send(JSON.stringify({ type: 'subscribe', payload: { patientIds: ['*'] } }));
+      }
+
+      if (msg.type === 'auth:error') {
+        addError('Error de autenticación en WebSocket. Reconectando…');
+        ws.close();
+        return;
+      }
+
+      if (msg.type === 'error') {
+        addError(msg.payload?.message || 'Error recibido del servidor de monitoreo.');
+        return;
       }
 
       if (msg.type === 'vitals') {
@@ -121,30 +157,89 @@ export default function PatientMonitoringPage() {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
+      if (ev.code !== 1000) {
+        // Cierre anormal
+        reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
+      }
     };
 
     ws.onerror = () => {
+      addError('Error de conexión WebSocket. Intentando reconectar en 3 segundos…');
       ws.close();
     };
-  }, [token]);
+  }, [token, addError]);
+
+  /* ── Polling de wearables desde BD (cada 1 min) ── */
+  const pollWearables = useCallback(async () => {
+    if (!token) return;
+    try {
+      const { data } = await axios.get(`${API_BASE}/wearables/data`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 100 },
+      });
+      const readings = data?.data ?? [];
+      if (!Array.isArray(readings) || readings.length === 0) return;
+
+      setLastPolled(new Date());
+      setPatients((prev) => {
+        const next = { ...prev };
+        readings.forEach((r) => {
+          const pid = r.patientId ?? r.userId ?? r._id;
+          if (!pid) return;
+          const reading = {
+            heartRate: r.heartRate,
+            oxygenSaturation: r.oxygenSaturation,
+            respiratoryRate: r.respiratoryRate,
+          };
+          // Solo actualizar si el dato de BD es más reciente que el WebSocket
+          const ts = r.timestamp ? new Date(r.timestamp).getTime() : Date.now();
+          if (!next[pid] || ts > (next[pid].lastSeen ?? 0)) {
+            next[pid] = { reading, lastSeen: ts };
+          }
+          if (statusFor(reading) === 'alert') {
+            setAlertLog((prev) => {
+              const exists = prev.some(
+                (e) => e.patientId === pid && e.time === new Date(ts).toLocaleTimeString('es-PE')
+              );
+              if (exists) return prev;
+              return [
+                { patientId: pid, reading, time: new Date(ts).toLocaleTimeString('es-PE') },
+                ...prev.slice(0, 49),
+              ];
+            });
+          }
+        });
+        return next;
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Error al consultar wearables de la base de datos.';
+      addError(`[Wearables BD] ${msg}`);
+    }
+  }, [token, addError]);
 
   useEffect(() => {
     connect();
+
+    // Ping para mantener la conexión WebSocket viva
     const ping = setInterval(() => {
       if (wsRef.current?.readyState === 1) {
         wsRef.current.send(JSON.stringify({ type: 'ping' }));
       }
     }, 25_000);
 
+    // Primer poll inmediato, luego cada 1 minuto
+    pollWearables();
+    pollTimer.current = setInterval(pollWearables, WEARABLE_POLL_MS);
+
     return () => {
       clearInterval(ping);
+      clearInterval(pollTimer.current);
       clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
+      wsRef.current?.close(1000, 'component unmount');
     };
-  }, [connect]);
+  }, [connect, pollWearables]);
 
   const patientEntries = Object.entries(patients);
   const alertCount = patientEntries.filter(([, v]) => statusFor(v.reading) === 'alert').length;
@@ -159,8 +254,27 @@ export default function PatientMonitoringPage() {
           {alertCount > 0 && (
             <span className="monitoring-alert-badge">{alertCount} alerta{alertCount > 1 ? 's' : ''}</span>
           )}
+          {lastPolled && (
+            <span className="monitoring-poll-info">
+              BD: {lastPolled.toLocaleTimeString('es-PE')}
+            </span>
+          )}
         </div>
       </header>
+
+      {/* Error messages */}
+      {errors.map(({ id, msg }) => (
+        <div key={id} className="monitoring-error" role="alert">
+          ⚠️ {msg}
+          <button
+            className="monitoring-error__dismiss"
+            onClick={() => dismissError(id)}
+            aria-label="Cerrar mensaje de error"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
 
       {patientEntries.length === 0 ? (
         <div className="monitoring-empty">
@@ -173,7 +287,6 @@ export default function PatientMonitoringPage() {
         <div className="monitoring-grid">
           {patientEntries
             .sort(([, a], [, b]) => {
-              // Alerts first
               const aAlert = statusFor(a.reading) === 'alert' ? 0 : 1;
               const bAlert = statusFor(b.reading) === 'alert' ? 0 : 1;
               return aAlert - bAlert || b.lastSeen - a.lastSeen;

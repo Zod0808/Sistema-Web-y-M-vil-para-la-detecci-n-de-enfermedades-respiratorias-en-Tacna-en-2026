@@ -23,8 +23,9 @@ const config: CapacitorConfig = {
 
   // ── Android ───────────────────────────────────────────────────────────────
   android: {
-    // Permitir contenido mixto solo en DEBUG — en release el network_security_config lo controla
-    allowMixedContent: isDev,
+    // network_security_config.xml controla qué dominios permiten cleartext (10.0.2.2, localhost)
+    // Habilitar aquí para que el WebView no bloquee peticiones HTTP al backend local
+    allowMixedContent: true,
 
     // Logging: 'none' en producción para no exponer información
     loggingBehavior: isDev ? 'debug' : 'none',

@@ -17,10 +17,17 @@
 .theme-dark {
   --color-background: #121212;
   --color-background-paper: #1e1e1e;
+  --color-surface: #1e1e1e;
+  --color-bg-subtle: #0f172a;
   --color-text-primary: rgba(255, 255, 255, 0.87);
   --color-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-text: rgba(255, 255, 255, 0.87);
   --color-divider: rgba(255, 255, 255, 0.12);
+  --color-border: rgba(255, 255, 255, 0.15);
+  --color-border-hover: rgba(255, 255, 255, 0.3);
+  --color-background-hover: rgba(255, 255, 255, 0.08);
   --color-action-hover: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
 }
 
 .App {

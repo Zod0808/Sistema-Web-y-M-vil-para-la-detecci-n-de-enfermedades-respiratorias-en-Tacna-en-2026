@@ -185,3 +185,82 @@
   color: #546e7a;
   font-size: 0.9rem;
 }
+
+/* ── Dark mode ──────────────────────────────────────────────────── */
+.theme-dark .clinical-page {
+  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+}
+
+.theme-dark .clinical-page-header h1 {
+  color: #90caf9;
+}
+
+.theme-dark .clinical-count {
+  background: rgba(25, 118, 210, 0.25);
+  color: #90caf9;
+}
+
+.theme-dark .clinical-error {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+.theme-dark .clinical-loading {
+  color: #90a4ae;
+}
+
+.theme-dark .loading-spinner {
+  border-color: rgba(255,255,255,0.1);
+  border-top-color: #42a5f5;
+}
+
+.theme-dark .clinical-table-wrapper {
+  background: #1e2433;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.theme-dark .clinical-table tbody tr {
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+.theme-dark .clinical-table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.theme-dark .clinical-table tbody td {
+  color: rgba(255,255,255,0.8);
+}
+
+.theme-dark .clinical-empty {
+  color: rgba(255,255,255,0.4);
+}
+
+.theme-dark .badge {
+  background: rgba(25, 118, 210, 0.25);
+  color: #90caf9;
+}
+
+.theme-dark .status-active,
+.theme-dark .status-scheduled,
+.theme-dark .status-completed {
+  background: rgba(46, 125, 50, 0.25);
+  color: #a5d6a7;
+}
+
+.theme-dark .status-inactive,
+.theme-dark .status-cancelled,
+.theme-dark .status-rejected {
+  background: rgba(198, 40, 40, 0.25);
+  color: #ef9a9a;
+}
+
+.theme-dark .status-pending,
+.theme-dark .status-rescheduled {
+  background: rgba(245, 127, 23, 0.25);
+  color: #ffcc80;
+}
+
+.theme-dark .clinical-pagination span {
+  color: rgba(255,255,255,0.6);
+}

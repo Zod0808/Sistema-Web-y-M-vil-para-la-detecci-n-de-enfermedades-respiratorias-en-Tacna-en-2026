@@ -44,3 +44,243 @@
   color: #1565c0;
   font-weight: 600;
 }
+
+/* ── Header actions ─────────────────────────────────────────────── */
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-create {
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.2s;
+}
+
+.btn-create:hover { opacity: 0.88; }
+
+/* ── Table action buttons ───────────────────────────────────────── */
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.btn-edit {
+  padding: 5px 12px;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-edit:hover { background: #bbdefb; }
+
+.btn-deactivate {
+  padding: 5px 12px;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-deactivate:hover { background: #ffe0b2; }
+
+.btn-activate {
+  padding: 5px 12px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-activate:hover { background: #c8e6c9; }
+
+/* ── Modal overlay ──────────────────────────────────────────────── */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.admin-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.admin-modal h2 {
+  margin: 0 0 20px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.admin-modal-field {
+  margin-bottom: 14px;
+}
+
+.admin-modal-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #546e7a;
+  margin-bottom: 5px;
+}
+
+.admin-modal-field input,
+.admin-modal-field select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #cfd8dc;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #37474f;
+  background: #fafafa;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.admin-modal-field input:focus,
+.admin-modal-field select:focus {
+  outline: none;
+  border-color: #1976d2;
+  background: #fff;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-modal-cancel {
+  padding: 9px 18px;
+  background: #f5f5f5;
+  color: #546e7a;
+  border: 1px solid #cfd8dc;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-modal-cancel:hover { background: #eeeeee; }
+
+.btn-modal-save {
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-modal-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-modal-save:hover:not(:disabled) { opacity: 0.88; }
+
+.admin-modal-error {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+/* ── Dark mode ──────────────────────────────────────────────────── */
+.theme-dark .admin-stat-card {
+  background: #1e2433;
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .admin-stat-value { color: #90caf9; }
+.theme-dark .admin-stat-label { color: rgba(255,255,255,0.6); }
+
+.theme-dark .admin-current-user { background: rgba(25, 118, 210, 0.12); }
+.theme-dark .admin-you-badge    { color: #90caf9; }
+
+.theme-dark .btn-edit {
+  background: rgba(25, 118, 210, 0.15);
+  color: #90caf9;
+  border-color: rgba(25, 118, 210, 0.3);
+}
+
+.theme-dark .btn-deactivate {
+  background: rgba(230, 81, 0, 0.15);
+  color: #ffcc80;
+  border-color: rgba(230, 81, 0, 0.3);
+}
+
+.theme-dark .btn-activate {
+  background: rgba(46, 125, 50, 0.15);
+  color: #a5d6a7;
+  border-color: rgba(46, 125, 50, 0.3);
+}
+
+.theme-dark .admin-modal {
+  background: #1e2433;
+}
+
+.theme-dark .admin-modal h2 { color: #90caf9; }
+
+.theme-dark .admin-modal-field label { color: rgba(255,255,255,0.6); }
+
+.theme-dark .admin-modal-field input,
+.theme-dark .admin-modal-field select {
+  background: #0d1117;
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.87);
+}
+
+.theme-dark .admin-modal-field input:focus,
+.theme-dark .admin-modal-field select:focus {
+  border-color: #90caf9;
+  background: #0d1117;
+}
+
+.theme-dark .btn-modal-cancel {
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+  border-color: rgba(255,255,255,0.15);
+}
+
+.theme-dark .admin-modal-backdrop {
+  background: rgba(0,0,0,0.7);
+}
