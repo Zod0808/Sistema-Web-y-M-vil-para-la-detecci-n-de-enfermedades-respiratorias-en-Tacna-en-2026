@@ -84,6 +84,7 @@ export default function PatientMonitoringPage() {
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
   const pollTimer = useRef(null);
+  const authFailedRef = useRef(false); // evita reconexión en fallo permanente de auth
 
   const [connected, setConnected] = useState(false);
   const [patients, setPatients] = useState({}); // { patientId: { reading, lastSeen } }
@@ -103,6 +104,7 @@ export default function PatientMonitoringPage() {
   /* ── WebSocket ── */
   const connect = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState < 2) return;
+    authFailedRef.current = false;
 
     let ws;
     try {
@@ -131,8 +133,9 @@ export default function PatientMonitoringPage() {
       }
 
       if (msg.type === 'auth:error') {
-        addError('Error de autenticación en WebSocket. Reconectando…');
-        ws.close();
+        authFailedRef.current = true;
+        addError(msg.payload?.message || 'Sin permiso para el monitoreo en tiempo real. Verifica tu sesión.');
+        ws.close(1000, 'auth error');
         return;
       }
 
@@ -159,14 +162,16 @@ export default function PatientMonitoringPage() {
 
     ws.onclose = (ev) => {
       setConnected(false);
-      if (ev.code !== 1000) {
-        // Cierre anormal
+      // No reconectar si el auth falló permanentemente o fue cierre limpio
+      if (ev.code !== 1000 && !authFailedRef.current) {
         reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
       }
     };
 
     ws.onerror = () => {
-      addError('Error de conexión WebSocket. Intentando reconectar en 3 segundos…');
+      if (!authFailedRef.current) {
+        addError('Error de conexión WebSocket. Intentando reconectar en 3 segundos…');
+      }
       ws.close();
     };
   }, [token, addError]);
@@ -179,7 +184,7 @@ export default function PatientMonitoringPage() {
         headers: { Authorization: `Bearer ${token}` },
         params: { limit: 100 },
       });
-      const readings = data?.data ?? [];
+      const readings = data?.data?.data ?? data?.data ?? [];
       if (!Array.isArray(readings) || readings.length === 0) return;
 
       setLastPolled(new Date());

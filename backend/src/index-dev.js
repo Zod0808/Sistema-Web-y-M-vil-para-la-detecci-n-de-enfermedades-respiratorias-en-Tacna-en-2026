@@ -16,7 +16,25 @@ const mongoose = require('mongoose');
 
 // Initialize express app
 const app = express();
+const http = require('http');
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Proxy servers for WebSocket path routing (needed because ws v8 aborts with 400
+// if the path doesn't match, preventing the second WSS from handling its path).
+const wearableProxyServer = http.createServer();
+const doctorProxyServer   = http.createServer();
+
+httpServer.on('upgrade', (req, socket, head) => {
+  const url = new URL(req.url, 'ws://localhost');
+  if (url.pathname === '/ws/wearables') {
+    wearableProxyServer.emit('upgrade', req, socket, head);
+  } else if (url.pathname === '/ws/doctor') {
+    doctorProxyServer.emit('upgrade', req, socket, head);
+  } else {
+    socket.destroy();
+  }
+});
 
 // Swagger configuration
 const swaggerOptions = {
@@ -1711,7 +1729,15 @@ try {
   app.use('/api/v1/wearables',         wearableRoutes);
   app.use('/api/v1/symptom-analyzer',  symptomAnalyzerRoutes);
 
+  // Attach WebSocket handlers to isolated proxy servers so that ws v8 path
+  // routing doesn't abort connections meant for the other handler.
+  const { attachWearableWebSocket } = require('./sockets/wearableSocketHandler');
+  const { attachDoctorWebSocket }   = require('./sockets/doctorSocketHandler');
+  attachWearableWebSocket(wearableProxyServer);
+  attachDoctorWebSocket(doctorProxyServer);
+
   console.log('✅ TypeScript routes loaded successfully');
+  console.log('✅ WebSocket handlers attached (/ws/wearables, /ws/doctor)');
 } catch (err) {
   console.error('⚠️  Could not load TypeScript routes:', err.message);
 }
@@ -1741,8 +1767,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server (using httpServer so WebSocket handlers can attach)
+httpServer.listen(PORT, () => {
   console.log('\n' + '='.repeat(50));
   console.log('🚀 RespiCare Backend API');
   console.log('='.repeat(50));
@@ -1752,6 +1778,8 @@ app.listen(PORT, () => {
   console.log(`❤️  Health: http://localhost:${PORT}/api/health`);
   console.log(`📚 Info: http://localhost:${PORT}/api`);
   console.log(`📖 API Docs: http://localhost:${PORT}/api-docs`);
+  console.log(`🔌 WebSocket wearables: ws://localhost:${PORT}/ws/wearables`);
+  console.log(`🩺 WebSocket doctor:    ws://localhost:${PORT}/ws/doctor`);
   console.log('='.repeat(50) + '\n');
 });
 
@@ -1766,5 +1794,5 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-module.exports = app;
+module.exports = { app, httpServer };
 

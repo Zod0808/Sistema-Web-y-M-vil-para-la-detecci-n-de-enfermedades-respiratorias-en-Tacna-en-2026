@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'recharts';
 import { API_BASE } from '../utils/apiBase';
+import { useAuth } from '../contexts/AuthContext';
 import './PatientMonitoringReport.css';
 
 const STATUS_CONFIG = {
@@ -180,6 +181,7 @@ function customLegendFormatter(value) {
 }
 
 function PatientMonitoringReport() {
+  const { token } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -187,11 +189,17 @@ function PatientMonitoringReport() {
   const [lastUpdate, setLastUpdate] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!token) {
+      setError('Debes iniciar sesión para ver el monitoreo de salud.');
+      setLoading(false);
+      return;
+    }
     try {
       setError(null);
+      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
       const [metricsRes, historyRes] = await Promise.all([
-        axios.get(`${API_BASE}/wearables/metrics`, { params: { hours: 24 } }),
-        axios.get(`${API_BASE}/wearables/data`, { params: { limit: 24 } }),
+        axios.get(`${API_BASE}/wearables/metrics`, { ...authHeaders, params: { hours: 24 } }),
+        axios.get(`${API_BASE}/wearables/data`, { ...authHeaders, params: { limit: 24 } }),
       ]);
 
       const m =
@@ -222,7 +230,7 @@ function PatientMonitoringReport() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchData();
