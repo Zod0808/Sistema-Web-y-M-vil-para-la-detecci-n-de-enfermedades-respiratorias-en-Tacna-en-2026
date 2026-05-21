@@ -6,6 +6,8 @@
 import { Response } from 'express';
 import WearableData from '../models/WearableData';
 import { ApiResponse, AuthenticatedRequest } from '../types';
+import { vitalsEmitter } from '../sockets/vitalsEmitter';
+import { checkThresholdsAndAlert } from '../services/wearableAlertService';
 
 /**
  * Sincronizar datos de wearables
@@ -52,6 +54,24 @@ export const syncWearableData = async (req: AuthenticatedRequest, res: Response)
 
       const saved = await wearableData.save();
       savedData.push(saved);
+
+      // Broadcast en tiempo real al dashboard del médico
+      vitalsEmitter.emit('vitals', {
+        patientId: String(patientId),
+        heartRate: item.heartRate,
+        oxygenSaturation: item.oxygenSaturation,
+        respiratoryRate: item.respiratoryRate,
+        steps: item.steps,
+        timestamp: saved.timestamp.toISOString(),
+      });
+
+      // Verificar umbrales y crear alertas en BD si se superan
+      checkThresholdsAndAlert(String(patientId), {
+        heartRate: item.heartRate,
+        oxygenSaturation: item.oxygenSaturation,
+        respiratoryRate: item.respiratoryRate,
+        timestamp: saved.timestamp.toISOString(),
+      }).catch(() => { /* non-blocking */ });
     }
 
     res.status(201).json({
@@ -76,10 +96,14 @@ export const syncWearableData = async (req: AuthenticatedRequest, res: Response)
  */
 export const getWearableData = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const patientId = req.params.patientId || req.user?._id;
+    const isStaff = req.user?.role === 'doctor' || req.user?.role === 'admin';
+    const requestedPatientId = req.params.patientId;
+
+    // Sin patientId en la ruta: staff ve todos los pacientes, paciente ve los suyos
+    const patientId = requestedPatientId || (!isStaff ? req.user?._id : undefined);
     const { startDate, endDate, limit = 100 } = req.query;
 
-    if (!patientId) {
+    if (!patientId && !isStaff) {
       res.status(400).json(
         {
           success: false,
@@ -90,8 +114,8 @@ export const getWearableData = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    // Verificar permisos (solo puede ver sus propios datos a menos que sea doctor/admin)
-    if (req.user?._id !== patientId && req.user?.role !== 'doctor' && req.user?.role !== 'admin') {
+    // Verificar permisos cuando se pide un paciente específico
+    if (requestedPatientId && req.user?._id !== requestedPatientId && !isStaff) {
       res.status(403).json(
         {
           success: false,
@@ -102,7 +126,8 @@ export const getWearableData = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    const query: any = { patientId };
+    // Si hay patientId (propio o específico) filtrar; si el staff no especificó, traer todo
+    const query: any = patientId ? { patientId } : {};
 
     // Filtrar por rango de fechas
     if (startDate || endDate) {
@@ -144,10 +169,12 @@ export const getWearableData = async (req: AuthenticatedRequest, res: Response):
  */
 export const getWearableMetrics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const patientId = req.params.patientId || req.user?._id;
+    const isStaff = req.user?.role === 'doctor' || req.user?.role === 'admin';
+    const requestedPatientId = req.params.patientId;
+    const patientId = requestedPatientId || (!isStaff ? req.user?._id : undefined);
     const { hours = 24 } = req.query;
 
-    if (!patientId) {
+    if (!patientId && !isStaff) {
       res.status(400).json(
         {
           success: false,
@@ -158,8 +185,7 @@ export const getWearableMetrics = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    // Verificar permisos
-    if (req.user?._id !== patientId && req.user?.role !== 'doctor' && req.user?.role !== 'admin') {
+    if (requestedPatientId && req.user?._id !== requestedPatientId && !isStaff) {
       res.status(403).json(
         {
           success: false,
@@ -173,10 +199,10 @@ export const getWearableMetrics = async (req: AuthenticatedRequest, res: Respons
     const startDate = new Date();
     startDate.setHours(startDate.getHours() - Number(hours));
 
-    const data = await WearableData.find({
-      patientId,
-      timestamp: { $gte: startDate }
-    }).sort({ timestamp: -1 }).lean();
+    const findQuery: any = { timestamp: { $gte: startDate } };
+    if (patientId) findQuery.patientId = patientId;
+
+    const data = await WearableData.find(findQuery).sort({ timestamp: -1 }).lean();
 
     // Calcular métricas
     const heartRates = data.filter((d: any) => d.heartRate).map((d: any) => d.heartRate as number);

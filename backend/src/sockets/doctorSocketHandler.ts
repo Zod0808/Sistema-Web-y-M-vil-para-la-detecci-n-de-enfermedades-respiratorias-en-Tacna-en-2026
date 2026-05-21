@@ -88,8 +88,7 @@ export function attachDoctorWebSocket(httpServer: HttpServer): WebSocketServer {
           return;
         }
         try {
-          const secret = process.env.JWT_SECRET;
-          if (!secret) throw new Error('JWT_SECRET no configurado');
+          const secret = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
           const decoded = jwt.verify(token, secret) as any;
           const role = decoded.role;
           if (role !== 'doctor' && role !== 'admin') {

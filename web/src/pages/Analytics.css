@@ -133,30 +133,62 @@
 }
 
 /* ── Dark mode ──────────────────────────────────────────────────── */
-.theme-dark .analytics-page {
+.theme-dark .analytics-page,
+[data-theme="dark"] .analytics-page {
   background: #0d1117;
 }
 
-.theme-dark .analytics-tabs {
+.theme-dark .analytics-header,
+[data-theme="dark"] .analytics-header {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+}
+
+.theme-dark .analytics-tabs,
+[data-theme="dark"] .analytics-tabs {
   background: #1e2433;
   border-bottom-color: rgba(255,255,255,0.08);
 }
 
-.theme-dark .tab-button {
+.theme-dark .tab-button,
+[data-theme="dark"] .tab-button {
   color: rgba(255,255,255,0.6);
 }
 
-.theme-dark .tab-button:hover {
+.theme-dark .tab-button:hover,
+[data-theme="dark"] .tab-button:hover {
   color: rgba(255,255,255,0.87);
   background: rgba(255,255,255,0.05);
 }
 
-.theme-dark .tab-button.active {
+.theme-dark .tab-button.active,
+[data-theme="dark"] .tab-button.active {
   color: #90caf9;
   border-bottom-color: #42a5f5;
   background: rgba(33,150,243,0.08);
 }
 
-.theme-dark .tab-loading {
+.theme-dark .tab-loading,
+[data-theme="dark"] .tab-loading {
   color: #90caf9;
+}
+
+/*
+ * El área de contenido resetea las variables de color a valores light
+ * porque los sub-componentes de Analytics fueron diseñados para modo claro.
+ * Esto evita que texto blanco (dark mode) quede invisible sobre fondos blancos.
+ */
+.theme-dark .analytics-content,
+[data-theme="dark"] .analytics-content {
+  --color-text: rgba(0, 0, 0, 0.87);
+  --color-text-primary: rgba(0, 0, 0, 0.87);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-background: #ffffff;
+  --color-background-paper: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-bg-subtle: #f9fafb;
+  --color-divider: rgba(0, 0, 0, 0.12);
+  --color-border: rgba(0, 0, 0, 0.12);
+  background: #f0f4f8;
+  border-radius: 8px;
+  padding: 20px 24px;
 }

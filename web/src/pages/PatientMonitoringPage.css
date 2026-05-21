@@ -87,15 +87,33 @@
   border-color: #22c55e33;
 }
 
+.vitals-card--high {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px #f59e0b22;
+  animation: blink-high 2s ease-in-out infinite;
+}
+
+@keyframes blink-high {
+  0%, 100% { box-shadow: 0 0 0 3px #f59e0b22; }
+  50%       { box-shadow: 0 0 0 6px #f59e0b44; }
+}
+
+.vitals-card--critical {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px #ef444422;
+  animation: blink-critical 1s ease-in-out infinite;
+}
+
+@keyframes blink-critical {
+  0%, 100% { box-shadow: 0 0 0 3px #ef444433; }
+  50%       { box-shadow: 0 0 0 8px #ef444455; }
+}
+
+/* keep old --alert as alias for --high for backward compat */
 .vitals-card--alert {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px #ef444422;
-  animation: blink-alert 1.5s ease-in-out infinite;
-}
-
-@keyframes blink-alert {
-  0%, 100% { box-shadow: 0 0 0 3px #ef444422; }
-  50%       { box-shadow: 0 0 0 6px #ef444444; }
+  animation: blink-critical 1s ease-in-out infinite;
 }
 
 .vitals-card--waiting {
@@ -125,9 +143,22 @@
   letter-spacing: 0.05em;
 }
 
-.vitals-card__badge--ok      { background: #dcfce7; color: #15803d; }
-.vitals-card__badge--alert   { background: #fee2e2; color: #dc2626; }
-.vitals-card__badge--waiting { background: #f3f4f6; color: #6b7280; }
+.vitals-card__badge--ok       { background: #dcfce7; color: #15803d; }
+.vitals-card__badge--high     { background: #fef3c7; color: #b45309; }
+.vitals-card__badge--critical { background: #fee2e2; color: #dc2626; font-weight: 900; }
+.vitals-card__badge--alert    { background: #fee2e2; color: #dc2626; }
+.vitals-card__badge--waiting  { background: #f3f4f6; color: #6b7280; }
+
+.theme-dark .vitals-card__badge--ok,
+[data-theme="dark"] .vitals-card__badge--ok       { background: #14532d; color: #86efac; }
+.theme-dark .vitals-card__badge--high,
+[data-theme="dark"] .vitals-card__badge--high     { background: #451a03; color: #fcd34d; }
+.theme-dark .vitals-card__badge--critical,
+[data-theme="dark"] .vitals-card__badge--critical { background: #450a0a; color: #fca5a5; }
+.theme-dark .vitals-card__badge--alert,
+[data-theme="dark"] .vitals-card__badge--alert    { background: #450a0a; color: #fca5a5; }
+.theme-dark .vitals-card__badge--waiting,
+[data-theme="dark"] .vitals-card__badge--waiting  { background: #1e2433; color: #9ca3af; }
 
 .vitals-card__metrics {
   display: flex;
@@ -158,6 +189,108 @@
   text-align: right;
 }
 
+/* ── Metric severity colors ──────────────────────────────────────── */
+.vitals-metric--high     { background: #fffbeb; }
+.vitals-metric--critical { background: #fff1f2; }
+
+.vitals-metric--high     .vitals-metric__value { color: #b45309; }
+.vitals-metric--critical .vitals-metric__value { color: #dc2626; }
+
+.theme-dark .vitals-metric--high,
+[data-theme="dark"] .vitals-metric--high     { background: #451a03; }
+.theme-dark .vitals-metric--critical,
+[data-theme="dark"] .vitals-metric--critical { background: #450a0a; }
+
+/* ── DB alert cards inside VitalsCard ───────────────────────────── */
+.vitals-card__db-alerts {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.db-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.db-alert--critical { background: #fee2e2; }
+.db-alert--high     { background: #fef3c7; }
+
+.db-alert__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.db-alert__title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.db-alert--critical .db-alert__title { color: #991b1b; }
+.db-alert--high     .db-alert__title { color: #92400e; }
+
+.db-alert__msg {
+  color: #374151;
+  line-height: 1.3;
+}
+
+.db-alert__ack {
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.08);
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.db-alert__ack:hover { background: rgba(0,0,0,0.16); }
+
+.theme-dark .db-alert--critical,
+[data-theme="dark"] .db-alert--critical { background: #450a0a; }
+.theme-dark .db-alert--high,
+[data-theme="dark"] .db-alert--high     { background: #451a03; }
+.theme-dark .db-alert__title,
+[data-theme="dark"] .db-alert__title    { color: #f9fafb; }
+.theme-dark .db-alert__msg,
+[data-theme="dark"] .db-alert__msg      { color: #d1d5db; }
+
+/* ── Sound toggle button ─────────────────────────────────────────── */
+.monitoring-sound-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.monitoring-sound-btn:hover { background: #f3f4f6; }
+.monitoring-sound-btn--on   { border-color: #22c55e; background: #dcfce7; }
+
+/* ── Header badges ───────────────────────────────────────────────── */
+.monitoring-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+}
+
+.monitoring-badge--critical { background: #fee2e2; color: #dc2626; }
+.monitoring-badge--high     { background: #fef3c7; color: #b45309; }
+
 /* ── Alert log ───────────────────────────────────────────────────── */
 .monitoring-log {
   margin-top: 2rem;
@@ -184,14 +317,18 @@
 
 .monitoring-log__item {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
   font-size: 0.8rem;
   padding: 0.4rem 0.6rem;
-  background: #fee2e2;
   border-radius: 6px;
-  color: #7f1d1d;
 }
+
+.monitoring-log__item--critical { background: #fee2e2; color: #7f1d1d; }
+.monitoring-log__item--high     { background: #fef3c7; color: #78350f; }
+
+.monitoring-log__sev { font-size: 1rem; flex-shrink: 0; }
 
 .monitoring-log__time {
   font-weight: 600;
@@ -234,17 +371,53 @@
   margin-left: auto;
 }
 
-/* ── Dark mode — triggered by body.theme-dark ─────────────────────── */
-.theme-dark .monitoring-title        { color: #f9fafb; }
-.theme-dark .vitals-card             { background: #1e293b; }
-.theme-dark .vitals-card__id         { color: #f9fafb; }
-.theme-dark .vitals-metric           { background: #0f172a; }
-.theme-dark .vitals-metric__value    { color: #f9fafb; }
-.theme-dark .monitoring-log          { background: #1e293b; }
-.theme-dark .monitoring-log__title   { color: #f9fafb; }
-.theme-dark .monitoring-log__item    { background: #450a0a; color: #fca5a5; }
-.theme-dark .monitoring-error        { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
-.theme-dark .monitoring-error__dismiss { color: #fca5a5; }
+/* ── Dark mode — triggered by body.theme-dark OR data-theme="dark" ── */
+.theme-dark .monitoring-title,
+[data-theme="dark"] .monitoring-title        { color: #f9fafb; }
+
+.theme-dark .vitals-card,
+[data-theme="dark"] .vitals-card             { background: #1e293b; }
+
+.theme-dark .vitals-card__id,
+[data-theme="dark"] .vitals-card__id         { color: #f9fafb; }
+
+.theme-dark .vitals-metric,
+[data-theme="dark"] .vitals-metric           { background: #0f172a; }
+
+.theme-dark .vitals-metric__value,
+[data-theme="dark"] .vitals-metric__value    { color: #f9fafb; }
+
+.theme-dark .vitals-metric__label,
+[data-theme="dark"] .vitals-metric__label    { color: #9ca3af; }
+
+.theme-dark .vitals-card__age,
+[data-theme="dark"] .vitals-card__age        { color: #9ca3af; }
+
+.theme-dark .monitoring-status,
+[data-theme="dark"] .monitoring-status       { color: #d1d5db; }
+
+.theme-dark .monitoring-poll-info,
+[data-theme="dark"] .monitoring-poll-info    { color: #9ca3af; }
+
+.theme-dark .monitoring-log,
+[data-theme="dark"] .monitoring-log          { background: #1e293b; }
+
+.theme-dark .monitoring-log__title,
+[data-theme="dark"] .monitoring-log__title   { color: #f9fafb; }
+
+.theme-dark .monitoring-log__item--critical,
+[data-theme="dark"] .monitoring-log__item--critical { background: #450a0a; color: #fca5a5; }
+.theme-dark .monitoring-log__item--high,
+[data-theme="dark"] .monitoring-log__item--high     { background: #451a03; color: #fcd34d; }
+
+.theme-dark .monitoring-error,
+[data-theme="dark"] .monitoring-error        { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
+
+.theme-dark .monitoring-error__dismiss,
+[data-theme="dark"] .monitoring-error__dismiss { color: #fca5a5; }
+
+.theme-dark .monitoring-empty,
+[data-theme="dark"] .monitoring-empty        { color: #9ca3af; }
 
 /* Fallback for system preference when no class is set */
 @media (prefers-color-scheme: dark) {
@@ -255,5 +428,6 @@
   body:not(.theme-light) .vitals-metric__value  { color: #f9fafb; }
   body:not(.theme-light) .monitoring-log        { background: #1e293b; }
   body:not(.theme-light) .monitoring-log__title { color: #f9fafb; }
-  body:not(.theme-light) .monitoring-log__item  { background: #450a0a; color: #fca5a5; }
+  body:not(.theme-light) .monitoring-log__item--critical { background: #450a0a; color: #fca5a5; }
+  body:not(.theme-light) .monitoring-log__item--high     { background: #451a03; color: #fcd34d; }
 }

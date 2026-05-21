@@ -1,24 +1,28 @@
 import React, { Suspense, lazy, useCallback, useMemo, useState } from 'react';
 import './Analytics.css';
 
-const AnalyticsDashboard = lazy(() => import('../components/AnalyticsDashboard'));
-const TemporalTrends = lazy(() => import('../components/TemporalTrends'));
-const DiseaseReports = lazy(() => import('../components/DiseaseReports'));
-const ShapDashboard = lazy(() => import('../components/ShapDashboard'));
+const AnalyticsDashboard       = lazy(() => import('../components/AnalyticsDashboard'));
+const TemporalTrends           = lazy(() => import('../components/TemporalTrends'));
+const DiseaseReports           = lazy(() => import('../components/DiseaseReports'));
+const EpidemiologicalHeatmap   = lazy(() => import('../components/EpidemiologicalHeatmap'));
+const InteractiveHeatMap       = lazy(() => import('../components/InteractiveHeatMap'));
 const AutomaticReportsDashboard = lazy(() => import('../components/AutomaticReportsDashboard'));
-const PatientMonitoringReport = lazy(() => import('../components/PatientMonitoringReport'));
+const ShapDashboard            = lazy(() => import('../components/ShapDashboard'));
+const PatientMonitoringReport  = lazy(() => import('../components/PatientMonitoringReport'));
 
 const ANALYTICS_TABS = [
-  { id: 'monitoring', label: '❤️ Monitoreo del Paciente', component: PatientMonitoringReport },
-  { id: 'reports', label: '📋 Reportes Automáticos', component: AutomaticReportsDashboard },
-  { id: 'dashboard', label: '📊 Dashboard', component: AnalyticsDashboard },
-  { id: 'trends', label: '📈 Tendencias', component: TemporalTrends },
-  { id: 'diseases', label: '🦠 Enfermedades', component: DiseaseReports },
-  { id: 'shap', label: '🧠 Explicabilidad', component: ShapDashboard },
+  { id: 'dashboard',   label: '📊 Dashboard',             component: AnalyticsDashboard },
+  { id: 'trends',      label: '📈 Tendencias Temporales',  component: TemporalTrends },
+  { id: 'diseases',    label: '🦠 Enfermedades',           component: DiseaseReports },
+  { id: 'epi-heatmap', label: '🗺️ Mapa Epidemiológico',   component: EpidemiologicalHeatmap },
+  { id: 'heatmap',     label: '📍 Mapa Interactivo',       component: InteractiveHeatMap },
+  { id: 'reports',     label: '📋 Reportes Automáticos',   component: AutomaticReportsDashboard },
+  { id: 'monitoring',  label: '❤️ Monitoreo Wearables',    component: PatientMonitoringReport },
+  { id: 'shap',        label: '🧠 Explicabilidad IA',       component: ShapDashboard },
 ];
 
 function Analytics() {
-  const [activeTab, setActiveTab] = useState('monitoring');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleTabChange = useCallback((tabId) => {
     setActiveTab(tabId);
@@ -34,8 +38,8 @@ function Analytics() {
   return (
     <div className="analytics-page">
       <div className="analytics-header">
-        <h1>Centro de Análisis y Monitoreo</h1>
-        <p>Seguimiento de salud del paciente y análisis de datos médicos</p>
+        <h1>Centro de Análisis y Reportes</h1>
+        <p>Estadísticas epidemiológicas, mapas de calor y análisis de datos médicos</p>
       </div>
 
       <div className="analytics-tabs">

@@ -72,10 +72,10 @@ const initializeUserModel = () => {
   return null;
 };
 
-// Generate JWT token
-const generateToken = (userId) => {
+// Generate JWT token (includes role so WebSocket handlers can verify authorization)
+const generateToken = (userId, role = 'patient') => {
   const secret = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
-  return jwt.sign({ userId }, secret, {
+  return jwt.sign({ userId, role }, secret, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
@@ -159,7 +159,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Generar tokens
-    const token = generateToken(user._id.toString());
+    const token = generateToken(user._id.toString(), user.role);
     const refreshToken = generateRefreshToken(user._id.toString());
 
     // Actualizar lastLogin
@@ -246,7 +246,7 @@ router.post('/register', async (req, res) => {
     });
 
     // Generar tokens
-    const token = generateToken(user._id.toString());
+    const token = generateToken(user._id.toString(), user.role);
     const refreshToken = generateRefreshToken(user._id.toString());
 
     // Actualizar lastLogin

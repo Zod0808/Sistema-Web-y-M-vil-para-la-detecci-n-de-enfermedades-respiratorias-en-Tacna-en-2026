@@ -22,7 +22,7 @@ import {
   Cell,
 } from 'recharts';
 import './EpidemiologicalHeatmap.css';
-import { LEGACY_API_BASE, API_BASE } from '../utils/apiBase';
+import { LEGACY_API_BASE } from '../utils/apiBase';
 
 const PERIOD_OPTIONS = [
   { value: '7d', label: 'Últimos 7 días' },

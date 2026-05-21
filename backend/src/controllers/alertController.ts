@@ -193,7 +193,14 @@ export const getUserAlerts = asyncHandler(async (req: AuthenticatedRequest, res:
   } = req.query;
 
   const isAdmin = req.user.role === 'admin';
-  const targetUserId = isAdmin && queryUserId ? String(queryUserId) : req.user._id;
+  const isDoctor = req.user.role === 'doctor';
+  let targetUserId: string | Types.ObjectId = req.user._id;
+  if (isAdmin && queryUserId) {
+    targetUserId = String(queryUserId);
+  } else if ((isDoctor || isAdmin) && patientId) {
+    // Doctors can query alerts for their patients by patientId
+    targetUserId = String(patientId);
+  }
 
   const filters: {
     status?: AlertStatus[];
