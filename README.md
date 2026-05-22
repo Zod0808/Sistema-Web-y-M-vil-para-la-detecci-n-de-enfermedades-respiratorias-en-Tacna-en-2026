@@ -11,6 +11,54 @@ Plataforma clínica para la gestión y análisis de enfermedades respiratorias. 
 
 ---
 
+## Estado de Despliegue
+
+| Componente | Estado | Plataforma | Detalles |
+| --- | --- | --- | --- |
+| Web (frontend) | ✅ Desplegado | Docker · Nginx | React 18 con Nginx Alpine, health check en `/health` |
+| Base de datos | ✅ Desplegado | MongoDB 6.0 | Autenticación habilitada, backup diario, volumen persistente |
+| Backend API | 🔄 En evaluación | Railway / Docker | `backend/railway.json` configurado, `Dockerfile` multi-stage listo |
+| Servicios de IA | 🔄 En evaluación | Railway / Docker | `ai-services/railway.json` configurado, `Dockerfile.prod` listo |
+| App Móvil | 🔄 En evaluación | Capacitor Android | APK debug compilado y probado en emulador Pixel 7 Pro |
+
+### Web (✅ Desplegado)
+
+- Build estático de React servido por **Nginx Alpine**
+- Variables de build: `REACT_APP_BACKEND_URL`, `REACT_APP_WS_URL`, `REACT_APP_AI_URL`
+- Health check: `GET /health` → 200
+- Dockerfile: `web/Dockerfile` (multi-stage: Node 18 builder → Nginx)
+
+### Base de datos (✅ Desplegado)
+
+- **MongoDB 6.0** con autenticación root (`MONGO_INITDB_ROOT_USERNAME / PASSWORD`)
+- Volumen persistente `mongodb_prod_data` + `mongodb_config`
+- Scripts de inicialización en `mongodb/init/`
+- Backup automático diario con retención de 30 días (`scripts/backup.sh`)
+- Health check: `mongosh` ping cada 30 s
+
+### Backend API (🔄 En evaluación)
+
+- **Node.js 18 / TypeScript / Express**, puerto 3001
+- `backend/railway.json` → builder Dockerfile, restart `ON_FAILURE` (máx. 10)
+- Variables requeridas: `MONGODB_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGINS`
+- Imagen Docker disponible en GHCR: `ghcr.io/<org>/respicare-backend`
+
+### Servicios de IA (🔄 En evaluación)
+
+- **Python 3.10 / FastAPI**, puerto 8000
+- `ai-services/railway.json` → builder `Dockerfile.prod`, restart `ON_FAILURE` (máx. 10)
+- Modelos: Random Forest 96.86%, XGBoost 97.28%, Neural Network 99.64%, Ensemble >99.8%
+- Imagen Docker disponible en GHCR: `ghcr.io/<org>/ai-services`
+
+### App Móvil (🔄 En evaluación)
+
+- **Next.js 16 + Capacitor 6**, APK debug generado y corriendo en emulador Pixel 7 Pro
+- En emulador usa `http://10.0.2.2:3001/api/v1` (alias al `localhost` del host)
+- Pasos de build: `npm run build` → `cap sync android` → `gradlew assembleDebug` → `adb install`
+- APK probado: `app-x86_64-debug.apk` (24/04/2026)
+
+---
+
 ## Arquitectura
 
 ```
