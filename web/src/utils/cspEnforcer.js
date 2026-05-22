@@ -31,7 +31,7 @@ export function initCSPEnforcement() {
 
   // Prevenir eval() y Function() (aunque CSP debería bloquearlo)
   if (typeof window !== 'undefined') {
-    const originalEval = window.eval;
+    // eslint-disable-next-line no-eval
     window.eval = function(code) {
       console.warn('eval() bloqueado por política de seguridad');
       throw new Error('eval() no está permitido por razones de seguridad');
@@ -39,7 +39,6 @@ export function initCSPEnforcement() {
 
     // Prevenir Function constructor
     if (window.Function) {
-      const OriginalFunction = window.Function;
       window.Function = function(...args) {
         console.warn('Function() constructor bloqueado por política de seguridad');
         throw new Error('Function() constructor no está permitido por razones de seguridad');

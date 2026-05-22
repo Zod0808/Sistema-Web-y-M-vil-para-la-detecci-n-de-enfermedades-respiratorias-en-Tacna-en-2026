@@ -9,7 +9,7 @@ const HERO_IMAGE_PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAOUlEQVR42mNgGAXUBwExwMjIAIYGCgYGBob/zzAxwMDAkA0YGBg6A0TLEC0YGhgIEjKIEeMcAxyAgAWlwQgmQ5hAEAAAAASUVORK5CYII=';
 
 function Home() {
-  const [language, setLanguage] = useState(getCurrentLanguage());
+  const [, setLanguage] = useState(getCurrentLanguage());
   const heroSources = useMemo(
     () => ({
       webp: HERO_IMAGE_WEBP,

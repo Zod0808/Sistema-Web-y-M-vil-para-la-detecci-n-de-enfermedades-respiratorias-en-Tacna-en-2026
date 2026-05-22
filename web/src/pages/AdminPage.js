@@ -99,9 +99,8 @@ const AdminPage = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  const headers = { Authorization: `Bearer ${token}` };
-
   const load = useCallback(async () => {
+    const headers = { Authorization: `Bearer ${token}` };
     setLoading(true);
     setError('');
     try {

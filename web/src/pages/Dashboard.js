@@ -25,15 +25,15 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const backendApiRoot = useMemo(() => `${BACKEND_BASE_URL}/api`, [BACKEND_BASE_URL]);
+  const backendApiRoot = useMemo(() => `${BACKEND_BASE_URL}/api`, []);
   const backendHealthCandidates = useMemo(
     () => [`${BACKEND_BASE_URL}/health`, `${BACKEND_BASE_URL}/api/health`],
-    [BACKEND_BASE_URL]
+    []
   );
-  const aiHealthUrl = useMemo(() => `${AI_BASE_URL}/health`, [AI_BASE_URL]);
+  const aiHealthUrl = useMemo(() => `${AI_BASE_URL}/health`, []);
   const aiDocsUrl = useMemo(
     () => `${AI_BASE_URL.replace(/\/api\/v\d+$/i, '')}/docs`,
-    [AI_BASE_URL]
+    []
   );
 
   const checkServices = useCallback(async () => {
