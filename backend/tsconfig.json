@@ -27,6 +27,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
     "skipDefaultLibCheck": true,
+    "allowJs": true,
+    "checkJs": false,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
