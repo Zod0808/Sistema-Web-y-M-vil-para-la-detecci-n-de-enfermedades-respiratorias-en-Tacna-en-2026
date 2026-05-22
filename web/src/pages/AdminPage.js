@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../utils/apiBase';
 import { useAuth } from '../contexts/AuthContext';
@@ -99,8 +99,9 @@ const AdminPage = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
+  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+
   const load = useCallback(async () => {
-    const headers = { Authorization: `Bearer ${token}` };
     setLoading(true);
     setError('');
     try {
@@ -122,7 +123,7 @@ const AdminPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, token]);
+  }, [page, headers]);
 
   useEffect(() => { load(); }, [load]);
 
