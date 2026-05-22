@@ -14,7 +14,6 @@ const ConsentManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedConsent, setSelectedConsent] = useState(null);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [signatureCanvas, setSignatureCanvas] = useState(null);
   const [stats, setStats] = useState(null);
   const [filters, setFilters] = useState({
     status: '',

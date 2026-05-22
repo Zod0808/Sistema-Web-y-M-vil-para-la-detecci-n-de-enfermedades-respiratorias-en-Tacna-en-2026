@@ -21,7 +21,7 @@ import { API_BASE, AI_BASE_URL, LEGACY_API_BASE } from '../utils/apiBase';
 
 function ChatBotEnhanced() {
   const [sessionId, setSessionId] = useState(null);
-  const [language, setLanguage] = useState(getCurrentLanguage());
+  const [, setLanguage] = useState(getCurrentLanguage());
   const [messages, setMessages] = useState([
     {
       type: 'bot',
