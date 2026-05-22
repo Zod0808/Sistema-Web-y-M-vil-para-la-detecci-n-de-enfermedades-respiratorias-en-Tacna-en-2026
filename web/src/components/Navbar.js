@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import LanguageSelector from './LanguageSelector';
@@ -91,7 +91,6 @@ function Navbar() {
   const location  = useLocation();
   const navigate  = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
-  const { t } = useTranslation();
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef(null);
   const path = location.pathname;

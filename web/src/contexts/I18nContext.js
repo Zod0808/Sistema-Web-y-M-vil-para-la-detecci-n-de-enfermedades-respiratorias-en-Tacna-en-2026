@@ -25,7 +25,8 @@ export function I18nProvider({ children }) {
     setLangService(langCode);
   }, []);
 
-  // t recreated on each language change → consumers re-render automatically
+  // t recreated on each language change so consumers re-render automatically
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const t = useCallback((key, params) => tService(key, params), [language]);
 
   return (

@@ -37,6 +37,7 @@ const ConsentManagement = () => {
   const [newBenefit, setNewBenefit] = useState('');
   const [newAlternative, setNewAlternative] = useState('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadConsents();
     loadStats();

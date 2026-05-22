@@ -25,6 +25,7 @@ function MLAdvancedResults({ analysisId, experimentId, sessionId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (analysisId) {
       loadAnalysisData();
