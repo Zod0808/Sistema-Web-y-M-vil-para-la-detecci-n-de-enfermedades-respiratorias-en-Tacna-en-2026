@@ -33,11 +33,10 @@ const ReferralManagement = () => {
     requestedDate: new Date().toISOString().split('T')[0],
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadReferrals();
     loadStats();
-  }, [filters]);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getAuthToken = () => {
     return localStorage.getItem('auth_token');

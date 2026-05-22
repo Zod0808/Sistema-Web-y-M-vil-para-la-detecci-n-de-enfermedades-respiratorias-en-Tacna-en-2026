@@ -37,11 +37,10 @@ const ConsentManagement = () => {
   const [newBenefit, setNewBenefit] = useState('');
   const [newAlternative, setNewAlternative] = useState('');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadConsents();
     loadStats();
-  }, [filters]);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getAuthToken = () => {
     return localStorage.getItem('auth_token');
