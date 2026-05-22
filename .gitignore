@@ -147,7 +147,7 @@ dist/
 
 # Gatsby
 .cache/
-public/
+/public/
 
 # React Native
 .expo/
