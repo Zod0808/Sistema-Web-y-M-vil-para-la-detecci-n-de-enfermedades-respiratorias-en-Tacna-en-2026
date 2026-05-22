@@ -4,19 +4,11 @@ import { AppConfig } from '../types';
 // Cargar variables de entorno
 dotenv.config();
 
-// Validar variables de entorno requeridas
+// Solo validar las variables sin valor por defecto en el código
 const requiredEnvVars = [
-  'NODE_ENV',
-  'PORT',
   'MONGODB_URI',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
-  'REDIS_URL',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASS',
-  'PUSH_PROVIDER',
 ];
 
 for (const envVar of requiredEnvVars) {
