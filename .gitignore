@@ -6,6 +6,8 @@
 !*.env.example
 !.env.example
 !env.example
+railway-backend-vars.json
+.env.production
 !.env.production
 !.env.staging
 
@@ -116,7 +118,6 @@ docs/_build/
 docs/api/
 
 # Package managers
-package-lock.json
 yarn.lock
 Pipfile.lock
 poetry.lock
