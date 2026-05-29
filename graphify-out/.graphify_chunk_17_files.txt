@@ -1,0 +1,22 @@
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\arquitectura_sistema.html
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\CATALOGO_PRUEBAS.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\CRONOGRAMA_PROYECTO.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\DIAGRAMAS_MERMAID.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\ESTRUCTURA_PRESENTACION_DIAPOSITIVAS.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\FD05-EPIS-Informe ProyectoFinal.docx.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\FD07-EPIS-Informe AGIL-SCRUM de Proyecto.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\Informe_Plan_Despliegue_Semana9.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\Informe_Resultados_Plan_Iteraciones.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\Informe_Resultados_Pruebas.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\INFORME_SOLUCION_TECNOLOGICA.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\Informe_Taller_Arbol_Decision_Estrategica.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\METODOLOGIA_AGIL_PROYECTO.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\REPORTE_LABORATORIO_TDD.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\SeguridadCadenaSuministroSoftware_UnidadII.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\TALLER_CONFIGURACION_AMBIENTES.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\Documentation\VERSIONAMIENTO_SISTEMA.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\infrastructure\cdn-config.yaml
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\infrastructure\argocd\app-of-apps.yaml
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\infrastructure\argocd\application.yaml
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\infrastructure\cdn\aws-cloudfront-config.md
+C:\Users\User\Desktop\construccionI\proyecto-final-sistema_enfermedades_respiratorias\infrastructure\cdn\cloudflare-config.md

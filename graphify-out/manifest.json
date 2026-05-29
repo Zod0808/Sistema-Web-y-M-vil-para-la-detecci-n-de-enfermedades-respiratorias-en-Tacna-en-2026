@@ -1,0 +1,1067 @@
+{
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\declarations.d.ts": {
+    "mtime": 1763956682.9206555,
+    "ast_hash": "0322355544684b104e130d08fbe1082b",
+    "semantic_hash": "0322355544684b104e130d08fbe1082b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\index-clean.ts": {
+    "mtime": 1777952128.6379552,
+    "ast_hash": "aa979ae39af3ff5abbc04b117fdf4c85",
+    "semantic_hash": "aa979ae39af3ff5abbc04b117fdf4c85"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\index-dev.js": {
+    "mtime": 1778943241.5930464,
+    "ast_hash": "944d9c162ff9ebb0445569ccc630bc76",
+    "semantic_hash": "944d9c162ff9ebb0445569ccc630bc76"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\index-simple.ts": {
+    "mtime": 1777952120.8378541,
+    "ast_hash": "f0fc683a1e1f4315f8142650855a2983",
+    "semantic_hash": "f0fc683a1e1f4315f8142650855a2983"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\index.ts": {
+    "mtime": 1777999812.1997733,
+    "ast_hash": "a69b3e09c0325a5b8ce2beac0c5f27f5",
+    "semantic_hash": "a69b3e09c0325a5b8ce2beac0c5f27f5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\application\\services\\AuthService.ts": {
+    "mtime": 1763956682.8969996,
+    "ast_hash": "38aa89e011f5701d958d7a8b5048e379",
+    "semantic_hash": "38aa89e011f5701d958d7a8b5048e379"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\application\\services\\HashService.ts": {
+    "mtime": 1763956682.8969996,
+    "ast_hash": "b19241343d55deddcc4231a7e1d9ebb3",
+    "semantic_hash": "b19241343d55deddcc4231a7e1d9ebb3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\application\\services\\MedicalHistoryService.ts": {
+    "mtime": 1763956682.8969996,
+    "ast_hash": "755fed3437cedb4d5cc963db7ec91d58",
+    "semantic_hash": "755fed3437cedb4d5cc963db7ec91d58"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\application\\services\\TokenService.ts": {
+    "mtime": 1763956682.9012964,
+    "ast_hash": "94af898feab2e85a24062358c021c970",
+    "semantic_hash": "94af898feab2e85a24062358c021c970"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\config\\config.ts": {
+    "mtime": 1779415322.2065873,
+    "ast_hash": "d86bcf3f741206f92689a8574a5ef187",
+    "semantic_hash": "d86bcf3f741206f92689a8574a5ef187"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\config\\redisClient.ts": {
+    "mtime": 1775774105.6552234,
+    "ast_hash": "56c2790f7ae2e9969622858ea5cb059d",
+    "semantic_hash": "56c2790f7ae2e9969622858ea5cb059d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\config\\swagger.ts": {
+    "mtime": 1763956682.903831,
+    "ast_hash": "107798a80e3ea90dc8b6dba3c640671b",
+    "semantic_hash": "107798a80e3ea90dc8b6dba3c640671b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\alertController.ts": {
+    "mtime": 1778965690.059999,
+    "ast_hash": "4ff02e8088c7b96f130bbee3f8e678bd",
+    "semantic_hash": "4ff02e8088c7b96f130bbee3f8e678bd"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\authController.ts": {
+    "mtime": 1778807612.3124514,
+    "ast_hash": "10d5de077c5ea5e301c13fa8b1e5b6c0",
+    "semantic_hash": "10d5de077c5ea5e301c13fa8b1e5b6c0"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\automaticReportController.ts": {
+    "mtime": 1763956682.907856,
+    "ast_hash": "ee1795014ce56c9d0668618916fe5ebe",
+    "semantic_hash": "ee1795014ce56c9d0668618916fe5ebe"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\dashboardController.ts": {
+    "mtime": 1763956682.9093633,
+    "ast_hash": "177668f3ead2029a8e2903b0664261b4",
+    "semantic_hash": "177668f3ead2029a8e2903b0664261b4"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\dsrController.ts": {
+    "mtime": 1763956682.9103699,
+    "ast_hash": "fb47c1ae3f8b173d870688c057bb7ca0",
+    "semantic_hash": "fb47c1ae3f8b173d870688c057bb7ca0"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\emergencyController.ts": {
+    "mtime": 1764306770.9987273,
+    "ast_hash": "4cbc657bb2e67689fe5b73897b642fc3",
+    "semantic_hash": "4cbc657bb2e67689fe5b73897b642fc3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\exportController.ts": {
+    "mtime": 1763956682.9103699,
+    "ast_hash": "8768903e1b8c7b1b4b1610e51babcc08",
+    "semantic_hash": "8768903e1b8c7b1b4b1610e51babcc08"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\fhirController.ts": {
+    "mtime": 1764305820.298096,
+    "ast_hash": "37a854612dfbf72572d6f1695e73325a",
+    "semantic_hash": "37a854612dfbf72572d6f1695e73325a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\fileUploadController.ts": {
+    "mtime": 1763956682.912369,
+    "ast_hash": "de31b72e8b018383bd13d62b5cc9cd18",
+    "semantic_hash": "de31b72e8b018383bd13d62b5cc9cd18"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\integrationController.ts": {
+    "mtime": 1764306137.9790442,
+    "ast_hash": "3ae8d1c943ecefb467e53dfe41ef8de3",
+    "semantic_hash": "3ae8d1c943ecefb467e53dfe41ef8de3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\labController.ts": {
+    "mtime": 1764306496.915961,
+    "ast_hash": "44f07bb4e5de59e725483670ee4e418f",
+    "semantic_hash": "44f07bb4e5de59e725483670ee4e418f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\medicalHistoryController.ts": {
+    "mtime": 1775773928.7634478,
+    "ast_hash": "5cabfb7e9369e23565dd70a1e5862579",
+    "semantic_hash": "5cabfb7e9369e23565dd70a1e5862579"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\smsMetricsController.ts": {
+    "mtime": 1775772729.7842665,
+    "ast_hash": "5091f3747a15268cb747c5724adab73a",
+    "semantic_hash": "5091f3747a15268cb747c5724adab73a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\smsWebhookController.ts": {
+    "mtime": 1764009861.4338713,
+    "ast_hash": "f7f3984a10bad2e2652cb56d27d7625b",
+    "semantic_hash": "f7f3984a10bad2e2652cb56d27d7625b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\symptomAnalyzerController.ts": {
+    "mtime": 1763956682.9186203,
+    "ast_hash": "136cb3e8725ad64e62f1faec47141ea3",
+    "semantic_hash": "136cb3e8725ad64e62f1faec47141ea3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\controllers\\wearableController.ts": {
+    "mtime": 1778965972.751045,
+    "ast_hash": "a5e825bfc1c02845a5fadbbb0c8bff7c",
+    "semantic_hash": "a5e825bfc1c02845a5fadbbb0c8bff7c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\entities\\AIAnalysis.ts": {
+    "mtime": 1763956682.922164,
+    "ast_hash": "5c4b5e1784eb4c003b4427b36d672a4b",
+    "semantic_hash": "5c4b5e1784eb4c003b4427b36d672a4b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\entities\\MedicalHistory.ts": {
+    "mtime": 1763956682.9226737,
+    "ast_hash": "c8945f452b2088d6a7a0e10b2dd2e46a",
+    "semantic_hash": "c8945f452b2088d6a7a0e10b2dd2e46a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\entities\\User.ts": {
+    "mtime": 1763956682.9226737,
+    "ast_hash": "7fc2e578c84e31c8f7170a0a11f17a94",
+    "semantic_hash": "7fc2e578c84e31c8f7170a0a11f17a94"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\repositories\\MedicalHistoryRepository.ts": {
+    "mtime": 1763956682.9266844,
+    "ast_hash": "22b70ade5983d51439beccfb65c25827",
+    "semantic_hash": "22b70ade5983d51439beccfb65c25827"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\repositories\\UserRepository.ts": {
+    "mtime": 1763956682.9266844,
+    "ast_hash": "bc972b13ecf557da7edb957fafcc4da8",
+    "semantic_hash": "bc972b13ecf557da7edb957fafcc4da8"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\repositories\\generated\\AIAnalysisRepository.generated.ts": {
+    "mtime": 1763956682.9276834,
+    "ast_hash": "1957210724f63cbd79c1dc43ae2be41d",
+    "semantic_hash": "1957210724f63cbd79c1dc43ae2be41d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\repositories\\generated\\MedicalHistoryRepository.generated.ts": {
+    "mtime": 1763956682.928684,
+    "ast_hash": "19f3d23d6ee2a6e496f2a0be1978853d",
+    "semantic_hash": "19f3d23d6ee2a6e496f2a0be1978853d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\repositories\\generated\\UserRepository.generated.ts": {
+    "mtime": 1763956682.928684,
+    "ast_hash": "9bfb1c113f03e1b5e12343f0bbe8cd73",
+    "semantic_hash": "9bfb1c113f03e1b5e12343f0bbe8cd73"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\use-cases\\auth\\AuthenticateUserUseCase.ts": {
+    "mtime": 1763956682.9324262,
+    "ast_hash": "bd701d54286ca6ec9b5aadfb36c0e5b2",
+    "semantic_hash": "bd701d54286ca6ec9b5aadfb36c0e5b2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\use-cases\\auth\\RegisterUserUseCase.ts": {
+    "mtime": 1763956682.9329853,
+    "ast_hash": "68d95733c57b24c32c08eee5e40e3df2",
+    "semantic_hash": "68d95733c57b24c32c08eee5e40e3df2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\use-cases\\medical\\CreateMedicalHistoryUseCase.ts": {
+    "mtime": 1763956682.9339907,
+    "ast_hash": "7509fe24ecd2289a2708d4f0a5e141de",
+    "semantic_hash": "7509fe24ecd2289a2708d4f0a5e141de"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\use-cases\\medical\\GetMedicalHistoryUseCase.ts": {
+    "mtime": 1763956682.9339907,
+    "ast_hash": "bdad48b357e3f8eb3742ecc4e144e9da",
+    "semantic_hash": "bdad48b357e3f8eb3742ecc4e144e9da"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\value-objects\\Location.ts": {
+    "mtime": 1763956682.9369946,
+    "ast_hash": "737cbe737f52973245f88b89264d653d",
+    "semantic_hash": "737cbe737f52973245f88b89264d653d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\domain\\value-objects\\Symptom.ts": {
+    "mtime": 1763956682.9369946,
+    "ast_hash": "efb77209cb74e292be6969429017ac42",
+    "semantic_hash": "efb77209cb74e292be6969429017ac42"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\dto\\ErrorResponse.dto.ts": {
+    "mtime": 1763956682.9379952,
+    "ast_hash": "60e499d6a231304e3d28595e2bcf7d4b",
+    "semantic_hash": "60e499d6a231304e3d28595e2bcf7d4b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\generators\\dto-generator.ts": {
+    "mtime": 1763956682.9389944,
+    "ast_hash": "7c7d9ac104953e97fb28bfc2efed45f8",
+    "semantic_hash": "7c7d9ac104953e97fb28bfc2efed45f8"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\generators\\repository-generator.ts": {
+    "mtime": 1763956682.9399953,
+    "ast_hash": "95d7251e73a6cf0e28c49baf92d0a4cc",
+    "semantic_hash": "95d7251e73a6cf0e28c49baf92d0a4cc"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\container\\DependencyContainer.ts": {
+    "mtime": 1763956682.9440095,
+    "ast_hash": "52c2a521018b831d779674f363b22e2c",
+    "semantic_hash": "52c2a521018b831d779674f363b22e2c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\repositories\\MongoMedicalHistoryRepository.ts": {
+    "mtime": 1763956682.9457822,
+    "ast_hash": "f8fa7764e0a434598ebf7c3b46f28df2",
+    "semantic_hash": "f8fa7764e0a434598ebf7c3b46f28df2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\repositories\\MongoUserRepository.ts": {
+    "mtime": 1763956682.9457822,
+    "ast_hash": "8b79d46bc707f6774853689767111bf6",
+    "semantic_hash": "8b79d46bc707f6774853689767111bf6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\repositories\\generated\\MongoAIAnalysisRepository.generated.ts": {
+    "mtime": 1763956682.9487867,
+    "ast_hash": "2a245c2592059800795d7719ff7c61b6",
+    "semantic_hash": "2a245c2592059800795d7719ff7c61b6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\repositories\\generated\\MongoMedicalHistoryRepository.generated.ts": {
+    "mtime": 1763956682.9487867,
+    "ast_hash": "f186eedd4c10848c30423f2e08b4c348",
+    "semantic_hash": "f186eedd4c10848c30423f2e08b4c348"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\infrastructure\\repositories\\generated\\MongoUserRepository.generated.ts": {
+    "mtime": 1763956682.9497883,
+    "ast_hash": "48d888d5666acf38177ea15dcc9725d6",
+    "semantic_hash": "48d888d5666acf38177ea15dcc9725d6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\controllers\\AuthController.ts": {
+    "mtime": 1763956682.9507883,
+    "ast_hash": "a528da32bd4d7241421853dc87b9c368",
+    "semantic_hash": "a528da32bd4d7241421853dc87b9c368"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\controllers\\MedicalHistoryController.ts": {
+    "mtime": 1763956682.9507883,
+    "ast_hash": "85b274e23e623b0ad2f6eb5d1435148e",
+    "semantic_hash": "85b274e23e623b0ad2f6eb5d1435148e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\ApiResponse.ts": {
+    "mtime": 1763956682.9532986,
+    "ast_hash": "b6c37f210fba98ada413916423ff1685",
+    "semantic_hash": "b6c37f210fba98ada413916423ff1685"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\AuthResponseDto.ts": {
+    "mtime": 1763956682.9532986,
+    "ast_hash": "672604f55902731b911169c7f12a7210",
+    "semantic_hash": "672604f55902731b911169c7f12a7210"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\CreateMedicalHistoryRequestDto.ts": {
+    "mtime": 1763956682.9548028,
+    "ast_hash": "2293d9ef19c444d28ce149495c664022",
+    "semantic_hash": "2293d9ef19c444d28ce149495c664022"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\LoginRequestDto.ts": {
+    "mtime": 1763956682.9548028,
+    "ast_hash": "32f0092a1367bb20f8ce57068453389e",
+    "semantic_hash": "32f0092a1367bb20f8ce57068453389e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\MedicalHistoryResponseDto.ts": {
+    "mtime": 1763956682.9558086,
+    "ast_hash": "99dfc3a0b08f4e987f0b6f015cf6b3dd",
+    "semantic_hash": "99dfc3a0b08f4e987f0b6f015cf6b3dd"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\RegisterRequestDto.ts": {
+    "mtime": 1763956682.9558086,
+    "ast_hash": "f7c4eb4ffdfc2f9b4abbbe6ad11b564c",
+    "semantic_hash": "f7c4eb4ffdfc2f9b4abbbe6ad11b564c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\UserResponseDto.ts": {
+    "mtime": 1763956682.9568088,
+    "ast_hash": "f1cc68bfa5ae7a9b61935e4798ef13b5",
+    "semantic_hash": "f1cc68bfa5ae7a9b61935e4798ef13b5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\generated\\MedicalHistoryRequestDto.generated.ts": {
+    "mtime": 1763956682.957809,
+    "ast_hash": "109b09779a6ae4c72c5c9203b3447917",
+    "semantic_hash": "109b09779a6ae4c72c5c9203b3447917"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\generated\\MedicalHistoryResponseDto.generated.ts": {
+    "mtime": 1763956682.958809,
+    "ast_hash": "8edc73c3fff16e4af26eb08f7f22004b",
+    "semantic_hash": "8edc73c3fff16e4af26eb08f7f22004b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\generated\\UserRequestDto.generated.ts": {
+    "mtime": 1763956682.958809,
+    "ast_hash": "1d9739256d78b8dae2dd7b3c4e1b60df",
+    "semantic_hash": "1d9739256d78b8dae2dd7b3c4e1b60df"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\dtos\\generated\\UserResponseDto.generated.ts": {
+    "mtime": 1763956682.9598088,
+    "ast_hash": "47f73518ea362a70cadfae7a573891b0",
+    "semantic_hash": "47f73518ea362a70cadfae7a573891b0"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\routes\\AuthRoutes.ts": {
+    "mtime": 1763956682.9608088,
+    "ast_hash": "dad7b7a3eabd17306ee21857929a2944",
+    "semantic_hash": "dad7b7a3eabd17306ee21857929a2944"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\interface-adapters\\routes\\MedicalHistoryRoutes.ts": {
+    "mtime": 1763956682.9614675,
+    "ast_hash": "b6f14dbcbdb9cbd6991325394db03ab2",
+    "semantic_hash": "b6f14dbcbdb9cbd6991325394db03ab2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\jobs\\alertJobs.ts": {
+    "mtime": 1763956682.9614675,
+    "ast_hash": "73cfd2754d2f3b56656816eee6557538",
+    "semantic_hash": "73cfd2754d2f3b56656816eee6557538"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\jobs\\appointmentJobs.ts": {
+    "mtime": 1763956682.9624734,
+    "ast_hash": "755144bd9e5b20880ab3cb1d475d6f88",
+    "semantic_hash": "755144bd9e5b20880ab3cb1d475d6f88"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\jobs\\labImportJobs.ts": {
+    "mtime": 1775772868.4696198,
+    "ast_hash": "f9e5bfce97077cc494c092e319ac8fb6",
+    "semantic_hash": "f9e5bfce97077cc494c092e319ac8fb6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\jobs\\mlMetricsJobs.ts": {
+    "mtime": 1775773731.5056992,
+    "ast_hash": "971100241bfffc2067578f6d9e92e653",
+    "semantic_hash": "971100241bfffc2067578f6d9e92e653"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\jobs\\reportJobs.ts": {
+    "mtime": 1763956682.9629776,
+    "ast_hash": "bab513672cb0d1076e1c38f049a8cacb",
+    "semantic_hash": "bab513672cb0d1076e1c38f049a8cacb"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\metrics\\metrics.ts": {
+    "mtime": 1763956682.963983,
+    "ast_hash": "7e4a068c2fed492dbe3a10de7368f548",
+    "semantic_hash": "7e4a068c2fed492dbe3a10de7368f548"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\metrics\\percentileMetrics.ts": {
+    "mtime": 1775774957.606091,
+    "ast_hash": "b89b7c98e13f3bd4d9a39781127db327",
+    "semantic_hash": "b89b7c98e13f3bd4d9a39781127db327"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\auditLogger.ts": {
+    "mtime": 1763956682.9654872,
+    "ast_hash": "be6bc63b18484a81ad01434287d63fab",
+    "semantic_hash": "be6bc63b18484a81ad01434287d63fab"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\auth.ts": {
+    "mtime": 1777968813.344926,
+    "ast_hash": "5e39ed5ee46e0e97045e042fd4fd589b",
+    "semantic_hash": "5e39ed5ee46e0e97045e042fd4fd589b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\brotliCompression.ts": {
+    "mtime": 1763956682.9664917,
+    "ast_hash": "904e85907ba27a1625aa5d70cf53805e",
+    "semantic_hash": "904e85907ba27a1625aa5d70cf53805e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\enforceHttps.ts": {
+    "mtime": 1763956682.9664917,
+    "ast_hash": "0516f13155bb914ce19b607e4012467d",
+    "semantic_hash": "0516f13155bb914ce19b607e4012467d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\errorHandler.ts": {
+    "mtime": 1763956682.9674919,
+    "ast_hash": "cd4012910500f610daca2b0cd7e90bba",
+    "semantic_hash": "cd4012910500f610daca2b0cd7e90bba"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\rateLimiter.ts": {
+    "mtime": 1763956682.9674919,
+    "ast_hash": "d4c7a61d95d7f526f164b14e2ea40df5",
+    "semantic_hash": "d4c7a61d95d7f526f164b14e2ea40df5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\rbac.ts": {
+    "mtime": 1777010123.1673553,
+    "ast_hash": "3940a62797880522794ddd563ea8a36f",
+    "semantic_hash": "3940a62797880522794ddd563ea8a36f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\rbacAudit.ts": {
+    "mtime": 1763956682.968493,
+    "ast_hash": "c5563e73dd14a31aa916939bd78324ce",
+    "semantic_hash": "c5563e73dd14a31aa916939bd78324ce"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\middleware\\validation.ts": {
+    "mtime": 1763956682.968493,
+    "ast_hash": "c17f92acda37aa60ce64cfd9ce994000",
+    "semantic_hash": "c17f92acda37aa60ce64cfd9ce994000"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\AIAnalysis.ts": {
+    "mtime": 1763956682.969492,
+    "ast_hash": "917eac88c9fd740faf2a7412286c8005",
+    "semantic_hash": "917eac88c9fd740faf2a7412286c8005"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\Alert.ts": {
+    "mtime": 1763999347.9315708,
+    "ast_hash": "1a9c0a0a8698e37b99465b572d18c5b3",
+    "semantic_hash": "1a9c0a0a8698e37b99465b572d18c5b3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\Appointment.ts": {
+    "mtime": 1763956682.9704957,
+    "ast_hash": "e2a4dc9327f262468b5d98358274a77f",
+    "semantic_hash": "e2a4dc9327f262468b5d98358274a77f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\AuditLog.ts": {
+    "mtime": 1763956682.9714932,
+    "ast_hash": "e3f79b1a33e9fae33b77f029ff3b7b8f",
+    "semantic_hash": "e3f79b1a33e9fae33b77f029ff3b7b8f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\AutomaticReport.ts": {
+    "mtime": 1763956682.9714932,
+    "ast_hash": "1c36a71cda531c1e1a86132d5614dc9d",
+    "semantic_hash": "1c36a71cda531c1e1a86132d5614dc9d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\ChatConversation.js": {
+    "mtime": 1764029302.46094,
+    "ast_hash": "eea7e5e0024a202562033f4af9d09e83",
+    "semantic_hash": "eea7e5e0024a202562033f4af9d09e83"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\ConsentLog.ts": {
+    "mtime": 1775718251.829051,
+    "ast_hash": "6ee951f0d0b980ad0bdfa5af71d5cb2e",
+    "semantic_hash": "6ee951f0d0b980ad0bdfa5af71d5cb2e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\InformedConsent.ts": {
+    "mtime": 1764708493.1612284,
+    "ast_hash": "9dd976e15c406d6d3744da4d20555573",
+    "semantic_hash": "9dd976e15c406d6d3744da4d20555573"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\LabResult.ts": {
+    "mtime": 1764306496.915961,
+    "ast_hash": "76e574366a0861228441e01dbc855f4e",
+    "semantic_hash": "76e574366a0861228441e01dbc855f4e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\MedicalHistory.ts": {
+    "mtime": 1763956682.9740016,
+    "ast_hash": "0b8b498116d50ee13292167222f7df7e",
+    "semantic_hash": "0b8b498116d50ee13292167222f7df7e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\MLExperiment.ts": {
+    "mtime": 1775774029.0026176,
+    "ast_hash": "a59258c57abf370301e4ea2fc4d265a3",
+    "semantic_hash": "a59258c57abf370301e4ea2fc4d265a3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\Prescription.ts": {
+    "mtime": 1763956682.9740016,
+    "ast_hash": "327358269a9ba48548d939eb61a74ad7",
+    "semantic_hash": "327358269a9ba48548d939eb61a74ad7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\Referral.ts": {
+    "mtime": 1764702247.697778,
+    "ast_hash": "de2d5631e4cb2903630d44731d6565ac",
+    "semantic_hash": "de2d5631e4cb2903630d44731d6565ac"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\SymptomReport.js": {
+    "mtime": 1764270185.4286492,
+    "ast_hash": "f76e6032179683a127bd99ee974972a3",
+    "semantic_hash": "f76e6032179683a127bd99ee974972a3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\User.ts": {
+    "mtime": 1764001043.5642047,
+    "ast_hash": "ad9415d7489aa64f819b34f19bf2ea72",
+    "semantic_hash": "ad9415d7489aa64f819b34f19bf2ea72"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\models\\WearableData.ts": {
+    "mtime": 1777089453.3185627,
+    "ast_hash": "d303f4d0f37116b15a41208f451ccd43",
+    "semantic_hash": "d303f4d0f37116b15a41208f451ccd43"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\monitoring\\mongodbMonitoring.ts": {
+    "mtime": 1775774075.5189416,
+    "ast_hash": "f06e8abb16203816c0bb5912e9ad1b8c",
+    "semantic_hash": "f06e8abb16203816c0bb5912e9ad1b8c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\observability\\otel-config.ts": {
+    "mtime": 1764700810.75806,
+    "ast_hash": "77622af62377d16f3c93014c7d0d51b7",
+    "semantic_hash": "77622af62377d16f3c93014c7d0d51b7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\alertRoutes.ts": {
+    "mtime": 1763974998.0572083,
+    "ast_hash": "69045565b965aecaa071aa18d5b37140",
+    "semantic_hash": "69045565b965aecaa071aa18d5b37140"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\analyticsRoutes.js": {
+    "mtime": 1763956682.9775097,
+    "ast_hash": "023a2ab800b8ecfecb3f48cb839bd1d7",
+    "semantic_hash": "023a2ab800b8ecfecb3f48cb839bd1d7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\analyticsRoutes.ts": {
+    "mtime": 1775718197.0334551,
+    "ast_hash": "2441d2a1c015fd224d5274c7812e3213",
+    "semantic_hash": "2441d2a1c015fd224d5274c7812e3213"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\analyticsRoutesNew.js": {
+    "mtime": 1764284177.9826877,
+    "ast_hash": "ce9aec9dddfc0848e8a7fa6f960409ad",
+    "semantic_hash": "ce9aec9dddfc0848e8a7fa6f960409ad"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\appointmentsRoutes.ts": {
+    "mtime": 1763956682.9785092,
+    "ast_hash": "55c3f434b889c840c7c342ce7ffec5ae",
+    "semantic_hash": "55c3f434b889c840c7c342ce7ffec5ae"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\authRoutes.ts": {
+    "mtime": 1778800400.9302099,
+    "ast_hash": "5debe57d7176ec5c0d7e8fd5a1e56949",
+    "semantic_hash": "5debe57d7176ec5c0d7e8fd5a1e56949"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\authRoutesDev.js": {
+    "mtime": 1778943377.1343,
+    "ast_hash": "f39318c02c9a6f95e464c7d571e27048",
+    "semantic_hash": "f39318c02c9a6f95e464c7d571e27048"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\automaticReportRoutes.ts": {
+    "mtime": 1763956682.9795103,
+    "ast_hash": "4941f3516bf07ea5e0ad6f1fea0da4e4",
+    "semantic_hash": "4941f3516bf07ea5e0ad6f1fea0da4e4"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\biRoutes.ts": {
+    "mtime": 1775688658.6087904,
+    "ast_hash": "80fe580bc581951b78458ab95f0ce54f",
+    "semantic_hash": "80fe580bc581951b78458ab95f0ce54f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatAudioRoutes.js": {
+    "mtime": 1764035795.6676354,
+    "ast_hash": "6e06288d3b3a78f54866e590cbc7080c",
+    "semantic_hash": "6e06288d3b3a78f54866e590cbc7080c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatAudioRoutes.ts": {
+    "mtime": 1775689954.736159,
+    "ast_hash": "13e90fbdb9b803cbb4fc471e3ea06acc",
+    "semantic_hash": "13e90fbdb9b803cbb4fc471e3ea06acc"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatConversationsRoutes.js": {
+    "mtime": 1764029467.555124,
+    "ast_hash": "be7eb616df9cf262e4649b30b65f2093",
+    "semantic_hash": "be7eb616df9cf262e4649b30b65f2093"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatConversationsRoutes.ts": {
+    "mtime": 1775717886.8917155,
+    "ast_hash": "24c70fa2ca330e8056c9c9ce87267c50",
+    "semantic_hash": "24c70fa2ca330e8056c9c9ce87267c50"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatImageRoutes.js": {
+    "mtime": 1764044766.705239,
+    "ast_hash": "4781f18e388d750f6ab9b795785f8bd5",
+    "semantic_hash": "4781f18e388d750f6ab9b795785f8bd5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\chatImageRoutes.ts": {
+    "mtime": 1775688573.1102507,
+    "ast_hash": "5abf0f7604eb30bbef90a55e2e9c7274",
+    "semantic_hash": "5abf0f7604eb30bbef90a55e2e9c7274"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\consentRoutes.ts": {
+    "mtime": 1775718188.4666004,
+    "ast_hash": "0b915ea616d1f6d295d0da54d5aeca13",
+    "semantic_hash": "0b915ea616d1f6d295d0da54d5aeca13"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\dashboardRoutes.ts": {
+    "mtime": 1763956682.9815102,
+    "ast_hash": "ddf0936e64eafa12c952b6f7cb71f151",
+    "semantic_hash": "ddf0936e64eafa12c952b6f7cb71f151"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\dsrRoutes.ts": {
+    "mtime": 1763956682.9815102,
+    "ast_hash": "c33e2fb7ef48c958afedbe42a21dbcb3",
+    "semantic_hash": "c33e2fb7ef48c958afedbe42a21dbcb3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\emergencyRoutes.ts": {
+    "mtime": 1775689948.7833254,
+    "ast_hash": "8c5d970143df8c5615b2f274da01db2b",
+    "semantic_hash": "8c5d970143df8c5615b2f274da01db2b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\exportRoutes.ts": {
+    "mtime": 1763956682.9815102,
+    "ast_hash": "391af32aac3fdf8252a0674a9cdb851c",
+    "semantic_hash": "391af32aac3fdf8252a0674a9cdb851c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\fhirRoutes.ts": {
+    "mtime": 1764305820.298096,
+    "ast_hash": "2a966d2f6926d7330894b58779089706",
+    "semantic_hash": "2a966d2f6926d7330894b58779089706"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\fhirRoutesDev.js": {
+    "mtime": 1764304653.563129,
+    "ast_hash": "f8482e3859e45cd5d07c5bf826097000",
+    "semantic_hash": "f8482e3859e45cd5d07c5bf826097000"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\fileUploadRoutes.ts": {
+    "mtime": 1763956682.9825108,
+    "ast_hash": "a7e524d65bbb3b146dfe4b612073c34b",
+    "semantic_hash": "a7e524d65bbb3b146dfe4b612073c34b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\informedConsentRoutes.ts": {
+    "mtime": 1775772740.6369164,
+    "ast_hash": "1eb0cb98de8cc8b23ffa7def620ea98a",
+    "semantic_hash": "1eb0cb98de8cc8b23ffa7def620ea98a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\integrationRoutes.ts": {
+    "mtime": 1764306137.9790442,
+    "ast_hash": "1fc9041ece3a5661d129158945b8fbf2",
+    "semantic_hash": "1fc9041ece3a5661d129158945b8fbf2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\labRoutes.ts": {
+    "mtime": 1775689851.387847,
+    "ast_hash": "ee9b6c53a6bdd9c0d96c0488b0d535d7",
+    "semantic_hash": "ee9b6c53a6bdd9c0d96c0488b0d535d7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\medicalHistoryRoutes.ts": {
+    "mtime": 1763956682.9835513,
+    "ast_hash": "4e8d609b835945858f1477d0b1951a64",
+    "semantic_hash": "4e8d609b835945858f1477d0b1951a64"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\mlAnalyticsRoutes.js": {
+    "mtime": 1764026170.7128997,
+    "ast_hash": "44a345e8e5598846bc9e788bd450fed7",
+    "semantic_hash": "44a345e8e5598846bc9e788bd450fed7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\mlOrchestrationRoutes.ts": {
+    "mtime": 1775773811.3638582,
+    "ast_hash": "6e3182f4f56e5fe708c39f82b27c8ebe",
+    "semantic_hash": "6e3182f4f56e5fe708c39f82b27c8ebe"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\mockAnalyticsRoutes.js": {
+    "mtime": 1763956682.9845512,
+    "ast_hash": "44802b727372880f70c5b11b36786676",
+    "semantic_hash": "44802b727372880f70c5b11b36786676"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\prescriptionRoutes.ts": {
+    "mtime": 1763956682.9845512,
+    "ast_hash": "ef03fdec54b4fc8d3de9d358bd4bf491",
+    "semantic_hash": "ef03fdec54b4fc8d3de9d358bd4bf491"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\referralRoutes.ts": {
+    "mtime": 1775772634.2963297,
+    "ast_hash": "09a96f8a84eeccb1afc81508375345c9",
+    "semantic_hash": "09a96f8a84eeccb1afc81508375345c9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\simpleAnalyticsRoutes.js": {
+    "mtime": 1763956682.9855523,
+    "ast_hash": "aa7c017a6911ba151a90fb3b8804d10e",
+    "semantic_hash": "aa7c017a6911ba151a90fb3b8804d10e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\smsRoutes.ts": {
+    "mtime": 1775772198.4503388,
+    "ast_hash": "2e751ea9bb4ad30fa334a15423bbbbb1",
+    "semantic_hash": "2e751ea9bb4ad30fa334a15423bbbbb1"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\smsWebhookRoutes.ts": {
+    "mtime": 1764009861.434871,
+    "ast_hash": "ea1f8cd8c7dce3b4e1a9b82a742d2a57",
+    "semantic_hash": "ea1f8cd8c7dce3b4e1a9b82a742d2a57"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\symptomAnalyzerRoutes.ts": {
+    "mtime": 1763956682.9855523,
+    "ast_hash": "a5f5d8a49a839c252be7707580788ca9",
+    "semantic_hash": "a5f5d8a49a839c252be7707580788ca9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\symptomReportsRoutes.js": {
+    "mtime": 1764270185.4286492,
+    "ast_hash": "db727c734cc9d9c1900371dc5c474391",
+    "semantic_hash": "db727c734cc9d9c1900371dc5c474391"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\routes\\wearableRoutes.ts": {
+    "mtime": 1777089461.3165104,
+    "ast_hash": "e79dc846891530f89f1420980f7607cd",
+    "semantic_hash": "e79dc846891530f89f1420980f7607cd"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\check-heatmap-dates.js": {
+    "mtime": 1764270185.4286492,
+    "ast_hash": "dc932970445c66c822d7605e71aa6695",
+    "semantic_hash": "dc932970445c66c822d7605e71aa6695"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\create-indexes.js": {
+    "mtime": 1763956682.9876442,
+    "ast_hash": "8c48aa88e23b5e77cecb8e02e41c90c1",
+    "semantic_hash": "8c48aa88e23b5e77cecb8e02e41c90c1"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\fix-seed-demo.js": {
+    "mtime": 1764026688.4688406,
+    "ast_hash": "d8c24c9a45d5f923c3eaa4ec37da8a13",
+    "semantic_hash": "d8c24c9a45d5f923c3eaa4ec37da8a13"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-chat-conversations.js": {
+    "mtime": 1764207992.876912,
+    "ast_hash": "e57c12dd69313555cdc205919b5a00c0",
+    "semantic_hash": "e57c12dd69313555cdc205919b5a00c0"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-complete-demo.js": {
+    "mtime": 1764255487.4469693,
+    "ast_hash": "21989f48a9f94c256153c338088fd6bb",
+    "semantic_hash": "21989f48a9f94c256153c338088fd6bb"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-complete-system.js": {
+    "mtime": 1776217538.1016612,
+    "ast_hash": "12d0da96d7f0708ab78a445db3e44ab6",
+    "semantic_hash": "12d0da96d7f0708ab78a445db3e44ab6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-full-demo.js": {
+    "mtime": 1764026878.9055307,
+    "ast_hash": "db369f335a8143f9f5223bf53e98a774",
+    "semantic_hash": "db369f335a8143f9f5223bf53e98a774"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-medical-histories.js": {
+    "mtime": 1764030037.0700774,
+    "ast_hash": "062a68a58bd1559cce7d0dd620a0d43a",
+    "semantic_hash": "062a68a58bd1559cce7d0dd620a0d43a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-ml-data-enhanced.js": {
+    "mtime": 1764889038.2852743,
+    "ast_hash": "b711fc697838adbcb395e301a109233c",
+    "semantic_hash": "b711fc697838adbcb395e301a109233c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-symptom-reports.js": {
+    "mtime": 1763974731.906464,
+    "ast_hash": "54434eb6109b271014f08a8b84399996",
+    "semantic_hash": "54434eb6109b271014f08a8b84399996"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed-users.js": {
+    "mtime": 1764026878.9055307,
+    "ast_hash": "cc6ebe34f1052da0ae0e7acf77ec2dbc",
+    "semantic_hash": "cc6ebe34f1052da0ae0e7acf77ec2dbc"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seed.ts": {
+    "mtime": 1763956682.9886448,
+    "ast_hash": "475f517c8398bcf814cf49ab769cf010",
+    "semantic_hash": "475f517c8398bcf814cf49ab769cf010"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seedAlerts.ts": {
+    "mtime": 1763956682.9886448,
+    "ast_hash": "cc26e02e7435f681309254e989fecba5",
+    "semantic_hash": "cc26e02e7435f681309254e989fecba5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\seedDemoData.ts": {
+    "mtime": 1763956682.9896457,
+    "ast_hash": "6cee5771cbab37fc9de52b17fda2cfd8",
+    "semantic_hash": "6cee5771cbab37fc9de52b17fda2cfd8"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\test-dashboard-api.js": {
+    "mtime": 1764256640.9827602,
+    "ast_hash": "b803e9e76907926b50140479b44a039f",
+    "semantic_hash": "b803e9e76907926b50140479b44a039f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\test-dashboard-patient.js": {
+    "mtime": 1764035039.318845,
+    "ast_hash": "64a6a218e3a81e1c7a7fd399cd436b4d",
+    "semantic_hash": "64a6a218e3a81e1c7a7fd399cd436b4d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\test-medical-histories-patient.js": {
+    "mtime": 1764034686.8022726,
+    "ast_hash": "301fa0b0a0796e7536b5ad216f718ad5",
+    "semantic_hash": "301fa0b0a0796e7536b5ad216f718ad5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\test-patient-login-histories.js": {
+    "mtime": 1764034686.8022726,
+    "ast_hash": "c90a935edf539dc2b72974a5cfa114e9",
+    "semantic_hash": "c90a935edf539dc2b72974a5cfa114e9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\test-symptom-reports.js": {
+    "mtime": 1764256640.9827602,
+    "ast_hash": "6f19c0f028e22e6af6ae1f0e9f289030",
+    "semantic_hash": "6f19c0f028e22e6af6ae1f0e9f289030"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\verify-relationships.js": {
+    "mtime": 1764034271.17238,
+    "ast_hash": "fd8f7d084a6ca794c74207110089620a",
+    "semantic_hash": "fd8f7d084a6ca794c74207110089620a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\scripts\\verify-seed.js": {
+    "mtime": 1764256640.9827602,
+    "ast_hash": "121c61465963fef93a253e6c0cdedb96",
+    "semantic_hash": "121c61465963fef93a253e6c0cdedb96"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\aiIntegration.ts": {
+    "mtime": 1777124068.1550994,
+    "ast_hash": "83ad075b6b250f12561e1d9aea2204b1",
+    "semantic_hash": "83ad075b6b250f12561e1d9aea2204b1"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\alertMonitoringService.ts": {
+    "mtime": 1763956682.9906435,
+    "ast_hash": "86ebac787d8acd8880069a5a5b55de72",
+    "semantic_hash": "86ebac787d8acd8880069a5a5b55de72"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\alertService.ts": {
+    "mtime": 1775773119.121165,
+    "ast_hash": "0b6866e3898f53bec2d2171760b849c7",
+    "semantic_hash": "0b6866e3898f53bec2d2171760b849c7"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\ambulanceService.ts": {
+    "mtime": 1775772243.7929738,
+    "ast_hash": "9a2f34de82b623430c24d081951f26dd",
+    "semantic_hash": "9a2f34de82b623430c24d081951f26dd"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\analyticsService.ts": {
+    "mtime": 1775773831.1765616,
+    "ast_hash": "3570d98c1cc4c2f012305e3cbdb67627",
+    "semantic_hash": "3570d98c1cc4c2f012305e3cbdb67627"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\appointmentService.ts": {
+    "mtime": 1763956682.9931493,
+    "ast_hash": "b91c1a60c0edd2d40ef64747ce7bf5e9",
+    "semantic_hash": "b91c1a60c0edd2d40ef64747ce7bf5e9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\automaticReportService.ts": {
+    "mtime": 1763956682.9931493,
+    "ast_hash": "120536e9b36d95791ba4ab2b7982088d",
+    "semantic_hash": "120536e9b36d95791ba4ab2b7982088d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\biConnectorService.ts": {
+    "mtime": 1775772915.2125485,
+    "ast_hash": "311537b467a9887e924455d872120119",
+    "semantic_hash": "311537b467a9887e924455d872120119"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\cacheService.ts": {
+    "mtime": 1763956682.9941542,
+    "ast_hash": "7e005a44f9aeed872c245df9f46332cf",
+    "semantic_hash": "7e005a44f9aeed872c245df9f46332cf"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\consentService.ts": {
+    "mtime": 1775773961.5951707,
+    "ast_hash": "8aa23047fa9baf64f2d79507221191fb",
+    "semantic_hash": "8aa23047fa9baf64f2d79507221191fb"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\drugIntegrationService.ts": {
+    "mtime": 1775773860.2229557,
+    "ast_hash": "883116e6f94a2a6d89051f48f4d2be30",
+    "semantic_hash": "883116e6f94a2a6d89051f48f4d2be30"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\drugInteractionService.ts": {
+    "mtime": 1763956682.9951541,
+    "ast_hash": "c6ed562ad84c8e823a81a576adbb50d6",
+    "semantic_hash": "c6ed562ad84c8e823a81a576adbb50d6"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\emergencyMedicalInfoService.ts": {
+    "mtime": 1775773005.8656461,
+    "ast_hash": "191ccf287ece0e01f9f8dd9691729a1d",
+    "semantic_hash": "191ccf287ece0e01f9f8dd9691729a1d"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\emergencyService.ts": {
+    "mtime": 1775772272.3476422,
+    "ast_hash": "691b402f13dc19ce106abeee479b9ca2",
+    "semantic_hash": "691b402f13dc19ce106abeee479b9ca2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\epidemiologicalService.ts": {
+    "mtime": 1763956682.9951541,
+    "ast_hash": "b445e4ade26e4fd8f7430be5835f0aad",
+    "semantic_hash": "b445e4ade26e4fd8f7430be5835f0aad"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\exportService.ts": {
+    "mtime": 1763956682.996658,
+    "ast_hash": "c20b8422f6bee9dfe220d5e3938598a2",
+    "semantic_hash": "c20b8422f6bee9dfe220d5e3938598a2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\featureFlagService.ts": {
+    "mtime": 1775773518.6995022,
+    "ast_hash": "24b06b2c6b85b15a84531c4ca0d4fe83",
+    "semantic_hash": "24b06b2c6b85b15a84531c4ca0d4fe83"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\fhirService.ts": {
+    "mtime": 1775773143.407194,
+    "ast_hash": "ab08b5a0294bce7893f2cf309a7d51c2",
+    "semantic_hash": "ab08b5a0294bce7893f2cf309a7d51c2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\fhirValidator.ts": {
+    "mtime": 1764305820.297092,
+    "ast_hash": "40d4c5aa1ca4c027d94274fcce0eb32a",
+    "semantic_hash": "40d4c5aa1ca4c027d94274fcce0eb32a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\fileUploadService.ts": {
+    "mtime": 1763956682.9976637,
+    "ast_hash": "14fcfccbfda35ed96c2e29032b4c95e2",
+    "semantic_hash": "14fcfccbfda35ed96c2e29032b4c95e2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\hospitalCommunicationService.ts": {
+    "mtime": 1775772491.184909,
+    "ast_hash": "9f4a7e5eef898380e27f7996b4e93101",
+    "semantic_hash": "9f4a7e5eef898380e27f7996b4e93101"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\hospitalSyncService.ts": {
+    "mtime": 1764305820.297092,
+    "ast_hash": "c48c09e928eff34693a5df6fc2617703",
+    "semantic_hash": "c48c09e928eff34693a5df6fc2617703"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\laboratoryIntegrationService.ts": {
+    "mtime": 1775773649.987835,
+    "ast_hash": "4e226624ae1a3aa03fae3ecc23af9fd0",
+    "semantic_hash": "4e226624ae1a3aa03fae3ecc23af9fd0"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\labService.ts": {
+    "mtime": 1775773680.023784,
+    "ast_hash": "125349f08efd43f9ec0eabdfcbd0d44c",
+    "semantic_hash": "125349f08efd43f9ec0eabdfcbd0d44c"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\metricAlertService.ts": {
+    "mtime": 1775773484.5542119,
+    "ast_hash": "895d7926620a8f174a2ed3930c4d957e",
+    "semantic_hash": "895d7926620a8f174a2ed3930c4d957e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\mlOrchestrationService.ts": {
+    "mtime": 1763956682.9996634,
+    "ast_hash": "f64e7934d99a6008e11eaf4bb51c34df",
+    "semantic_hash": "f64e7934d99a6008e11eaf4bb51c34df"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\notificationService.ts": {
+    "mtime": 1778129693.6789236,
+    "ast_hash": "2c80e5cbf39cdca0dbc2a10fc6e0a93b",
+    "semantic_hash": "2c80e5cbf39cdca0dbc2a10fc6e0a93b"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\oauth2Service.ts": {
+    "mtime": 1763956683.000664,
+    "ast_hash": "ba957a25dbe58053ff023e2c3e53f165",
+    "semantic_hash": "ba957a25dbe58053ff023e2c3e53f165"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\prescriptionService.ts": {
+    "mtime": 1763956683.0016627,
+    "ast_hash": "d1625c0941c198059be580dd36121317",
+    "semantic_hash": "d1625c0941c198059be580dd36121317"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\referralService.ts": {
+    "mtime": 1775775025.0255833,
+    "ast_hash": "2f5ef6e4a188bdd21f3d2925a931aebe",
+    "semantic_hash": "2f5ef6e4a188bdd21f3d2925a931aebe"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\reportService.ts": {
+    "mtime": 1763956683.0016627,
+    "ast_hash": "703fe1b2232015e2e943807edd3d123a",
+    "semantic_hash": "703fe1b2232015e2e943807edd3d123a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\smsMetricsService.ts": {
+    "mtime": 1764009861.4338713,
+    "ast_hash": "243fe42b73d70edb004ffeaf84a57930",
+    "semantic_hash": "243fe42b73d70edb004ffeaf84a57930"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\smsRateLimiter.ts": {
+    "mtime": 1764009861.4338713,
+    "ast_hash": "2010a8c11a7363219f26940db8b3df7f",
+    "semantic_hash": "2010a8c11a7363219f26940db8b3df7f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\smsService.ts": {
+    "mtime": 1775774009.626445,
+    "ast_hash": "d128f753160be5a6987f482bf8c32050",
+    "semantic_hash": "d128f753160be5a6987f482bf8c32050"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\services\\wearableAlertService.ts": {
+    "mtime": 1778965653.8090143,
+    "ast_hash": "03110ef646ca5998758b503436338e2f",
+    "semantic_hash": "03110ef646ca5998758b503436338e2f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\sockets\\doctorSocketHandler.ts": {
+    "mtime": 1778943840.7939708,
+    "ast_hash": "e974e9682d198e80083dc0c7a6348e56",
+    "semantic_hash": "e974e9682d198e80083dc0c7a6348e56"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\sockets\\vitalsEmitter.ts": {
+    "mtime": 1777999763.3127325,
+    "ast_hash": "7eb00df24e184c7876974c982f605b3e",
+    "semantic_hash": "7eb00df24e184c7876974c982f605b3e"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\sockets\\wearableSocketHandler.ts": {
+    "mtime": 1778126214.8046308,
+    "ast_hash": "57e0fb12dbe15b5f99aa28abaf975799",
+    "semantic_hash": "57e0fb12dbe15b5f99aa28abaf975799"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\telemetry\\tracing.ts": {
+    "mtime": 1763956683.0031686,
+    "ast_hash": "29773bb48e9da80f6fadb2beb7139b39",
+    "semantic_hash": "29773bb48e9da80f6fadb2beb7139b39"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\types\\index.ts": {
+    "mtime": 1775773639.8595612,
+    "ast_hash": "1b7035db4a5d1291905e9497bd82252f",
+    "semantic_hash": "1b7035db4a5d1291905e9497bd82252f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\anonymization.ts": {
+    "mtime": 1763956683.0051737,
+    "ast_hash": "2d9af08cdfd80465e66d7f85fa9269c4",
+    "semantic_hash": "2d9af08cdfd80465e66d7f85fa9269c4"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\AppError.ts": {
+    "mtime": 1763956683.0041738,
+    "ast_hash": "1048b1b97f1bde7e392fc2ae648a14c3",
+    "semantic_hash": "1048b1b97f1bde7e392fc2ae648a14c3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\asyncHandler.ts": {
+    "mtime": 1763956683.0061736,
+    "ast_hash": "e516cf913d56993d7b6ca57a274c0eb9",
+    "semantic_hash": "e516cf913d56993d7b6ca57a274c0eb9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\encryption.ts": {
+    "mtime": 1763956683.0061736,
+    "ast_hash": "4c416fc57c0893d52e3adddc435b2fb3",
+    "semantic_hash": "4c416fc57c0893d52e3adddc435b2fb3"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\hl7Parser.ts": {
+    "mtime": 1763956683.0061736,
+    "ast_hash": "e48987b5e2fce0cfbeb9fcb2ee4788b2",
+    "semantic_hash": "e48987b5e2fce0cfbeb9fcb2ee4788b2"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\localizedErrors.ts": {
+    "mtime": 1763956683.0071733,
+    "ast_hash": "c3253b033620a3e104621f47103585f9",
+    "semantic_hash": "c3253b033620a3e104621f47103585f9"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\logger.ts": {
+    "mtime": 1763956683.0129118,
+    "ast_hash": "6fb67280739263b1d1fa8bc496a25c89",
+    "semantic_hash": "6fb67280739263b1d1fa8bc496a25c89"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\pdfGenerator.ts": {
+    "mtime": 1763956683.0129118,
+    "ast_hash": "f32a68199e75165aedb2f95f7722af9a",
+    "semantic_hash": "f32a68199e75165aedb2f95f7722af9a"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\sentry.ts": {
+    "mtime": 1763956683.0139165,
+    "ast_hash": "d088f1624d5790b8cac86f0f3b026365",
+    "semantic_hash": "d088f1624d5790b8cac86f0f3b026365"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\symptomSeverityCalculator.ts": {
+    "mtime": 1763956683.0139165,
+    "ast_hash": "ea5edc2e57e1c6e7a9b4e16fc2cdbd9f",
+    "semantic_hash": "ea5edc2e57e1c6e7a9b4e16fc2cdbd9f"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\utils\\__tests__\\symptomSeverityCalculator.test.ts": {
+    "mtime": 1763956683.0051737,
+    "ast_hash": "789ad203320766a542c33df0869e1fb5",
+    "semantic_hash": "789ad203320766a542c33df0869e1fb5"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\validators\\authValidators.ts": {
+    "mtime": 1763956683.0159206,
+    "ast_hash": "6127129841a690f5de40dacbbc30f318",
+    "semantic_hash": "6127129841a690f5de40dacbbc30f318"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\validators\\medicalHistoryValidators.ts": {
+    "mtime": 1763956683.0159206,
+    "ast_hash": "1787524d90d1d699b6d008cedd22f2a8",
+    "semantic_hash": "1787524d90d1d699b6d008cedd22f2a8"
+  },
+  "C:\\Users\\User\\Desktop\\construccionI\\proyecto-final-sistema_enfermedades_respiratorias\\backend\\src\\generators\\README.md": {
+    "mtime": 1763956682.9389944,
+    "ast_hash": "421a22c8cfb6b8a9afa5f02fd60e4fa5",
+    "semantic_hash": "421a22c8cfb6b8a9afa5f02fd60e4fa5"
+  }
+}
