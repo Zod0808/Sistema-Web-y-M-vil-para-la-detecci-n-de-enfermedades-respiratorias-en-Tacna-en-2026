@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import MLAdvancedResults from './MLAdvancedResults';
 import './AnalyticsDashboard.css';
-import { LEGACY_API_BASE, API_BASE } from '../utils/apiBase';
+import { API_BASE } from '../utils/apiBase';
 
 function AnalyticsDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
