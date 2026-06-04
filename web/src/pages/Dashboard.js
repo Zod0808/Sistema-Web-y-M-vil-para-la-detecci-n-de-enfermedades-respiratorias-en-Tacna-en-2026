@@ -181,13 +181,12 @@ function Dashboard() {
           <div className="admin-tools">
             <h3>Herramientas de Administración</h3>
             <div className="tools-grid">
-              <a href="http://localhost:8081" target="_blank" rel="noopener noreferrer" className="tool-card">
+              <a href={`${BACKEND_BASE_URL.replace(/\/api\/v\d+$/i,'').replace(/\/api$/i,'')}/mongo-express/`} target="_blank" rel="noopener noreferrer" className="tool-card">
                 <span className="tool-icon">🗄️</span>
                 <h4>MongoDB Express</h4>
                 <p>Administración de Base de Datos</p>
-                <span className="tool-credentials">admin / admin123</span>
               </a>
-              <a href="http://localhost:8082" target="_blank" rel="noopener noreferrer" className="tool-card">
+              <a href={`${BACKEND_BASE_URL.replace(/\/api\/v\d+$/i,'').replace(/\/api$/i,'')}/redis-commander/`} target="_blank" rel="noopener noreferrer" className="tool-card">
                 <span className="tool-icon">💾</span>
                 <h4>Redis Commander</h4>
                 <p>Gestión de Caché</p>
