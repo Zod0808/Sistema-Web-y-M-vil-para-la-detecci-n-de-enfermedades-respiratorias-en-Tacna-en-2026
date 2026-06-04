@@ -74,7 +74,7 @@ services:
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
       JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-30d}
       AI_SERVICE_URL: http://ai-services:8000
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       SMTP_HOST: ${SMTP_HOST:-localhost}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -118,6 +118,7 @@ services:
       AI_RATE_LIMIT_ENABLED: "1"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       PYTHONUNBUFFERED: "1"
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
     depends_on:
       mongodb:
         condition: service_healthy
@@ -144,6 +145,49 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # ── MongoDB Express (UI) ─────────────────────────
+  mongo-express:
+    image: mongo-express:latest
+    container_name: respicare-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_SITE_BASEURL: /mongo-express/
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - respicare-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── Redis Commander (UI) ──────────────────────────
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: respicare-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD}
+      HTTP_USER: ${MONGO_USERNAME:-admin}
+      HTTP_PASSWORD: ${MONGO_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - respicare-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # ── Nginx Reverse Proxy ───────────────────────────
   nginx:

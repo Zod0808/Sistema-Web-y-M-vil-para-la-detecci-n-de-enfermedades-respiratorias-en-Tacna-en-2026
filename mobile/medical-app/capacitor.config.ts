@@ -13,8 +13,8 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
 
     // ── DESARROLLO: descomentar para live reload ────────────────────────
-    // url: 'http://10.0.2.2:8083',   // emulador
-    // url: 'https://xxxx.ngrok-free.app',  // dispositivo físico
+    // url: 'http://10.0.2.2:8083',   // emulador Android
+    // url: 'https://are-collecting-aids-females.trycloudflare.com',  // tunnel Cloudflare
     // cleartext: true,
 
     // Tiempo máximo de carga antes de mostrar error (ms)
