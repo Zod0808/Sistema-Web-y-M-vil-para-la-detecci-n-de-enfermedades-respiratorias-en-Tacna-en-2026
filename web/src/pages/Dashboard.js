@@ -4,6 +4,7 @@ import './Dashboard.css';
 import AlertConsole from '../components/AlertConsole';
 import AppointmentCalendar from '../components/AppointmentCalendar';
 import { BACKEND_BASE_URL, AI_BASE_URL } from '../utils/apiBase';
+import { useAuth } from '../contexts/AuthContext';
 
 const tryFetch = async (urls, config) => {
   let lastError;
@@ -20,6 +21,7 @@ const tryFetch = async (urls, config) => {
 };
 
 function Dashboard() {
+  const { token } = useAuth();
   const [backendStatus, setBackendStatus] = useState(null);
   const [aiStatus, setAiStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +175,7 @@ function Dashboard() {
           </div>
 
           <div className="appointment-calendar-section">
-            <AppointmentCalendar />
+            <AppointmentCalendar token={token} />
           </div>
 
           <div className="admin-tools">
