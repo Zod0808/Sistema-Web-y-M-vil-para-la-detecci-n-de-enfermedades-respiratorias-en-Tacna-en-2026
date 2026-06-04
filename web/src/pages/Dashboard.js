@@ -27,9 +27,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const backendApiRoot = useMemo(() => `${BACKEND_BASE_URL}/api`, []);
+  const backendApiRoot = useMemo(() => `${BACKEND_BASE_URL}/api/docs`, []);
   const backendHealthCandidates = useMemo(
-    () => [`${BACKEND_BASE_URL}/health`, `${BACKEND_BASE_URL}/api/health`],
+    () => [`${BACKEND_BASE_URL}/health`],
     []
   );
   const aiHealthUrl = useMemo(() => `${AI_BASE_URL}/health`, []);
