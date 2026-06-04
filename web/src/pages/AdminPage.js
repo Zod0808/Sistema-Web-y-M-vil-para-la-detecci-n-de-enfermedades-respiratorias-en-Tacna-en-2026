@@ -118,7 +118,17 @@ const AdminPage = () => {
         setError(usersRes.reason?.response?.data?.message || 'Error al cargar usuarios.');
       }
       if (statsRes.status === 'fulfilled') {
-        setStats(statsRes.value.data?.data || null);
+        const raw = statsRes.value.data?.data || null;
+        if (raw) {
+          // Normalizar formato: backend devuelve {doctor:{total,active}, patient:{total,active}, admin:{total,active}}
+          const normalized = raw.totalUsers != null ? raw : {
+            totalUsers: (raw.doctor?.total || 0) + (raw.admin?.total || 0) + (raw.patient?.total || 0),
+            doctorCount: raw.doctor?.total || 0,
+            patientCount: raw.patient?.total || 0,
+            activeUsers: (raw.doctor?.active || 0) + (raw.admin?.active || 0) + (raw.patient?.active || 0),
+          };
+          setStats(normalized);
+        }
       }
     } finally {
       setLoading(false);
