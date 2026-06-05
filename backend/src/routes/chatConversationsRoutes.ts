@@ -163,7 +163,13 @@ router.post('/:sessionId/messages', optionalAuth, async (req: AuthenticatedReque
 
         logger.info('AI response saved', { sessionId });
       } catch (aiErr: any) {
-        logger.warn('AI service call failed, using fallback', { error: aiErr.message });
+        const aiErrDetail = aiErr.response
+          ? `HTTP ${aiErr.response.status} – ${JSON.stringify(aiErr.response.data).slice(0, 200)}`
+          : aiErr.message;
+        logger.warn('AI service call failed, using fallback', {
+          aiServiceURL: chatAnalyzeURL,
+          error: aiErrDetail,
+        });
         const fallback = 'Lo siento, el servicio de asistencia médica no está disponible en este momento. Contacta con un profesional de la salud.';
         conversation.addMessage('bot', fallback, { urgencyLevel: 'low', isError: true });
         await conversation.save();
