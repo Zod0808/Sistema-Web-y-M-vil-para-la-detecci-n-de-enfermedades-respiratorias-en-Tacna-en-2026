@@ -26,10 +26,16 @@ jobs:
         with:
           node-version: '18.x'
           cache: 'npm'
-          cache-dependency-path: 'mobile/package-lock.json'
+          cache-dependency-path: |
+            mobile/package-lock.json
+            mobile/medical-app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install medical-app dependencies
+        working-directory: mobile/medical-app
+        run: npm ci --legacy-peer-deps
 
       - name: Lint
         run: |
