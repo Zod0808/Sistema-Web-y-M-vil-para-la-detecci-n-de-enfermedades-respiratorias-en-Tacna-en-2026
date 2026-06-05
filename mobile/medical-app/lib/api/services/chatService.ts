@@ -83,14 +83,11 @@ export class ChatService {
     metadata?: any
   ): Promise<{ userMessage: ChatMessage; assistantMessage?: ChatMessage }> {
     // Enviar mensaje del usuario - el backend ahora devuelve la respuesta del asistente directamente
+    // apiClient strips the outer { success, message, data } envelope and returns the inner data directly
     const response = await apiClient.post<{
-      success: boolean
-      message: string
-      data: {
-        userMessage: ChatMessage
-        assistantMessage?: ChatMessage
-        messageCount: number
-      }
+      userMessage: ChatMessage
+      assistantMessage?: ChatMessage
+      messageCount: number
     }>(
       API_ENDPOINTS.chat.messages(sessionId),
       {
@@ -99,14 +96,14 @@ export class ChatService {
         metadata,
       }
     )
-    
-    // El backend ahora devuelve ambos mensajes en la respuesta
-    if (response.data?.userMessage && response.data?.assistantMessage) {
+
+    // El backend devuelve ambos mensajes en la respuesta
+    if (response.userMessage && response.assistantMessage) {
       return {
-        userMessage: response.data.userMessage,
+        userMessage: response.userMessage,
         assistantMessage: {
-          ...response.data.assistantMessage,
-          role: 'assistant' // Asegurar que el role sea 'assistant' para el frontend
+          ...response.assistantMessage,
+          role: 'assistant'
         }
       }
     }
