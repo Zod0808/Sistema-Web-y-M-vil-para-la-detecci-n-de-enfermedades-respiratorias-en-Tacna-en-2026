@@ -8,8 +8,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest __tests__/",
     "test:integration": "jest __tests__/integration/",
-    "test:offline": "jest __tests__/offline/",
-    "lint": "eslint ."
+    "test:offline": "jest __tests__/offline/"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
