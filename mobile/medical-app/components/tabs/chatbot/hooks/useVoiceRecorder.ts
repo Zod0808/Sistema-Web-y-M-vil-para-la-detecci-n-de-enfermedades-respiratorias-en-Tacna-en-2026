@@ -32,6 +32,14 @@ export function useVoiceRecorder({ sessionId, setIsLoading, onTranscribed, onCou
 
   const startRecording = async (type: 'transcribe' | 'cough') => {
     try {
+      // Verificar si el permiso ya fue denegado antes de intentar getUserMedia
+      if (navigator.permissions) {
+        const perm = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (perm.state === 'denied') {
+          toast.error('Permiso de micrófono denegado. Habilítalo en la configuración del dispositivo.');
+          return;
+        }
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
       const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
@@ -86,7 +94,7 @@ export function useVoiceRecorder({ sessionId, setIsLoading, onTranscribed, onCou
     if (!sessionId) { toast.error('No hay sesión activa'); return }
     try {
       setIsLoading(true)
-      const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('token') : '') || ''
+      const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '') || ''
       if (!token) throw new Error('No hay token de autenticación.')
 
       const form = new FormData()
@@ -121,7 +129,7 @@ export function useVoiceRecorder({ sessionId, setIsLoading, onTranscribed, onCou
     if (!sessionId) { toast.error('No hay sesión activa'); return }
     try {
       setIsLoading(true)
-      const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('token') : '') || ''
+      const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '') || ''
       if (!token) throw new Error('No hay token de autenticación.')
 
       const form = new FormData()

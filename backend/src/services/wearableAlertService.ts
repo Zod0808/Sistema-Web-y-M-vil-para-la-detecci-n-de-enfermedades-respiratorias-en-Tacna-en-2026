@@ -44,7 +44,9 @@ const THRESHOLDS = {
   },
 } as const;
 
-// Cooldown en memoria: evita crear alertas duplicadas en ventana de 5 min
+// Cooldown en memoria: evita crear alertas duplicadas en ventana de 5 min.
+// NOTA: se resetea si el proceso reinicia — alertas duplicadas son posibles tras reinicios.
+// Para producción de HA migrar cooldowns a Redis.
 const cooldowns = new Map<string, number>();
 const COOLDOWN_MS = 5 * 60 * 1000;
 

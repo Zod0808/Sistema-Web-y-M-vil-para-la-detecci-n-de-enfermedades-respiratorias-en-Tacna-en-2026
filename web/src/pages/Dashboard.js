@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
 import AlertConsole from '../components/AlertConsole';
@@ -26,6 +26,7 @@ function Dashboard() {
   const [aiStatus, setAiStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortRef = useRef(null);
 
   const backendApiRoot = useMemo(() => `${BACKEND_BASE_URL}/api/docs`, []);
   const backendHealthCandidates = useMemo(
@@ -39,21 +40,27 @@ function Dashboard() {
   );
 
   const checkServices = useCallback(async () => {
+    // Cancelar request anterior si aún está en vuelo
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
+
     setLoading(true);
     setError(null);
 
     try {
-      // Check Backend
       const { response: backendResponse, url: resolvedBackendHealthUrl } = await tryFetch(
-        backendHealthCandidates
+        backendHealthCandidates,
+        { signal }
       );
       setBackendStatus({ ...backendResponse.data, resolvedUrl: resolvedBackendHealthUrl });
 
-      // Check AI Services
-      const aiResponse = await axios.get(aiHealthUrl);
+      const aiResponse = await axios.get(aiHealthUrl, { signal });
       setAiStatus(aiResponse.data);
     } catch (err) {
-      setError(err.message);
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

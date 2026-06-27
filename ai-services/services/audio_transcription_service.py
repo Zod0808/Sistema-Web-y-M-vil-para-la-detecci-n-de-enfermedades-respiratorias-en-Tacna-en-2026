@@ -57,12 +57,19 @@ class AudioTranscriptionService:
         Returns:
             Dict with transcription, language, and confidence
         """
+        MAX_AUDIO_BYTES = 25 * 1024 * 1024  # 25 MB — límite antes de OOM en Whisper
         try:
-            logger.info("Starting audio transcription", 
+            if len(audio_data) > MAX_AUDIO_BYTES:
+                raise ValueError(
+                    f"Audio demasiado grande: {len(audio_data) / 1024 / 1024:.1f} MB. "
+                    f"Límite: {MAX_AUDIO_BYTES // 1024 // 1024} MB"
+                )
+
+            logger.info("Starting audio transcription",
                        audio_length=len(audio_data),
                        format=audio_format,
                        language=language)
-            
+
             # Load model if not already loaded
             model = self._load_whisper_model()
             
@@ -135,6 +142,14 @@ class AudioTranscriptionService:
             Dict with transcription results
         """
         try:
+            # Validar tamaño del string base64 ANTES de decodificar para evitar OOM.
+            # base64 usa ~4/3 del tamaño original, así que 25 MB → ~33 MB en base64.
+            MAX_BASE64_LEN = 35 * 1024 * 1024
+            if len(audio_base64) > MAX_BASE64_LEN:
+                raise ValueError(
+                    f"Audio base64 demasiado grande: {len(audio_base64) // 1024 // 1024} MB. "
+                    f"Límite: 35 MB (equivalente a ~25 MB de audio)"
+                )
             audio_data = base64.b64decode(audio_base64)
             return await self.transcribe(audio_data, audio_format, language)
         except Exception as e:

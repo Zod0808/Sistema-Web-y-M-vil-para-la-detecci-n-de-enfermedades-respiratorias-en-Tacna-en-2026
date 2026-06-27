@@ -247,7 +247,14 @@ class NotificationService {
         return;
       }
 
-      const phoneNumber = (user as any).phone;
+      const phoneNumber = String((user as any).phone).trim();
+      if (!/^\+?[1-9]\d{6,14}$/.test(phoneNumber)) {
+        logger.warn('Número de teléfono con formato inválido, SMS cancelado', {
+          alertId: alert.id,
+          userId: alert.userId,
+        });
+        return;
+      }
 
       // Para emergencias, usar formato especial
       if (alert.category === 'emergency') {

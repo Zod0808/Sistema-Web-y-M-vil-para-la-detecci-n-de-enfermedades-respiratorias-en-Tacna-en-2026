@@ -61,13 +61,22 @@ export class AmbulanceService {
     };
 
     if (this.config.enabled && this.config.apiUrl && this.config.apiKey && this.config.provider === 'external') {
+      try {
+        const parsed = new URL(this.config.apiUrl);
+        if (parsed.protocol !== 'https:') {
+          throw new Error(`AMBULANCE_SERVICE_API_URL debe usar HTTPS (recibido: ${parsed.protocol})`);
+        }
+      } catch (err: any) {
+        logger.error('AMBULANCE_SERVICE_API_URL inválida — cliente no creado', { error: err.message });
+        return;
+      }
       this.client = axios.create({
         baseURL: this.config.apiUrl,
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
-        timeout: 5000, // 5 segundos para emergencias
+        timeout: 5000,
       });
     }
   }

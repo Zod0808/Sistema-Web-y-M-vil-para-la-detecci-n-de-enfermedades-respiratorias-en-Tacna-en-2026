@@ -154,13 +154,16 @@ _cors_origins: list[str] = (
     if _cors_origins_raw
     else ["*"]  # dev/unset → allow all
 )
+# allow_credentials=True is incompatible with allow_origins=["*"] (CORS spec violation).
+# When origins are explicit, credentials are allowed; when wildcard, they are disabled.
+_cors_allow_credentials = len(_cors_origins) > 0 and _cors_origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
+    allow_credentials=_cors_allow_credentials,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Internal-Api-Key"],
+    expose_headers=["X-Request-ID"],
 )
 
 # Security headers middleware (CSP, HSTS, X-Frame-Options, etc.)
@@ -172,16 +175,28 @@ async def security_headers_middleware(request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    # CSP minimal; ajustar listas en producción
-    # Swagger UI (/docs) requiere recursos de cdn.jsdelivr.net
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
-        "img-src 'self' data:; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'"
-    )
+    # CSP: Swagger UI (/docs, /redoc, /openapi.json) requiere unsafe-inline y cdn.jsdelivr.net.
+    # El resto de la API usa política estricta sin unsafe-inline.
+    is_docs_path = request.url.path.startswith(("/docs", "/redoc", "/openapi.json"))
+    if is_docs_path:
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+            "img-src 'self' data:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'"
+        )
+    else:
+        csp = (
+            "default-src 'none'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
+            "img-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'"
+        )
+    response.headers["Content-Security-Policy"] = csp
     return response
 
 # Simple rate limiting (token bucket por IP) - configurable por env
@@ -244,8 +259,15 @@ async def performance_logging_middleware(request, call_next):
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - start) * 1000, 3)
     try:
+        PERF_MAX_BYTES = 50 * 1024 * 1024  # 50 MB por archivo diario
         os.makedirs("monitoring/performance", exist_ok=True)
         log_path = os.path.join("monitoring", "performance", f"perf_{datetime.utcnow().strftime('%Y%m%d')}.jsonl")
+        if os.path.exists(log_path) and os.path.getsize(log_path) >= PERF_MAX_BYTES:
+            # Rotar: renombrar a .1 y empezar archivo limpio
+            rotated = log_path + ".1"
+            if os.path.exists(rotated):
+                os.remove(rotated)
+            os.rename(log_path, rotated)
         record = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "method": request.method,

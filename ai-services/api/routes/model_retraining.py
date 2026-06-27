@@ -6,13 +6,23 @@ basado en feedback médico.
 
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import structlog
 import sys
 import os
+
+from core.config import settings
+
+
+def _require_internal_key(x_internal_api_key: Optional[str] = Header(default=None)) -> None:
+    key = settings.INTERNAL_API_KEY
+    if not key:
+        raise HTTPException(status_code=503, detail="INTERNAL_API_KEY no configurada en el servidor")
+    if x_internal_api_key != key:
+        raise HTTPException(status_code=403, detail="Token interno inválido o ausente")
 
 # Add paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../ml_models'))
@@ -76,7 +86,7 @@ async def get_retraining_status() -> Dict[str, Any]:
         )
 
 
-@router.post("/v1/ml/retraining/trigger")
+@router.post("/v1/ml/retraining/trigger", dependencies=[Depends(_require_internal_key)])
 async def trigger_retraining(
     request: RetrainingRequest,
     background_tasks: BackgroundTasks

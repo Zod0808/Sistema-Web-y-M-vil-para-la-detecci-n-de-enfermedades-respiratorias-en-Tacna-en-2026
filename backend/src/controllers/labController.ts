@@ -28,13 +28,24 @@ export const getLabResults = asyncHandler(
     } = req.query;
 
     try {
+      let parsedStartDate: Date | undefined;
+      let parsedEndDate: Date | undefined;
+      if (startDate) {
+        parsedStartDate = new Date(startDate as string);
+        if (isNaN(parsedStartDate.getTime())) throw new AppError('startDate no es una fecha válida', 400);
+      }
+      if (endDate) {
+        parsedEndDate = new Date(endDate as string);
+        if (isNaN(parsedEndDate.getTime())) throw new AppError('endDate no es una fecha válida', 400);
+      }
+
       const results = await labService.getResults({
         patientId: patientId as string | undefined,
         testCode: testCode as string | undefined,
         status: status as 'normal' | 'abnormal' | 'critical' | undefined,
         flagged: flagged === 'true' ? true : flagged === 'false' ? false : undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
         laboratoryId: laboratoryId as string | undefined,
       });
 

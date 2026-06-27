@@ -131,6 +131,15 @@ const ConsentManagement = () => {
         return;
       }
 
+      // Verificar que el canvas tiene contenido real (no está en blanco)
+      const ctx = canvas.getContext('2d');
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const hasContent = pixels.some((v, i) => i % 4 === 3 && v > 0); // canal alpha > 0
+      if (!hasContent) {
+        alert('Por favor, dibuje su firma antes de continuar');
+        return;
+      }
+
       const signatureData = canvas.toDataURL('image/png');
 
       await apiClient.post(`/informed-consents/${consentId}/sign`, {

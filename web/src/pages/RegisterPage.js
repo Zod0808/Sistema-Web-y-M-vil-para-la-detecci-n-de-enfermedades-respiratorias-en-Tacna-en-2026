@@ -45,8 +45,20 @@ const RegisterPage = () => {
       setError('Las contraseñas no coinciden.');
       return;
     }
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    if (form.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (!/[A-Z]/.test(form.password)) {
+      setError('La contraseña debe contener al menos una letra mayúscula.');
+      return;
+    }
+    if (!/[0-9]/.test(form.password)) {
+      setError('La contraseña debe contener al menos un número.');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(form.password)) {
+      setError('La contraseña debe contener al menos un carácter especial (ej: !@#$%).');
       return;
     }
     setError('');

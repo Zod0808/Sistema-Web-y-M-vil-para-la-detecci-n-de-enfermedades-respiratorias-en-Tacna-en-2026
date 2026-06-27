@@ -82,6 +82,8 @@ export class EmergencyService {
       emergencyContacts: config.emergencyContacts || [],
     };
 
+    logger.warn('⚠️  activeEmergencies usa Map en memoria — el estado se perderá si el proceso reinicia. Para producción de alta disponibilidad, migrar a Redis.');
+
     // Inicializar cliente HTTP si hay configuración
     if (this.config.enabled && this.config.apiUrl && this.config.apiKey) {
       this.client = axios.create({

@@ -18,11 +18,20 @@ router = APIRouter()
 
 class SymptomMLInput(BaseModel):
     """Input for ML symptom analysis"""
-    symptoms: List[str] = Field(..., description="List of symptoms")
-    patient_age: Optional[int] = Field(35, description="Patient age")
-    risk_factors: Optional[List[str]] = Field([], description="List of risk factors (smoking, diabetes, hypertension, etc.)")
+    symptoms: List[str] = Field(..., min_length=1, max_length=50, description="List of symptoms (max 50)")
+    patient_age: Optional[int] = Field(35, ge=0, le=130, description="Patient age")
+    risk_factors: Optional[List[str]] = Field([], max_length=20, description="List of risk factors (max 20)")
     include_explanation: Optional[bool] = Field(True, description="Include SHAP explanation")
     apply_personalization: Optional[bool] = Field(True, description="Apply age/risk personalization")
+
+    from pydantic import field_validator
+
+    @field_validator('symptoms', 'risk_factors', mode='before')
+    @classmethod
+    def limit_string_length(cls, items):
+        if items is None:
+            return items
+        return [str(s)[:200] for s in items]
 
 
 class SymptomMLOutput(BaseModel):

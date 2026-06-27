@@ -25,6 +25,25 @@ const MedicalReport = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
+  const downloadReport = async (reportId) => {
+    try {
+      const res = await axios.get(`${API_BASE}/reports/${reportId}/download`, {
+        headers,
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte-${reportId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setMessage({ type: 'error', text: 'Error al descargar el reporte.' });
+    }
+  };
+
   const generateReport = async () => {
     setLoading(true);
     setMessage(null);
@@ -49,7 +68,7 @@ const MedicalReport = () => {
       setMessage({ type: 'success', text: 'Reporte generado correctamente.' });
       if (report?.id) {
         await loadHistory();
-        window.open(`${API_BASE}/reports/${report.id}/download?token=${token}`, '_blank', 'noopener');
+        await downloadReport(report.id);
       }
     } catch (error) {
       console.error(error);
@@ -203,13 +222,13 @@ const MedicalReport = () => {
                   <td>{report.sharedWith?.length ? report.sharedWith.join(', ') : '—'}</td>
                   <td>{report.signedBy ? `Firmado por ${report.signedBy}` : 'Pendiente'}</td>
                   <td>
-                    <a
-                      href={`${API_BASE}/reports/${report.id}/download?token=${token}`}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => downloadReport(report.id)}
+                      style={{ cursor: 'pointer', background: 'none', border: 'none', color: '#1565c0', textDecoration: 'underline' }}
                     >
                       Descargar
-                    </a>
+                    </button>
                   </td>
                 </tr>
               ))}

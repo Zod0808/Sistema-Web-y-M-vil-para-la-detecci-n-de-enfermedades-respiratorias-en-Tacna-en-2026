@@ -9,6 +9,13 @@ from core.config import settings
 
 logger = structlog.get_logger()
 
+ALLOWED_SPACY_MODELS = frozenset({
+    "en_core_web_sm", "en_core_web_md", "en_core_web_lg",
+    "es_core_news_sm", "es_core_news_md", "es_core_news_lg",
+    "en_core_sci_sm", "en_core_sci_md", "en_core_sci_lg",
+    "es_dep_news_trf",
+})
+
 
 class ModelType(Enum):
     """Available model types"""
@@ -130,13 +137,19 @@ class ModelFactory:
             import spacy
             
             model_name = kwargs.get("model_name", settings.MEDICAL_MODEL_NAME)
-            
+
+            if model_name not in ALLOWED_SPACY_MODELS:
+                raise ValueError(
+                    f"Modelo spaCy no permitido: '{model_name}'. "
+                    f"Modelos válidos: {sorted(ALLOWED_SPACY_MODELS)}"
+                )
+
             try:
                 nlp = spacy.load(model_name)
             except OSError:
                 logger.warning(f"Model {model_name} not found, downloading...")
                 import subprocess
-                subprocess.run(["python", "-m", "spacy", "download", model_name])
+                subprocess.run(["python", "-m", "spacy", "download", model_name], check=True)
                 nlp = spacy.load(model_name)
             
             return {

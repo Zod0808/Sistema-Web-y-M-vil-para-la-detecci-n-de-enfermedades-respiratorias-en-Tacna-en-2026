@@ -48,10 +48,15 @@ class OpenAIStrategy(AnalysisStrategy):
             
             return result
             
-        except Exception as e:
-            logger.error("Error in OpenAI symptom analysis", error=str(e))
+        except openai.AuthenticationError:
+            logger.error("Error in OpenAI symptom analysis: invalid API key (check OPENAI_API_KEY)")
             raise
-    
+        except Exception as e:
+            # Redact API key from error message before logging
+            safe_msg = str(e).replace(settings.OPENAI_API_KEY or "", "[REDACTED]")
+            logger.error("Error in OpenAI symptom analysis", error=safe_msg)
+            raise
+
     async def process_medical_text(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """Process medical history text using OpenAI API"""
         try:
@@ -78,8 +83,12 @@ class OpenAIStrategy(AnalysisStrategy):
             
             return result
             
+        except openai.AuthenticationError:
+            logger.error("Error in OpenAI medical text processing: invalid API key (check OPENAI_API_KEY)")
+            raise
         except Exception as e:
-            logger.error("Error in OpenAI medical text processing", error=str(e))
+            safe_msg = str(e).replace(settings.OPENAI_API_KEY or "", "[REDACTED]")
+            logger.error("Error in OpenAI medical text processing", error=safe_msg)
             raise
     
     def _format_symptoms_for_ai(self, symptoms: List[Dict[str, Any]]) -> str:

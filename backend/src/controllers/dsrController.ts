@@ -56,6 +56,12 @@ export async function deleteUserData(req: Request, res: Response) {
     }
     const { userId } = req.params;
 
+    // Obtener IDs de historiales ANTES de borrarlos para filtrar AIAnalysis
+    const patientHistoryIds = await MedicalHistory.find({ patientId: userId })
+      .select('_id')
+      .lean()
+      .then(docs => docs.map(d => d._id));
+
     // Soft-delete de usuario y borrado de datos vinculados
     const [user] = await Promise.all([
       User.findByIdAndUpdate(userId, { isActive: false, name: 'REDACTED', avatar: null }, { new: true }),
@@ -66,7 +72,7 @@ export async function deleteUserData(req: Request, res: Response) {
       AppointmentModel.deleteMany({ patientId: userId }),
       PrescriptionModel.deleteMany({ patientId: userId }),
       AlertModel.deleteMany({ patientId: userId }),
-      AIAnalysis.deleteMany({}), // Nota: vinculadas por medicalHistoryId ya eliminadas arriba
+      AIAnalysis.deleteMany({ medicalHistoryId: { $in: patientHistoryIds } }),
       WearableData.deleteMany({ patientId: userId })
     ]);
 

@@ -32,12 +32,12 @@ const FhirPage = () => {
     try {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
-      
-      // Agregar parámetros de búsqueda
+      const FHIR_ALLOWED_KEYS = /^[a-zA-Z0-9_\-:.]+$/;
+
       Object.entries(searchParams).forEach(([key, value]) => {
-        if (value) {
-          params.append(key, value);
-        }
+        if (!value || !FHIR_ALLOWED_KEYS.test(key)) return;
+        const sanitized = String(value).trim().slice(0, 200);
+        if (sanitized) params.append(key, sanitized);
       });
 
       const response = await fetch(

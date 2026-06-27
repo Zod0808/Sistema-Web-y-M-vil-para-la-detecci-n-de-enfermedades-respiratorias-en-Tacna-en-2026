@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../utils/apiBase';
 
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(readCachedUser);
   const [token, setToken] = useState(() => localStorage.getItem('auth_token'));
   const [loading, setLoading] = useState(() => !!localStorage.getItem('auth_token'));
+  const interceptorRef = useRef(null);
 
   const persistUser = (u) => {
     if (u) localStorage.setItem('auth_user', JSON.stringify(u));
@@ -53,13 +54,39 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Interceptor global: cierra sesión si cualquier request recibe 401 durante la sesión activa
+  useEffect(() => {
+    if (interceptorRef.current !== null) {
+      axios.interceptors.response.eject(interceptorRef.current);
+    }
+    interceptorRef.current = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error?.response?.status === 401 && localStorage.getItem('auth_token')) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          setToken(null);
+          setUser(null);
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      if (interceptorRef.current !== null) {
+        axios.interceptors.response.eject(interceptorRef.current);
+      }
+    };
+  }, []);
+
   const persistToken = (t) => {
     localStorage.setItem('auth_token', t);
     setToken(t);
   };
 
+  const AUTH_TIMEOUT = 10_000; // 10 s — evita que requests lentos congelen la UI
+
   const login = async (email, password) => {
-    const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
+    const res = await axios.post(`${API_BASE}/auth/login`, { email, password }, { timeout: AUTH_TIMEOUT });
     const { token: t, user: u } = res.data.data;
     persistToken(t);
     persistUser(u);
@@ -67,7 +94,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password, role = 'patient') => {
-    const res = await axios.post(`${API_BASE}/auth/register`, { name, email, password, role });
+    const res = await axios.post(`${API_BASE}/auth/register`, { name, email, password, role }, { timeout: AUTH_TIMEOUT });
     const { token: t, user: u } = res.data.data;
     persistToken(t);
     persistUser(u);

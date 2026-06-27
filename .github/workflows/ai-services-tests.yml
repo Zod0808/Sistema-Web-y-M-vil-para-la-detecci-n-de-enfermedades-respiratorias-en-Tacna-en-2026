@@ -73,11 +73,11 @@ jobs:
               
               print(f"Coverage: {coverage_percent:.2f}%")
               
-              if coverage_percent < 35:
-                  print(f"❌ Coverage {coverage_percent:.2f}% is below threshold of 35%")
+              if coverage_percent < 60:
+                  print(f"❌ Coverage {coverage_percent:.2f}% is below threshold of 60%")
                   sys.exit(1)
               else:
-                  print(f"✅ Coverage {coverage_percent:.2f}% meets threshold of 35%")
+                  print(f"✅ Coverage {coverage_percent:.2f}% meets threshold of 60%")
                   sys.exit(0)
           except Exception as e:
               print(f"Error reading coverage.xml: {e}")

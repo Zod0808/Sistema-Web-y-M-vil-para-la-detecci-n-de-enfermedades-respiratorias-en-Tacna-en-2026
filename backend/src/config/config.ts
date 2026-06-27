@@ -17,6 +17,17 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+const MIN_SECRET_LENGTH = 32;
+for (const secretVar of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+  const val = process.env[secretVar] || '';
+  if (val.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `${secretVar} debe tener al menos ${MIN_SECRET_LENGTH} caracteres (actual: ${val.length}). ` +
+      'Genera uno seguro con: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64\'))"'
+    );
+  }
+}
+
 const parseCommaSeparated = (value?: string): string[] | undefined => {
   if (!value) {
     return undefined;

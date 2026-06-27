@@ -86,6 +86,11 @@ const ReferralManagement = () => {
 
   const handleCreateReferral = async (e) => {
     e.preventDefault();
+    const { patientId, referredToDoctorId, referredToSpecialty, reason } = formData;
+    if (!patientId?.trim()) { alert('ID de paciente es requerido'); return; }
+    if (!referredToDoctorId?.trim()) { alert('ID del doctor receptor es requerido'); return; }
+    if (!referredToSpecialty?.trim()) { alert('Especialidad es requerida'); return; }
+    if (!reason?.trim()) { alert('Razón del referido es requerida'); return; }
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       await apiClient.post('/referrals', {

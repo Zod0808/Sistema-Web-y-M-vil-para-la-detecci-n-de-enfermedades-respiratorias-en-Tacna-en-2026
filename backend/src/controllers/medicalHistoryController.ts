@@ -113,16 +113,19 @@ export const getMedicalHistories = asyncHandler(async (req: AuthenticatedRequest
   sortQuery[selectedSortField] = sortOrder;
 
   if (search) {
-    const normalizedSearch = search.trim();
+    const MAX_SEARCH_LENGTH = 100;
+    const normalizedSearch = search.trim().slice(0, MAX_SEARCH_LENGTH);
     if (normalizedSearch.length >= 3) {
       filters.$text = { $search: normalizedSearch };
       searchProjection = { score: { $meta: 'textScore' } };
       sortQuery.score = { $meta: 'textScore' };
-    } else {
+    } else if (normalizedSearch.length > 0) {
+      // Escapar metacaracteres regex para prevenir ReDoS
+      const escaped = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filters.$or = [
-        { patientName: { $regex: normalizedSearch, $options: 'i' } },
-        { diagnosis: { $regex: normalizedSearch, $options: 'i' } },
-        { description: { $regex: normalizedSearch, $options: 'i' } }
+        { patientName: { $regex: escaped, $options: 'i' } },
+        { diagnosis: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } }
       ];
     }
   }
@@ -198,7 +201,8 @@ export const getMedicalHistoryById = asyncHandler(async (req: AuthenticatedReque
   }
 
   // Verificar permisos (solo el doctor que la creó o admin)
-  if (req.user?.role !== 'admin' && medicalHistory.doctorId !== req.user?._id) {
+  // .toString() necesario: doctorId es ObjectId, req.user._id puede ser string u ObjectId
+  if (req.user?.role !== 'admin' && medicalHistory.doctorId?.toString() !== req.user?._id?.toString()) {
     throw new AppError('No tienes permisos para ver esta historia médica', 403);
   }
 

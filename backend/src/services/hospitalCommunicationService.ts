@@ -48,7 +48,17 @@ export interface HospitalSelection {
 
 export class HospitalCommunicationService {
   private config: HospitalCommunicationConfig;
-  private activeNotifications: Map<string, HospitalNotification> = new Map();
+  private activeNotifications: Map<string, { notification: HospitalNotification; addedAt: number }> = new Map();
+  private static readonly NOTIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+  private purgeExpiredNotifications(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.activeNotifications) {
+      if (now - entry.addedAt > HospitalCommunicationService.NOTIFICATION_TTL_MS) {
+        this.activeNotifications.delete(key);
+      }
+    }
+  }
 
   constructor(config: Partial<HospitalCommunicationConfig> = {}) {
     this.config = {
@@ -95,7 +105,8 @@ export class HospitalCommunicationService {
 
           if (notification) {
             notifications.push(notification);
-            this.activeNotifications.set(notification.hospitalId, notification);
+            this.purgeExpiredNotifications();
+            this.activeNotifications.set(notification.hospitalId, { notification, addedAt: Date.now() });
           }
         } catch (error: any) {
           logger.error(`Error al notificar hospital ${hospital.hospitalName}: ${error.message}`, {
@@ -292,9 +303,9 @@ export class HospitalCommunicationService {
    * Obtener estado de notificaciones a hospitales
    */
   getHospitalNotifications(emergencyId: string): HospitalNotification[] {
-    return Array.from(this.activeNotifications.values()).filter(
-      (notification) => notification.emergencyId === emergencyId
-    );
+    return Array.from(this.activeNotifications.values())
+      .filter((entry) => entry.notification.emergencyId === emergencyId)
+      .map((entry) => entry.notification);
   }
 
   /**

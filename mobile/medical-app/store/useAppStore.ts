@@ -87,6 +87,7 @@ export const useAppStore = create<AppState>()(
       },
       
       login: async (email: string, password: string) => {
+        if (!get().isOnline) throw new Error('Sin conexión a internet. Verifica tu red e intenta de nuevo.')
         set({ isLoading: true })
         try {
           const response = await authService.login({ email, password })
@@ -122,7 +123,8 @@ export const useAppStore = create<AppState>()(
       updateUser: async (user: Partial<User>) => {
         const currentUser = get().user
         if (!currentUser) return
-        
+        if (!get().isOnline) throw new Error('Sin conexión a internet. Los cambios se aplicarán cuando vuelvas a conectarte.')
+
         try {
           const updatedUser = await authService.updateProfile(user)
           saveUser(updatedUser)

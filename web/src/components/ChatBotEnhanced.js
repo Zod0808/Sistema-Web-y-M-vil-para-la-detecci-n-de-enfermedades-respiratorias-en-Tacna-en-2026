@@ -11,6 +11,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import DOMPurify from 'isomorphic-dompurify';
 import SHAPVisualization from './SHAPVisualization';
 import FactorChart from './FactorChart';
 import MLAdvancedResults from './MLAdvancedResults';
@@ -322,14 +323,17 @@ function ChatBotEnhanced() {
       
       if (extractedSymptoms && extractedSymptoms.length > 0) {
         try {
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
           const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-          
+          const _cachedUser = (() => { try { return JSON.parse(localStorage.getItem('auth_user') || '{}'); } catch { return {}; } })();
+          const _birthYear = _cachedUser.birthYear || _cachedUser.birth_year;
+          const _patientAge = _birthYear ? (new Date().getFullYear() - Number(_birthYear)) : (_cachedUser.age || null);
+
           const mlResponse = await axios.post(
             `${API_BASE}/symptom-analyzer/ml-analyze`,
             {
               symptoms: extractedSymptoms,
-              patient_age: 35,
+              patient_age: _patientAge,
               risk_factors: [],
               include_explanation: true,
               apply_personalization: true
@@ -503,7 +507,10 @@ function ChatBotEnhanced() {
   };
 
   const renderFormattedMessage = (text) => {
-    const formatted = formatMessage(text);
+    const formatted = DOMPurify.sanitize(formatMessage(text), {
+      ALLOWED_TAGS: ['b', 'strong', 'em', 'h2', 'h3', 'h4', 'br', 'ul', 'ol', 'li', 'p'],
+      ALLOWED_ATTR: [],
+    });
     return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 

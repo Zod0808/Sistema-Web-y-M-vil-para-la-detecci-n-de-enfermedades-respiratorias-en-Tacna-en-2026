@@ -8,6 +8,7 @@ import WearableData from '../models/WearableData';
 import { ApiResponse, AuthenticatedRequest } from '../types';
 import { vitalsEmitter } from '../sockets/vitalsEmitter';
 import { checkThresholdsAndAlert } from '../services/wearableAlertService';
+import { logger } from '../utils/logger';
 
 /**
  * Sincronizar datos de wearables
@@ -80,7 +81,7 @@ export const syncWearableData = async (req: AuthenticatedRequest, res: Response)
       data: { count: savedData.length, data: savedData }
     } as ApiResponse);
   } catch (error: any) {
-    console.error('Error syncing wearable data:', error);
+    logger.error('Error syncing wearable data', { error: error.message });
     res.status(500).json(
       {
         success: false,
@@ -129,14 +130,24 @@ export const getWearableData = async (req: AuthenticatedRequest, res: Response):
     // Si hay patientId (propio o específico) filtrar; si el staff no especificó, traer todo
     const query: any = patientId ? { patientId } : {};
 
-    // Filtrar por rango de fechas
+    // Filtrar por rango de fechas — validar que sean fechas válidas antes de pasar a MongoDB
     if (startDate || endDate) {
       query.timestamp = {};
       if (startDate) {
-        query.timestamp.$gte = new Date(startDate as string);
+        const start = new Date(startDate as string);
+        if (isNaN(start.getTime())) {
+          res.status(400).json({ success: false, message: 'startDate no es una fecha válida' } as ApiResponse);
+          return;
+        }
+        query.timestamp.$gte = start;
       }
       if (endDate) {
-        query.timestamp.$lte = new Date(endDate as string);
+        const end = new Date(endDate as string);
+        if (isNaN(end.getTime())) {
+          res.status(400).json({ success: false, message: 'endDate no es una fecha válida' } as ApiResponse);
+          return;
+        }
+        query.timestamp.$lte = end;
       }
     }
 
@@ -153,7 +164,7 @@ export const getWearableData = async (req: AuthenticatedRequest, res: Response):
       } as ApiResponse
     );
   } catch (error: any) {
-    console.error('Error getting wearable data:', error);
+    logger.error('Error getting wearable data', { error: error.message });
     res.status(500).json(
       {
         success: false,
@@ -254,7 +265,7 @@ export const getWearableMetrics = async (req: AuthenticatedRequest, res: Respons
       } as ApiResponse
     );
   } catch (error: any) {
-    console.error('Error getting wearable metrics:', error);
+    logger.error('Error getting wearable metrics', { error: error.message });
     res.status(500).json(
       {
         success: false,

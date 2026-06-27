@@ -39,23 +39,39 @@ async def init_database():
 async def create_indexes():
     """Create database indexes for better performance"""
     try:
-        # Medical histories collection indexes
+        from pymongo import ASCENDING, DESCENDING
+
+        # Medical histories — compound indexes for the most frequent queries
         await database.medical_histories.create_index("patient_id")
         await database.medical_histories.create_index("date")
         await database.medical_histories.create_index("diagnosis")
-        
-        # Symptoms collection indexes
+        await database.medical_histories.create_index(
+            [("patient_id", ASCENDING), ("date", DESCENDING)], name="patient_date_idx"
+        )
+
+        # Symptoms — compound for patient history queries
         await database.symptoms.create_index("patient_id")
         await database.symptoms.create_index("timestamp")
         await database.symptoms.create_index("severity")
-        
-        # AI processing results indexes
+        await database.symptoms.create_index(
+            [("patient_id", ASCENDING), ("timestamp", DESCENDING)], name="patient_ts_idx"
+        )
+        await database.symptoms.create_index(
+            [("patient_id", ASCENDING), ("severity", ASCENDING), ("timestamp", DESCENDING)],
+            name="patient_severity_ts_idx"
+        )
+
+        # AI processing results — compound for type + recency queries
         await database.ai_results.create_index("patient_id")
         await database.ai_results.create_index("type")
         await database.ai_results.create_index("created_at")
-        
+        await database.ai_results.create_index(
+            [("patient_id", ASCENDING), ("type", ASCENDING), ("created_at", DESCENDING)],
+            name="patient_type_created_idx"
+        )
+
         logger.info("Database indexes created successfully")
-        
+
     except Exception as e:
         logger.error("Failed to create database indexes", error=str(e))
 

@@ -56,6 +56,7 @@ import { logger } from './utils/logger';
 import { config } from './config/config';
 import { swaggerSpec } from './config/swagger';
 import { initializeRedis, disconnectRedis, getRedisClient } from './config/redisClient';
+import { getEncryptionKey } from './utils/encryption';
 import { brotliCompression } from './middleware/brotliCompression';
 import { smartRateLimiter } from './middleware/rateLimiter';
 import { startAlertJobs, stopAlertJobs } from './jobs/alertJobs';
@@ -323,8 +324,19 @@ class App {
   }
 
   private async initializeCache(): Promise<void> {
+    if (process.env.NODE_ENV !== 'test') {
+      try {
+        getEncryptionKey();
+      } catch (err: any) {
+        logger.error(`❌ FIELD_ENCRYPTION_KEY inválida: ${err.message}. Datos sensibles no se encriptarán.`);
+        if (process.env.NODE_ENV === 'production') process.exit(1);
+      }
+    }
     try {
-      await initializeRedis();
+      const redis = await initializeRedis();
+      if (!redis && process.env.NODE_ENV !== 'test') {
+        logger.warn('⚠️  Redis no disponible — rate limiting y caché desactivados. Verifique REDIS_URL.');
+      }
     } catch (error) {
       logger.error('❌ Error inicializando Redis:', error);
     }

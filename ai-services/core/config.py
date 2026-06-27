@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     BATCH_SIZE: int = 32
     CACHE_TTL: int = 3600  # 1 hour
     
+    # Internal API key — requerida para endpoints administrativos (retraining, cache clear)
+    INTERNAL_API_KEY: Optional[str] = None
+
     # Logging
     LOG_LEVEL: str = "INFO"
     

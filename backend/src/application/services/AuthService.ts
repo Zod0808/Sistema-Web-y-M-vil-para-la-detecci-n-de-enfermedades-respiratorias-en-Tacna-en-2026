@@ -3,6 +3,7 @@ import { UserEntity, UserRole } from '../../domain/entities/User';
 import { UserRepository } from '../../domain/repositories/UserRepository';
 import { HashService } from './HashService';
 import { TokenService } from './TokenService';
+import { logger } from '../../utils/logger';
 
 export interface LoginRequest {
   email: string;
@@ -125,9 +126,7 @@ export class AuthService {
   }
 
   async logout(userId: string): Promise<void> {
-    // En una implementación real, podrías invalidar el token en una blacklist
-    // Por ahora, simplemente registramos el logout
-    console.log(`Usuario ${userId} cerró sesión`);
+    logger.info('Cierre de sesión', { userId });
   }
 
   async getProfile(userId: string): Promise<UserEntity> {

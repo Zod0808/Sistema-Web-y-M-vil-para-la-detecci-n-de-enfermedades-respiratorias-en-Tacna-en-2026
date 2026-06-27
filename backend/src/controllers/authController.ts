@@ -34,6 +34,15 @@ const generateRefreshToken = (userId: string): string => {
 export const register = asyncHandler(async (req: Request<{}, ApiResponse<AuthResponse>, RegisterRequest>, res: Response) => {
   const { name, email, password, role } = req.body;
 
+  const ALLOWED_ROLES = ['patient', 'doctor', 'admin'];
+  if (role && !ALLOWED_ROLES.includes(role)) {
+    logger.warn('Intento de registro con rol no permitido', { email, role });
+    throw new AppError('Rol no válido', 400);
+  }
+  if (role && role !== 'patient') {
+    logger.warn('Registro con rol elevado', { email, role });
+  }
+
   // Verificar si el usuario ya existe
   const existingUser = await User.findByEmail(email);
   if (existingUser) {
@@ -88,17 +97,20 @@ export const login = asyncHandler(async (req: Request<{}, ApiResponse<AuthRespon
   // Buscar usuario y incluir contraseña
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
   if (!user) {
+    logger.warn('Login fallido: email no encontrado', { email });
     throw new AppError('Credenciales inválidas', 401);
   }
 
   // Verificar si el usuario está activo
   if (!user.isActive) {
+    logger.warn('Login fallido: cuenta desactivada', { email });
     throw new AppError('La cuenta está desactivada', 401);
   }
 
   // Verificar contraseña
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
+    logger.warn('Login fallido: contraseña incorrecta', { email });
     throw new AppError('Credenciales inválidas', 401);
   }
 

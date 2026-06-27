@@ -141,8 +141,9 @@ export function ConsentScreen({ onBack }: ConsentScreenProps) {
   }
 
   const handleRevokeConsent = async (consentId: string) => {
-    const reason = prompt('Razón de revocación:')
-    if (!reason) return
+    const raw = prompt('Razón de revocación (máx. 500 caracteres):')
+    if (!raw || !raw.trim()) return
+    const reason = raw.trim().slice(0, 500)
 
     try {
       await apiClient.post<any>(`/api/v1/informed-consents/${consentId}/revoke`, { reason })

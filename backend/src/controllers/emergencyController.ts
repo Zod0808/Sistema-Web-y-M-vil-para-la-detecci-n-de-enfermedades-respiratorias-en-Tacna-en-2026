@@ -44,16 +44,25 @@ export const createEmergency = asyncHandler(
       throw new AppError('Coordenadas GPS (latitude, longitude) son requeridas', 400);
     }
 
+    const lat = Number(location.latitude);
+    const lon = Number(location.longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      throw new AppError('latitude debe estar entre -90 y 90', 400);
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      throw new AppError('longitude debe estar entre -180 y 180', 400);
+    }
+
     const emergencyRequest: EmergencyRequest = {
-      userId: req.user?._id?.toString() || req.body.userId,
+      userId: req.user?._id?.toString(),
       patientId: patientId || req.user?._id?.toString(),
       patientName: patientName || req.user?.name,
       emergencyType,
       severity,
       description,
       location: {
-        latitude: Number(location.latitude),
-        longitude: Number(location.longitude),
+        latitude: lat,
+        longitude: lon,
         address: location.address,
         district: location.district,
         accuracy: location.accuracy,

@@ -104,14 +104,49 @@ export interface MLPredictionResponse {
   timestamp: string;
 }
 
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+const CB_FAILURE_THRESHOLD = 5;   // failures before opening
+const CB_RECOVERY_MS       = 30_000; // time in OPEN before trying HALF_OPEN
+
 class AIIntegrationService {
   private aiClient: AxiosInstance;
   private isConnected: boolean = false;
 
+  private cbState: CircuitState = 'CLOSED';
+  private cbFailures: number = 0;
+  private cbOpenedAt: number = 0;
+
+  private recordSuccess(): void {
+    this.cbFailures = 0;
+    this.cbState = 'CLOSED';
+  }
+
+  private recordFailure(): void {
+    this.cbFailures++;
+    if (this.cbState === 'HALF_OPEN' || this.cbFailures >= CB_FAILURE_THRESHOLD) {
+      this.cbState = 'OPEN';
+      this.cbOpenedAt = Date.now();
+      logger.warn('🔴 Circuit breaker AI Service ABIERTO — pausando solicitudes', { failures: this.cbFailures });
+    }
+  }
+
+  private isCircuitOpen(): boolean {
+    if (this.cbState === 'CLOSED') return false;
+    if (this.cbState === 'OPEN') {
+      if (Date.now() - this.cbOpenedAt >= CB_RECOVERY_MS) {
+        this.cbState = 'HALF_OPEN';
+        logger.info('🟡 Circuit breaker AI Service HALF_OPEN — intentando recuperación');
+        return false;
+      }
+      return true;
+    }
+    return false; // HALF_OPEN → permit one probe
+  }
+
   constructor() {
     this.aiClient = axios.create({
       baseURL: config.ai.serviceUrl,
-      timeout: 30000, // 30 seconds timeout
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'RespiCare-Backend/1.0.0'
@@ -178,19 +213,16 @@ class AIIntegrationService {
    * Process medical history text with AI
    */
   async processMedicalHistory(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
+    if (this.isCircuitOpen()) {
+      throw new AppError('Servicio de IA temporalmente no disponible (circuit breaker)', 503);
+    }
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
-
       const response = await this.aiClient.post<AIAnalysisResponse>(
         '/api/v1/medical-history/process',
         request
       );
 
+      this.recordSuccess();
       logger.info('Medical history processed by AI', {
         patientId: request.patient_id,
         processingTime: response.data.processing_time_ms,
@@ -199,6 +231,7 @@ class AIIntegrationService {
 
       return response.data;
     } catch (error: any) {
+      this.recordFailure();
       logger.error('AI Medical History Processing Failed', {
         patientId: request.patient_id,
         error: error.message
@@ -218,14 +251,10 @@ class AIIntegrationService {
    * Analyze symptoms with AI (Legacy endpoint)
    */
   async analyzeSymptoms(request: SymptomAnalysisRequest): Promise<SymptomAnalysisResponse> {
+    if (this.isCircuitOpen()) {
+      throw new AppError('Servicio de IA temporalmente no disponible (circuit breaker)', 503);
+    }
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
-
       // Map structured symptoms to the ML endpoint's string-array format
       const symptomNames = request.symptoms.map(s => s.symptom);
 
@@ -267,6 +296,7 @@ class AIIntegrationService {
         processing_time_ms: 0,
       };
 
+      this.recordSuccess();
       logger.info('Symptoms analyzed by AI', {
         patientId: request.patient_id,
         urgencyLevel: mapped.urgency_level,
@@ -275,6 +305,7 @@ class AIIntegrationService {
 
       return mapped;
     } catch (error: any) {
+      this.recordFailure();
       logger.error('AI Symptom Analysis Failed', {
         patientId: request.patient_id,
         error: error.message

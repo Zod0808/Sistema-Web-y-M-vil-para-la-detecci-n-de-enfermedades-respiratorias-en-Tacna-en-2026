@@ -3,12 +3,21 @@ Model Cache API Routes
 Endpoints para gestionar y monitorear el caché de modelos
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import structlog
 
 from ml_models.model_cache import get_model_cache
+from core.config import settings
+
+
+def _require_internal_key(x_internal_api_key: Optional[str] = Header(default=None)) -> None:
+    key = settings.INTERNAL_API_KEY
+    if not key:
+        raise HTTPException(status_code=503, detail="INTERNAL_API_KEY no configurada en el servidor")
+    if x_internal_api_key != key:
+        raise HTTPException(status_code=403, detail="Token interno inválido o ausente")
 
 logger = structlog.get_logger()
 
@@ -95,7 +104,7 @@ async def remove_cached_model(model_name: str, model_type: str = "all"):
         raise HTTPException(status_code=500, detail=f"Error removing model from cache: {str(e)}")
 
 
-@router.post("/clear")
+@router.post("/clear", dependencies=[Depends(_require_internal_key)])
 async def clear_cache():
     """Limpia todo el caché de modelos"""
     try:

@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { timingSafeEqual } from 'crypto';
 import User from '../models/User';
 import { AppError } from '../utils/AppError';
 import { AuthenticatedRequest } from '../types';
@@ -86,9 +87,17 @@ export const authorizeInternalOrRoles = (roles: string[], allowedTokens: string[
     const token = Array.isArray(header) ? header[0] : header;
 
     if (token && typeof token === 'string') {
-      if (allowedTokens.includes(token)) {
-        return next();
-      }
+      const tokenBuf = Buffer.from(token, 'utf8');
+      const isValid = allowedTokens.some(allowed => {
+        try {
+          const allowedBuf = Buffer.from(allowed, 'utf8');
+          if (tokenBuf.length !== allowedBuf.length) return false;
+          return timingSafeEqual(tokenBuf, allowedBuf);
+        } catch {
+          return false;
+        }
+      });
+      if (isValid) return next();
     }
 
     if (!req.user) {
