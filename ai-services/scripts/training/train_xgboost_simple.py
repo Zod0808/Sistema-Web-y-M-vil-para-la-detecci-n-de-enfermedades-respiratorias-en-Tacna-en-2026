@@ -63,19 +63,60 @@ def create_advanced_features(symptoms_text: str, patient_age: int = 35) -> np.nd
     return np.array(features)
 
 
+def _resolve_dataset(path: str) -> str:
+    """Busca el dataset en rutas alternativas si el path no existe."""
+    import os
+    if os.path.exists(path):
+        return path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ai_root    = os.path.join(script_dir, '..', '..')
+    candidates = [
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'augmented_dataset_retraining_20251103_123539.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'augmented_dataset_full_20251103_124126.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'synthetic_dataset_extended.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'synthetic_dataset.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'real_approved', 'real_dataset_respicare.csv'),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            print(f"  Dataset auto-detectado: {c}")
+            return c
+    raise FileNotFoundError(f"No se encontro ningun dataset. Proporciona --dataset <path>")
+
+
 def main():
+    import os, argparse
+    parser = argparse.ArgumentParser(description='Entrena XGBoost para RespiCare')
+    parser.add_argument('--dataset', type=str, default='synthetic_dataset.csv',
+                        help='Ruta al dataset (.csv con columnas disease, symptoms)')
+    parser.add_argument('--output', type=str, default='models/xgboost_model.pkl',
+                        help='Ruta de salida del modelo entrenado')
+    args = parser.parse_args()
+
     print("=== Training XGBoost Model ===")
-    
+
+    dataset_path = _resolve_dataset(args.dataset)
+
     # Load dataset
     print("\nLoading dataset...")
     cases = []
-    with open('synthetic_dataset.csv', 'r', encoding='utf-8') as f:
+    with open(dataset_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             cases.append(row)
-    
+
     print(f"Loaded {len(cases)} cases")
-    
+
+    # Filtrar clases con menos de 10 muestras para evitar errores en train_test_split / XGBoost
+    from collections import Counter
+    class_counts = Counter(c['disease'] for c in cases)
+    MIN_SAMPLES = 10
+    rare = {cls for cls, cnt in class_counts.items() if cnt < MIN_SAMPLES}
+    if rare:
+        print(f"  Filtrando {len(rare)} clase(s) con < {MIN_SAMPLES} muestras: {rare}")
+        cases = [c for c in cases if c['disease'] not in rare]
+        print(f"  Casos tras filtrado: {len(cases)}")
+
     # Prepare data
     print("\nCreating advanced features...")
     X_symptom_text = []
@@ -108,9 +149,12 @@ def main():
     print(f"Features: {X_combined.shape[1]}")
     print(f"Classes: {len(label_encoder.classes_)}")
     
-    # Split data
+    # Split data — sin stratify para tolerar clases con pocas muestras
+    counts = np.bincount(y_encoded)
+    can_stratify = int(counts.min()) >= 2
     X_train, X_test, y_train, y_test = train_test_split(
-        X_combined, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+        X_combined, y_encoded, test_size=0.2, random_state=42,
+        stratify=y_encoded if can_stratify else None
     )
     
     # Train XGBoost
@@ -156,8 +200,9 @@ def main():
         'vectorizer': vectorizer,
         'created_at': datetime.now().isoformat()
     }
-    joblib.dump(model_data, 'models/xgboost_model.pkl')
-    print("Model saved to models/xgboost_model.pkl")
+    os.makedirs(os.path.dirname(args.output) if os.path.dirname(args.output) else '.', exist_ok=True)
+    joblib.dump(model_data, args.output)
+    print(f"Model saved to {args.output}")
     
     # Test prediction
     print("\n=== Testing Model ===")

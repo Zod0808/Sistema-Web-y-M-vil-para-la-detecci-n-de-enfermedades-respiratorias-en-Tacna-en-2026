@@ -42,8 +42,8 @@ class MedicalHistorySearch(BaseModel):
     patient_id: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    diagnosis: Optional[str] = None
-    symptoms: Optional[List[str]] = None
+    diagnosis: Optional[str] = Field(default=None, max_length=200)
+    symptoms: Optional[List[str]] = Field(default=None, max_length=20)
     limit: int = Field(default=50, le=100)
 
 

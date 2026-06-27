@@ -328,11 +328,15 @@ class RespiCareDatasetExtractor:
     def extract(self) -> pd.DataFrame:
         import glob
 
-        # Primero intenta los archivos prioritarios, luego el resto
-        all_files = set(os.path.basename(f) for f in glob.glob(os.path.join(self.csv_path, "*.csv")))
-        ordered   = [f for f in self.PRIORITY_FILES if f in all_files]
-        rest      = sorted(all_files - set(self.PRIORITY_FILES) - self.SKIP_FILES)
-        files_to_read = [os.path.join(self.csv_path, f) for f in ordered + rest]
+        # Escaneo recursivo: captura archivos en raíz y en subdirectorios modelo1/
+        all_paths = glob.glob(os.path.join(self.csv_path, "**", "*.csv"), recursive=True)
+        # basename → path completo (último gana en caso de colisión de nombre)
+        all_files_map: dict[str, str] = {os.path.basename(p): p for p in all_paths}
+
+        ordered       = [all_files_map[f] for f in self.PRIORITY_FILES if f in all_files_map]
+        rest          = sorted(p for name, p in all_files_map.items()
+                               if name not in self.PRIORITY_FILES and name not in self.SKIP_FILES)
+        files_to_read = ordered + rest
 
         if not files_to_read:
             log.warning("Datasets: no se encontraron CSVs en %s", self.csv_path)
@@ -381,9 +385,9 @@ class KaggleCSVExtractor:
         # Solo archivos que NO sean del formato nativo RespiCare
         native_files = set(RespiCareDatasetExtractor.PRIORITY_FILES) | RespiCareDatasetExtractor.SKIP_FILES
 
-        pattern = os.path.join(self.csv_path, "*.csv")
-        files = [f for f in glob.glob(pattern)
-                 if os.path.basename(f) not in native_files]
+        # Escaneo recursivo para capturar archivos en subdirectorios modelo2..5
+        all_paths = glob.glob(os.path.join(self.csv_path, "**", "*.csv"), recursive=True)
+        files = [p for p in all_paths if os.path.basename(p) not in native_files]
 
         if not files:
             log.info("Kaggle CSV: no hay archivos externos en %s (solo datasets nativos)", self.csv_path)

@@ -82,8 +82,15 @@ export const getFileInfo = asyncHandler(async (req: AuthenticatedRequest, res: R
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    
-    const fullPath = path.join(process.cwd(), filePath);
+
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    const fullPath = path.resolve(process.cwd(), filePath);
+
+    // Prevenir path traversal: la ruta resuelta debe estar dentro de /uploads
+    if (!fullPath.startsWith(uploadsDir + path.sep) && fullPath !== uploadsDir) {
+      throw new AppError('Acceso denegado: ruta fuera del directorio permitido', 403);
+    }
+
     const stats = await fs.stat(fullPath);
 
     const fileInfo = {

@@ -47,19 +47,43 @@ def main():
     print("PASO 1: PREPARACION DE DATASET AUMENTADO")
     print("="*70)
     
-    # Use extended dataset as base
-    base_dataset = 'synthetic_dataset_extended.csv'
-    
-    if not os.path.exists(base_dataset):
-        print(f"\n[ERROR] Dataset base no encontrado: {base_dataset}")
-        print("Usando dataset original como alternativa...")
-        base_dataset = 'synthetic_dataset.csv'
-    
-    if not os.path.exists(base_dataset):
+    # Priorizar datasets reales. Orden = calidad y tamano del dataset.
+    # Para agregar un nuevo dataset: copiarlo en data/datasets/modelo1/ y agregarlo aqui.
+    DATASETS_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'datasets')
+    MODELO1_DIR  = os.path.join(DATASETS_DIR, 'modelo1')
+    DATASET_PRIORITY = [
+        # 1. Dataset Kaggle UCI — 4920 filas, 132 sintomas binarios, 41 enfermedades
+        os.path.join(MODELO1_DIR, 'prognosis_disease_symptoms', 'train_disease.csv'),
+        # 2. Dataset real combinado Kaggle Profile + MINSA Tacna
+        os.path.join(MODELO1_DIR, 'real_approved', 'real_dataset_respicare.csv'),
+        os.path.join(DATASETS_DIR, 'real_dataset_respicare.csv'),           # fallback raiz
+        # 3. Sintetico aumentado (fallback)
+        os.path.join(MODELO1_DIR, 'synthetic', 'augmented_dataset_full_20251103_124126.csv'),
+        os.path.join(DATASETS_DIR, 'augmented_dataset_full_20251103_124126.csv'),
+        # 4. Sintetico extendido
+        os.path.join(MODELO1_DIR, 'synthetic', 'synthetic_dataset_extended.csv'),
+        os.path.join(DATASETS_DIR, 'synthetic_dataset_extended.csv'),
+        # 5. Sintetico base
+        os.path.join(MODELO1_DIR, 'synthetic', 'synthetic_dataset.csv'),
+        os.path.join(DATASETS_DIR, 'synthetic_dataset.csv'),
+        'synthetic_dataset_extended.csv',
+        'synthetic_dataset.csv',
+    ]
+
+    base_dataset = None
+    for candidate in DATASET_PRIORITY:
+        if os.path.exists(candidate):
+            base_dataset = candidate
+            is_real = 'real_dataset' in os.path.basename(candidate)
+            label   = '✅ REAL (aprobado científicamente)' if is_real else '⚙️  Sintético'
+            print(f"\nDataset base seleccionado [{label}]:")
+            print(f"  {candidate}")
+            break
+
+    if not base_dataset:
         print(f"\n[ERROR] Ningun dataset encontrado")
+        print(f"  Ejecuta primero: python scripts/training/connect_real_datasets.py")
         return 1
-    
-    print(f"\nDataset base: {base_dataset}")
     
     # Collect feedback data
     print("\nRecopilando feedback medico...")

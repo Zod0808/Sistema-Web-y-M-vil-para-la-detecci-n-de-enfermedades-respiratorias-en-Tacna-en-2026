@@ -265,7 +265,8 @@ export default function PatientMonitoringPage() {
       }
 
       if (msg.type === 'auth:ok') {
-        ws.send(JSON.stringify({ type: 'subscribe', payload: { patientIds: ['*'] } }));
+        // El servidor filtra los pacientes por el JWT del doctor autenticado
+        ws.send(JSON.stringify({ type: 'subscribe', payload: {} }));
       }
 
       if (msg.type === 'auth:error') {

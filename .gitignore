@@ -96,14 +96,59 @@ data/db/
 # Redis data
 dump.rdb
 
-# AI Models (large files)
-# Exclude AI model directories but allow source code models
-ai-services/models/
+# AI Models — bloquear extensiones pesadas en cualquier lugar
 *.model
-*.pkl
-*.h5
 *.pt
 *.pth
+*.h5
+
+# Bloquear todos los .pkl EXCEPTO los 3 modelos del ensemble RespiCare
+# NOTA: NO ignorar la carpeta ai-services/models/ como directorio,
+# porque git no permite excepciones dentro de directorios ignorados.
+ai-services/models/automl_*.pkl
+ai-services/models/checkpoints/
+ai-services/models/tmp/
+
+# ── Modelos del ensemble que SI se commitean (generados por execute_full_retraining.py) ──
+# base_random_forest.pkl, xgboost_model.pkl, neural_network_model.pkl
+# NO estan en ninguna regla de bloqueo → git los trackea automaticamente.
+
+# ── Datasets grandes — NO commitear, usar Google Drive / OneDrive ─────────────
+# Modelo 1 — CSVs pesados (sintéticos > 5MB)
+ai-services/data/datasets/modelo1/synthetic/
+ai-services/data/datasets/modelo1/real_approved/fallecidos_covid.csv
+
+# Modelo 2 — Audio de tos (WAV/MP3, pueden pesar GB)
+ai-services/data/datasets/modelo2/cough/
+ai-services/data/datasets/modelo2/no_cough/
+
+# Modelo 3 — Grabaciones de auscultación
+ai-services/data/datasets/modelo3/recordings/
+
+# Modelo 4 — Radiografías (PNG/JPG/DICOM, pueden pesar 10GB+)
+ai-services/data/datasets/modelo4/train/
+ai-services/data/datasets/modelo4/val/
+ai-services/data/datasets/modelo4/test/
+
+# Modelo 5 — Series de tiempo wearables
+ai-services/data/datasets/modelo5/timeseries/
+
+# Formatos multimedia grandes en cualquier subcarpeta de datasets
+ai-services/data/datasets/**/*.wav
+ai-services/data/datasets/**/*.mp3
+ai-services/data/datasets/**/*.flac
+ai-services/data/datasets/**/*.ogg
+ai-services/data/datasets/**/*.dcm
+ai-services/data/datasets/**/*.nii
+ai-services/data/datasets/**/*.nii.gz
+
+# ── Archivos pequeños que SÍ se commitean (< 5MB, datos de referencia) ────────
+# modelo1/prognosis_disease_symptoms/train_disease.csv  (~1.3MB) ← OK
+# modelo1/prognosis_disease_symptoms/test_disease.csv   (~0.1MB) ← OK
+# modelo1/real_approved/real_dataset_respicare.csv      (~0.1MB) ← OK
+# modelo1/kaggle_disease_profile/                        (~0.6MB) ← OK
+# modelo1/validation/model_validation_results.csv        (~0KB)  ← OK
+# dataset_registry.py                                            ← OK
 
 # Cache
 cache/

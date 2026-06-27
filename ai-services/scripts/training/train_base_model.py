@@ -250,9 +250,13 @@ class BaseRandomForestModel:
         print(f"Features: {X_vectorized.shape[1]}")
         print(f"Classes: {len(self.label_encoder.classes_)}")
         
-        # Split data
+        # Split data — sin stratify para tolerar clases con pocas muestras
+        import numpy as np
+        counts = np.bincount(y_encoded)
+        can_stratify = int(counts.min()) >= 2
         X_train, X_test, y_train, y_test = train_test_split(
-            X_vectorized, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+            X_vectorized, y_encoded, test_size=0.2, random_state=42,
+            stratify=y_encoded if can_stratify else None
         )
         
         # Train model
@@ -343,21 +347,57 @@ class BaseRandomForestModel:
         print(f"Model saved to {filepath}")
 
 
+def _resolve_dataset(path: str) -> str:
+    """Busca el dataset en rutas alternativas si el path no existe."""
+    import os
+    if os.path.exists(path):
+        return path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ai_root    = os.path.join(script_dir, '..', '..')
+    candidates = [
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'augmented_dataset_retraining_20251103_123539.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'augmented_dataset_full_20251103_124126.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'synthetic_dataset_extended.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'synthetic', 'synthetic_dataset.csv'),
+        os.path.join(ai_root, 'data', 'datasets', 'modelo1', 'real_approved', 'real_dataset_respicare.csv'),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            print(f"  Dataset auto-detectado: {c}")
+            return c
+    raise FileNotFoundError(f"No se encontro ningun dataset. Proporciona --dataset <path>")
+
+
 def main():
     """Main training script"""
+    import argparse
+    parser = argparse.ArgumentParser(description='Entrena Random Forest para RespiCare')
+    parser.add_argument('--dataset', type=str, default='synthetic_dataset.csv',
+                        help='Ruta al dataset de entrenamiento (.csv con columnas disease, symptoms)')
+    parser.add_argument('--output', type=str, default='models/base_random_forest.pkl',
+                        help='Ruta de salida del modelo entrenado')
+    parser.add_argument('--estimators', type=int, default=300,
+                        help='Numero de arboles del Random Forest')
+    args = parser.parse_args()
+
     print("=== Training Base Random Forest Model ===")
-    
+
     # Initialize model
-    model = BaseRandomForestModel(n_estimators=300)
-    
+    model = BaseRandomForestModel(n_estimators=args.estimators)
+
+    # Resolver dataset
+    dataset_path = _resolve_dataset(args.dataset)
+
     # Load data
-    cases = model.prepare_data('synthetic_dataset.csv')
+    cases = model.prepare_data(dataset_path)
     
     # Train model
     model.train(cases)
     
     # Save model
-    model.save_model('models/base_random_forest.pkl')
+    import os as _os
+    _os.makedirs(_os.path.dirname(args.output) if _os.path.dirname(args.output) else '.', exist_ok=True)
+    model.save_model(args.output)
     
     # Test prediction
     print("\n=== Testing Model ===")

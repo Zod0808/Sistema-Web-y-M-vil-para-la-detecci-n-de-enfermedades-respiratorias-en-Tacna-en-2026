@@ -93,13 +93,23 @@ router.get(
   }),
 );
 
+const ALLOWED_GROUP_FIELDS = new Set(['gender', 'age_group', 'region', 'diagnosis', 'severity']);
+
 router.get(
   '/ml/fairness',
   asyncHandler(async (req: Request, res: Response) => {
-    const groupField = (req.query.groupField as string) || 'gender';
-    const highConfidenceThreshold = req.query.highConfidenceThreshold
+    const requestedField = req.query.groupField as string | undefined;
+    const groupField = requestedField && ALLOWED_GROUP_FIELDS.has(requestedField)
+      ? requestedField
+      : 'gender';
+
+    const rawThreshold = req.query.highConfidenceThreshold
       ? parseFloat(req.query.highConfidenceThreshold as string)
       : undefined;
+    const highConfidenceThreshold =
+      rawThreshold !== undefined && !isNaN(rawThreshold) && rawThreshold >= 0 && rawThreshold <= 1
+        ? rawThreshold
+        : undefined;
 
     const data = await aiIntegrationService.getMlFairnessMetrics({
       group_field: groupField,
