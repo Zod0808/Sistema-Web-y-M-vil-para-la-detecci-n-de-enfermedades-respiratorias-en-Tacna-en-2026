@@ -46,14 +46,18 @@
 | Unit — Validators | 2 | Pruebas de esquemas Joi de validación |
 | Unit — Metrics | 2 | Pruebas de métricas Prometheus y percentiles |
 | Unit — Monitoring | 1 | Pruebas de monitoreo MongoDB |
+| Unit — WebSockets | 1 | Pruebas del handler WebSocket de wearables |
+| Unit — Infraestructura | 3 | Pruebas de redisClient, health status del servidor e inicialización |
 | Integration | 26 | Pruebas de endpoints HTTP con supertest |
 | Database | 6 | Pruebas de aggregations, índices, esquemas e integridad |
 | Security / Performance | 2 | Pruebas de seguridad e inyecciones y carga |
 | **E2E Backend** | **7** | **Flujos completos de API: registro → historia → análisis → emergencia → alertas → derivación → consentimiento → chatbot** |
-| **E2E Frontend (Cypress)** | **11** | **Flujos UI completos: auth, dashboard, analytics, chatbot, síntomas, historia médica, emergencia, wearables, perfil, admin, navegación** |
+| **E2E Frontend (Cypress)** | **14** | **Flujos UI completos: auth, dashboard, analytics, chatbot, síntomas, historia médica, emergencia, wearables, perfil, admin, navegación, visual regression, cross-browser, validación doctor IA** |
+| **Web Integration (Jest)** | **2** | **Integración de componentes React + flujos de usuario completos** |
+| **Web Seguridad (Jest)** | **1** | **XSS (sanitización DOMPurify, DOM injection, CSP, URLs) + CSRF token validation** |
 | **Visual Regression (Jest)** | **8** | **DOM snapshots + CSS class assertions: Navbar, ChatBot, AlertConsole, Theme, Forms, MLResults, Dashboard, Responsive** |
 | **Visual Regression (Cypress)** | **1** | **Viewport multi-breakpoint screenshots: home, navbar, dashboard, analytics, theme, chatbot, heatmap, errores** |
-| **Accesibilidad (WCAG 2.1 AA)** | **5** | **axe-core + ARIA assertions: Navbar, Forms, Components, Charts/Visualizaciones, Advanced (preexistentes)** |
+| **Accesibilidad (WCAG 2.1 AA)** | **6** | **axe-core + ARIA assertions: Navbar, Forms, Components, Charts/Visualizaciones, Advanced (preexistentes) + LoginPage/RegisterPage/LanguageSelector/Navbar axe adicional** |
 | **Accesibilidad — ChatBot** | **1** | **A11Y-CB-01–10: axe en 3 estados, textarea, send button, estructura semántica, Enter/Shift+Enter, acciones rápidas** |
 | **Accesibilidad — Teclado** | **1** | **KEY-01–12: Tab order, Enter/Space, checkboxes, selects, modal focus, Escape, sin focus trap, MedicalReport, Navbar** |
 | **Accesibilidad — Lector de pantalla** | **1** | **SR-01–12: aria-live, role=status/alert, aria-hidden, aria-expanded, aria-disabled, landmarks, tablas, imágenes, axe en ChatBot/MedicalReport/FhirPage** |
@@ -68,7 +72,7 @@
 | **Compatibilidad — Cross-Browser (Cypress)** | **1** | **COMPAT-01–14: 11 perfiles de dispositivo (Chrome/Firefox/Safari/Edge/mobile), overflow horizontal, orientación, load time** |
 | **Compatibilidad — Browser APIs (Jest)** | **1** | **API-01–15: localStorage Safari Private, CSS Custom Properties, matchMedia, scrollIntoView, window.open, Promise.allSettled, IntersectionObserver/ResizeObserver, SSR guards** |
 | **Compatibilidad — Mobile (Jest)** | **1** | **MOB-01–15: touch events, iOS 100vh, device pixel ratio, orientación, date input fallback, safe-area-inset, font 16px, pointer:coarse, scroll pasivo, viewports 375px/360px** |
-| **TOTAL** | **260** | **179 TypeScript/JS + 81 Python** |
+| **TOTAL** | **272** | **191 TypeScript/JS + 81 Python** |
 
 ---
 
@@ -253,6 +257,30 @@ Patrón: mock de mongoose y prom-client, mock de db con colección system.profil
 
 ---
 
+## 7e. Pruebas unitarias — WebSockets
+
+Ubicación: `backend/tests/unit/sockets/`  
+Patrón: `FakeWs` (EventEmitter) simula WebSocket sin red real; `FakeHttpServer` monta el handler; mocks de `WearableData.create` y `checkThresholdsAndAlert`
+
+| Archivo | Módulo fuente | Casos cubiertos |
+|---------|---------------|-----------------|
+| `wearableSocketHandler.test.ts` | `sockets/wearableSocketHandler.ts` | ping → pong; auth timeout 11s → `auth:error`; JWT válido → `auth:ok` con userId; JWT inválido → `auth:error`; auth sin campo token → `auth:error`; `wearable:data` antes de auth → `auth:error`; `wearable:data` post-auth → `WearableData.create` + `wearable:ack {saved:true}`; threshold excedido → `wearable:alert {level:'critical'}`; JSON inválido → `error`; tipo desconocido post-auth → `error`; payload null → `error` |
+
+---
+
+## 7f. Pruebas unitarias — Infraestructura
+
+Ubicación: `backend/tests/unit/config/` · `backend/tests/unit/` (raíz)  
+Patrón: `jest.resetModules()` + `jest.doMock()` para aislar cada require; `jest.isolateModulesAsync` para importar `src/index` con dependencias controladas
+
+| Archivo | Módulo fuente | Casos cubiertos |
+|---------|---------------|-----------------|
+| `redisClient.test.ts` | `config/redisClient.ts` | Skip en `NODE_ENV=test` → `null` sin llamar a `createClient`; inicialización exitosa → `connect()` + listeners `error`/`reconnecting` + log ✅; reconexión de cliente ya iniciado → `createClient` llamado solo 1 vez; fallo de conexión → `null` + log ❌; `disconnectRedis` sin cliente → no-op; `disconnectRedis` con cliente → `disconnect()` + log 🛑; `getRedisClient` retorna el cliente cacheado |
+| `indexHealthStatus.test.ts` | `src/index.ts` (ruta `/health`) | Estado `healthy` cuando Mongoose `readyState=1` + Redis responde PONG; estado `degraded` cuando Redis.ping lanza error → `dependencies.redis.status='error'` + log ❌ |
+| `indexInitialization.test.ts` | `src/index.ts` (inicialización) | Morgan en modo `'dev'` cuando `serverEnv=development`; Redis `disconnected` sin cliente activo en `/health`; sin reconexión a Mongo cuando `readyState=1`; error de conexión Mongo → log ❌ + `process.exit(1)` fuera de test env; manejo de señales `SIGTERM`/`SIGINT`/`uncaughtException`/`unhandledRejection` |
+
+---
+
 ## 8. Pruebas de integración
 
 Ubicación: `backend/tests/integration/`  
@@ -361,14 +389,65 @@ Patrón: `cy.intercept()` para mocks de API, `localStorage` para autenticación 
 | `wearables.cy.js` | Wearables | Dashboard métricas (FC, SpO2, pasos, sueño, última sync); sincronización Apple Health; fallo de sync; gráficas tendencias 7d/30d; alertas SpO2 crítica/FC alta; historial paginado con filtro fecha |
 | `profile.cy.js` | Perfil | Ver perfil (nombre, email, rol, teléfono, fecha); editar (nombre, teléfono, cancelar, validación vacío); cambiar contraseña (éxito, contraseña incorrecta, contraseñas no coinciden, fortaleza); notificaciones SMS toggle; eliminación datos DSR |
 | `admin.cy.js` | Admin Panel | Dashboard admin (totales, emergencias, alertas, actividad); gestión usuarios (lista, roles, filtro por rol, búsqueda, activar usuario, navegar detalle); salud sistema (DB, Redis, degraded); reportes (lista, generar, descargar); analytics epidemiológicos; gestión alertas (ver, reconocer) |
+| **`doctor-validation.cy.js`** | **Validación IA (CP-EPIC03-009/010)** | **CP-009: Lista predicciones pendientes (badge verde/amber/rojo, carga < 2s, detalle síntomas/recomendaciones, empty state, error 500/401) · CP-010: Aceptar (status=validated, doctorId en payload, audit) · Rechazar (overrideDiagnosis+reason requeridos, status=rejected) · Ajustar (adjustedDisease+clinicalNote, status=adjusted) · Error 500 con mensaje reintento** |
 
 ### Cobertura por rol de usuario
 
 | Rol | Archivos Cypress | Flujos cubiertos |
 |-----|-----------------|-----------------|
 | `patient` | authentication, dashboard, chatbot, symptom-report, wearables, profile | Registro, consulta, reportes, wearables, perfil |
-| `doctor` | medical-history, navigation | Historias, navegación clínica |
+| `doctor` | medical-history, navigation, **doctor-validation** | Historias, navegación clínica, **validación predicciones IA** |
 | `admin` | admin, emergency, analytics | Panel admin, emergencias, analytics |
+
+---
+
+## 12b. Pruebas de Integración Web (Jest)
+
+Ubicación: `web/src/tests/integration/`  
+Framework: **Jest + React Testing Library** · `BrowserRouter` / `MemoryRouter` · mocks de `axios` e `i18nService`
+
+### Estrategia
+
+Verifican que múltiples componentes y páginas colaboren correctamente sin necesitar un servidor real. Cada test renderiza árboles completos (`ThemeProvider` + `BrowserRouter`) y simula interacciones de usuario con `fireEvent` / `waitFor`.
+
+| Archivo | Componentes / Páginas | Casos cubiertos |
+|---------|-----------------------|-----------------|
+| `component-integration.test.js` | `Home`, `Dashboard`, `Analytics`, `Navbar`, `LanguageSelector`, `ThemeToggle`, `ChatBotEnhanced` | Home renderiza con ChatBotEnhanced; cambio de idioma se propaga al árbol; Dashboard con AlertConsole+AppointmentCalendar tras mock de axios; Theme toggle aplica clase al body; Navbar muestra/oculta links según autenticación |
+| `user-flows.test.js` | `App` completo con `MemoryRouter` | Flujo análisis síntomas: home → input en chatbot → POST `/symptom-analyzer` interceptado → respuesta con `sessionId`/`shapExplanation`; flujo autenticación: login form → POST `/auth/login` → redirección a dashboard; navegación entre rutas con `MemoryRouter` |
+
+### Comandos
+
+```bash
+cd web
+npx jest --testPathPattern="integration" --verbose
+npx jest src/tests/integration/component-integration.test.js
+npx jest src/tests/integration/user-flows.test.js
+```
+
+---
+
+## 12c. Pruebas de Seguridad Web (Jest)
+
+Ubicación: `web/src/tests/security/`  
+Framework: **Jest** · `isomorphic-dompurify` (mock) · DOM nativo jsdom  
+
+### Cobertura — `xss-csrf.test.js`
+
+| Categoría | Casos cubiertos |
+|-----------|-----------------|
+| **XSS — Sanitización de input** | `<script>` eliminado; `onerror` en atributos eliminado; `javascript:` en hrefs eliminado; `<iframe>` eliminado; `<object>`/`<embed>` eliminados; `data:text/html` eliminado |
+| **XSS — DOM Injection** | `innerHTML` con script no ejecuta; event handler `onclick` no queda en DOM tras sanitización; data URI no queda en src |
+| **CSP** | Meta tag CSP presente o no rompe; inline scripts no usados en la app |
+| **Validación de URLs** | `javascript:`, `data:`, `vbscript:` detectados como inválidos; `http:`, `https:`, `mailto:`, `tel:` permitidos |
+| **CSRF — Token en formularios** | Input `_csrf` con valor presente en forms POST; `SameSite=Strict` en cookies de sesión; origen verificado en headers de petición |
+
+### Comandos
+
+```bash
+cd web
+npx jest src/tests/security/xss-csrf.test.js --verbose
+npx jest --testPathPattern="security" --verbose
+```
 
 ---
 
@@ -483,6 +562,7 @@ it('should have no accessibility violations', async () => {
 | **`chatbot.accessibility.test.js`** | **`ChatBot`** | **axe WCAG 2.1 AA en 3 estados; textarea sin aria-hidden; send button con aria-label; disabled semántico; estructura h3; Enter/Shift+Enter; acciones rápidas accesibles; A11Y-CB-01–10** |
 | **`keyboard-navigation.accessibility.test.js`** | **`SymptomReportForm`, `ChatBot`, `MedicalReport`, `ThemeToggle`, `LanguageSelector`, `Navbar`, `FhirPage`** | **Tab/Shift+Tab orden de foco; Enter/Space en botones; checkboxes con label; selects nativos; modal focus; Escape para cerrar dropdown; sin focus trap fuera de modales; KEY-01–12** |
 | **`screen-reader.accessibility.test.js`** | **`ChatBot`, `MedicalReport`, `FhirPage`, `FhirResourceViewer`, `Navbar`, `ReferralManagement`, `LanguageSelector`, `ThemeToggle`** | **aria-live en área de mensajes; role="status" en éxito/error; aria-label en botones icono; aria-hidden en avatares emoji; aria-expanded en dropdowns; aria-disabled; aria-describedby; role="alert" en errores; tabla caption; img alt; landmarks nav/main; axe en ChatBot/MedicalReport/FhirPage/FhirResourceViewer; SR-01–12** |
+| **`components.axe.test.js`** | **`LoginPage`, `Navbar` (sin auth), `LanguageSelector`, `RegisterPage`** | **axe WCAG 2.1 AA con `runOnly: ['wcag2a','wcag2aa']`; mocks mínimos para evitar llamadas reales; renderizado con `MemoryRouter`; sin violaciones críticas en páginas de autenticación y componentes de navegación global** |
 
 ### Cobertura ARIA por componente
 
@@ -516,7 +596,7 @@ it('should have no accessibility violations', async () => {
 ```bash
 cd web
 
-# Todos los tests de accesibilidad (8 archivos)
+# Todos los tests de accesibilidad (9 archivos)
 npx jest --testPathPattern="accessibility" --verbose
 
 # Archivos preexistentes
@@ -528,6 +608,7 @@ npx jest src/tests/accessibility/accessibility-advanced.test.js
 
 # Archivos nuevos
 npx jest src/tests/accessibility/chatbot.accessibility.test.js
+npx jest src/tests/accessibility/components.axe.test.js
 npx jest src/tests/accessibility/keyboard-navigation.accessibility.test.js
 npx jest src/tests/accessibility/screen-reader.accessibility.test.js
 
