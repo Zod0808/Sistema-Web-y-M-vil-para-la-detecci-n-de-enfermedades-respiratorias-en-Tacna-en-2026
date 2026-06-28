@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
 
     // ── DESARROLLO: descomentar para live reload ────────────────────────
     // url: 'http://10.0.2.2:8083',   // emulador Android
-    // url: 'https://sensors-contain-kingdom-nails.trycloudflare.com',  // tunnel Cloudflare
+    // url: 'https://searches-tribune-nottingham-landing.trycloudflare.com',  // tunnel Cloudflare
     // cleartext: true,
 
     // Tiempo máximo de carga antes de mostrar error (ms)
