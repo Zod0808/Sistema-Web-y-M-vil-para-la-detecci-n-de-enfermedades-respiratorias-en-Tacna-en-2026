@@ -1,4 +1,4 @@
-import { CapacitorConfig } from '@capacitor/cli';
+mport { CapacitorConfig } from '@capacitor/cli';
 import { KeyboardResize } from '@capacitor/keyboard';
 
 const isDev = process.env.NODE_ENV === 'development';

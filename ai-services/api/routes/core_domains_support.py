@@ -3,7 +3,7 @@ API Routes for Core Domains Support
 Endpoints para soporte indirecto de AI a los dominios core
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -11,6 +11,15 @@ import structlog
 
 from services.core_domains_support import CoreDomainsSupportService
 from api.dependencies import get_model_manager, get_service_manager
+from core.config import settings
+
+
+def _require_internal_key(x_internal_api_key: Optional[str] = Header(default=None)) -> None:
+    key = settings.INTERNAL_API_KEY
+    if not key:
+        raise HTTPException(status_code=503, detail="INTERNAL_API_KEY no configurada en el servidor")
+    if x_internal_api_key != key:
+        raise HTTPException(status_code=403, detail="Token interno inválido o ausente")
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/core-domains", tags=["Core Domains Support"])
@@ -44,8 +53,10 @@ class AlertPriorityRequest(BaseModel):
     patient_context: Optional[Dict[str, Any]] = Field(default=None, description="Contexto del paciente")
 
 
+_auth = [Depends(_require_internal_key)]
+
 # Endpoints
-@router.post("/medical-history/analyze")
+@router.post("/medical-history/analyze", dependencies=_auth)
 async def analyze_medical_history(
     request: MedicalHistoryAnalysisRequest,
     model_manager=Depends(get_model_manager),
@@ -65,10 +76,10 @@ async def analyze_medical_history(
         return result
     except Exception as e:
         logger.error("Error in medical history analysis", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al analizar historia médica")
 
 
-@router.post("/appointments/optimize")
+@router.post("/appointments/optimize", dependencies=_auth)
 async def optimize_appointment(
     request: AppointmentOptimizationRequest,
     model_manager=Depends(get_model_manager),
@@ -90,10 +101,10 @@ async def optimize_appointment(
         return result
     except Exception as e:
         logger.error("Error in appointment optimization", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al optimizar cita")
 
 
-@router.post("/prescriptions/analyze")
+@router.post("/prescriptions/analyze", dependencies=_auth)
 async def analyze_prescription(
     request: PrescriptionAnalysisRequest,
     model_manager=Depends(get_model_manager),
@@ -115,10 +126,10 @@ async def analyze_prescription(
         return result
     except Exception as e:
         logger.error("Error in prescription analysis", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al analizar prescripción")
 
 
-@router.post("/alerts/assess-priority")
+@router.post("/alerts/assess-priority", dependencies=_auth)
 async def assess_alert_priority(
     request: AlertPriorityRequest,
     model_manager=Depends(get_model_manager),
@@ -137,5 +148,5 @@ async def assess_alert_priority(
         return result
     except Exception as e:
         logger.error("Error in alert priority assessment", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al evaluar prioridad de alerta")
 

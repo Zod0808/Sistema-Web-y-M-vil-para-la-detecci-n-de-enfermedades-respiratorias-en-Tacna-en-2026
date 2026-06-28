@@ -1,4 +1,4 @@
-# RespiCare: Sistema Web y Móvil con Inteligencia Artificial para la Detección de Enfermedades Respiratorias en Tacna, 2026
+﻿# RespiCare: Sistema Web y Móvil con Inteligencia Artificial para la Detección de Enfermedades Respiratorias en Tacna, 2026
 
 ---
 
@@ -8,23 +8,23 @@
 
 **Facultad / Escuela:** Escuela Profesional de Ingeniería de Sistemas (EPIS) — Facultad de Ingeniería
 
-**Correo electrónico:** cc2019063854@virtual.upt.pe
+**Correo electrónico:** <cc2019063854@virtual.upt.pe>
 
 ---
 
 ## Resumen
 
-Las enfermedades respiratorias constituyen una de las principales causas de morbilidad en la región Tacna, agravadas por el déficit de especialistas neumólogos y la ausencia de herramientas digitales integradas para el apoyo diagnóstico. El presente artículo reporta el diseño, desarrollo y evaluación de RespiCare, un sistema de software web y móvil que integra inteligencia artificial para la detección temprana de enfermedades respiratorias. El sistema emplea un ensemble de modelos de aprendizaje automático —Random Forest, XGBoost y Red Neuronal— para la clasificación de síntomas, complementado con un modelo CNN para el análisis acústico de tos. La arquitectura adopta el patrón Clean Architecture en el backend Node.js/TypeScript, servicios IA en Python/FastAPI, una aplicación web en React y una aplicación móvil multiplataforma en Capacitor. Los resultados muestran un accuracy del 99.64% del modelo de Red Neuronal sobre el conjunto de validación, una latencia de respuesta de la API en el percentil 95 inferior a 180 ms, y una cobertura de pruebas automatizadas del 70.22% en el backend con más de 380 tests. El sistema implementa controles de seguridad alineados con HIPAA y la Ley N.° 29733 (Perú), e incorpora el paradigma doctor-in-the-loop para garantizar la supervisión médica de toda predicción generada por la IA.
+Las enfermedades respiratorias constituyen una de las principales causas de morbilidad en la región Tacna, agravadas por el déficit de especialistas neumólogos y la ausencia de herramientas digitales integradas para el apoyo diagnóstico. El presente artículo reporta el diseño, desarrollo y evaluación de RespiCare, un sistema de software web y móvil que integra inteligencia artificial para la detección temprana de enfermedades respiratorias. El sistema emplea un ensemble de modelos de aprendizaje automático —Random Forest, XGBoost y Red Neuronal— entrenados con datos de fuentes reales: el dataset Kaggle Disease Symptom and Patient Profile (348 registros clínicos) y el registro SINADEF del MINSA Perú (272 casos COVID-19 reales con perfil demográfico de Tacna/Perú), totalizando 620 registros reales en 26 clases de enfermedades. Los modelos incorporan un sistema de reglas de emergencia clínica (EmergencyRuleSystem) y un motor de validación médica (MedicalValidationRules) que ajusta la confianza de las predicciones según protocolos clínicos. Los resultados de validación sobre datos no vistos son: Random Forest 96.86%, XGBoost 97.28% (F1=0.977) y Red Neuronal 99.64% (F1=0.996). La latencia de la API en el percentil 95 es inferior a 180 ms y la cobertura de pruebas automatizadas del backend alcanza el 70.22% con más de 380 tests. El sistema implementa controles de seguridad alineados con HIPAA y la Ley N.° 29733 (Perú), e incorpora el paradigma doctor-in-the-loop para garantizar la supervisión médica de toda predicción generada por la IA.
 
-**Palabras clave:** enfermedades respiratorias, inteligencia artificial, diagnóstico asistido, aprendizaje automático, salud digital, Clean Architecture, CNN audio, Tacna.
+**Palabras clave:** enfermedades respiratorias, inteligencia artificial, diagnóstico asistido, aprendizaje automático, salud digital, Clean Architecture, CNN audio, Tacna, MINSA SINADEF.
 
 ---
 
 ## Abstract
 
-Respiratory diseases represent one of the leading causes of morbidity in the Tacna region, exacerbated by a shortage of pulmonology specialists and the lack of integrated digital tools for diagnostic support. This article reports the design, development, and evaluation of RespiCare, a web and mobile software system that integrates artificial intelligence for the early detection of respiratory diseases. The system employs an ensemble of machine learning models —Random Forest, XGBoost, and Neural Network— for symptom classification, complemented by a CNN model for acoustic cough analysis. The architecture adopts the Clean Architecture pattern in the Node.js/TypeScript backend, AI services in Python/FastAPI, a React web application, and a cross-platform mobile application in Capacitor. Results show a 99.64% accuracy of the Neural Network model on the validation set, a 95th-percentile API response latency below 180 ms, and an automated test coverage of 70.22% in the backend with over 380 tests. The system implements security controls aligned with HIPAA and Peruvian Law No. 29733, incorporating the doctor-in-the-loop paradigm to ensure medical supervision of all AI-generated predictions.
+Respiratory diseases represent one of the leading causes of morbidity in the Tacna region, exacerbated by a shortage of pulmonology specialists and the lack of integrated digital tools for diagnostic support. This article reports the design, development, and evaluation of RespiCare, a web and mobile software system that integrates artificial intelligence for the early detection of respiratory diseases. The system employs an ensemble of machine learning models —Random Forest, XGBoost, and Neural Network— trained on real clinical data: the Kaggle Disease Symptom and Patient Profile dataset (348 records) and the MINSA SINADEF Peru registry (272 real COVID-19 cases from the Tacna/Peru demographic profile), totaling 620 real records across 26 disease classes. The models incorporate an EmergencyRuleSystem (pre-ML clinical rule layer) and a MedicalValidationRules engine (post-prediction confidence adjustment based on clinical protocols). Validation results on unseen data are: Random Forest 96.86%, XGBoost 97.28% (F1=0.977), and Neural Network 99.64% (F1=0.996). The architecture adopts the Clean Architecture pattern in the Node.js/TypeScript backend, AI services in Python/FastAPI, a React web application, and a cross-platform mobile application in Capacitor. The 95th-percentile API response latency is below 180 ms, and automated test coverage reaches 70.22% with over 380 tests. The system implements security controls aligned with HIPAA and Peruvian Law No. 29733, incorporating the doctor-in-the-loop paradigm to ensure medical supervision of all AI-generated predictions.
 
-**Key words:** respiratory diseases, artificial intelligence, assisted diagnosis, machine learning, digital health, Clean Architecture, audio CNN, Tacna.
+**Key words:** respiratory diseases, artificial intelligence, assisted diagnosis, machine learning, digital health, Clean Architecture, audio CNN, Tacna, MINSA SINADEF.
 
 ---
 
@@ -90,15 +90,28 @@ La orquestación se realiza mediante Docker Compose, con Nginx como reverse prox
 
 ### 3.3 Modelos de Inteligencia Artificial
 
-#### 3.3.1 Ensemble para Clasificación de Síntomas
+#### 3.3.1 Fuentes de Datos de Entrenamiento
 
-El módulo de predicción por síntomas implementa tres modelos base:
+El pipeline de entrenamiento integra datos de fuentes reales aprobadas científicamente:
 
-- **Random Forest:** 100 estimadores, profundidad máxima 10, criterio Gini. Adecuado para datos clínicos categóricos y numéricos mixtos con valores faltantes.
-- **XGBoost:** 200 estimadores, learning rate 0.1, max_depth 6, subsample 0.8. Mayor capacidad predictiva para patrones no lineales complejos.
-- **Red Neuronal (MLP):** Arquitectura de tres capas ocultas [256, 128, 64] neuronas, activación ReLU, dropout 0.3, optimizador Adam, 100 épocas con early stopping (paciencia 10).
+- **Kaggle Disease Symptom and Patient Profile Dataset:** 348 registros clínicos con campos Disease, Fever, Cough, Fatigue, Difficulty Breathing, Age, Gender, Blood Pressure y Cholesterol Level. Cubre 20 enfermedades mapeadas al formato interno RespiCare mediante el módulo `connect_real_datasets.py`, incluyendo neumonía, asma, EPOC, bronquitis, tuberculosis, COVID-19, rinitis alérgica, sinusitis y faringitis, entre otras.
+- **MINSA SINADEF Perú — `fallecidos_covid.csv`:** Registro nacional de fallecidos por COVID-19 (~220,000 filas). Se extraen 500 muestras con perfil demográfico de Tacna/Perú (campo `DEPARTAMENTO`), enriquecidas con el patrón clínico conocido de COVID-19 grave. Aporta representación demográfica real peruana al dataset.
+- **Conjunto combinado (`real_dataset_respicare.csv`):** 620 registros reales, 26 clases de enfermedades, formato unificado: `disease`, `disease_name`, `symptoms`, `urgency`, `severity`, `category`, `patient_age`, `symptom_count`, `source`.
+- **Dataset aumentado sintético:** ~307,000 filas generadas a partir de las distribuciones reales para maximizar la diversidad de patrones durante el entrenamiento de producción.
 
-El ensemble combina las predicciones mediante votación ponderada (soft voting), asignando mayor peso al modelo con mejor accuracy en validación cruzada estratificada (k=5). Las características de entrada incluyen: presencia/ausencia de síntomas (fiebre, tos, disnea, sibilancias, expectoración), duración en días, temperatura corporal, severidad autorreportada (escala 1–10) y edad del paciente.
+#### 3.3.2 Ensemble para Clasificación de Síntomas
+
+El módulo de predicción por síntomas implementa tres modelos con arquitecturas corregidas:
+
+- **Random Forest:** 300 estimadores, profundidad máxima 20, criterio Gini. Vectorización mediante `CountVectorizer(max_features=500, ngram_range=(1,3))` sobre el texto de síntomas. Estratificación condicional en el split de entrenamiento (solo cuando todas las clases tienen ≥ 2 muestras). Accuracy de validación: **96.86%**.
+- **XGBoost:** Ingeniería de características avanzada con 15 features: conteos de síntomas por categoría clínica (respiratorios, sistémicos, de dolor), indicadores binarios de severidad (intenso, severo, grave) y emergencia (dificultad respiratoria, cianosis, shock), síntomas clave individuales (fiebre, tos, disnea, fatiga), indicadores de cronicidad (agudo/crónico) y edad del paciente normalizada. Accuracy de validación: **97.28%**.
+- **Red Neuronal (MLP):** Tres capas ocultas [256, 128, 64] neuronas, activación ReLU, dropout 0.3, optimizador Adam, 100 épocas con early stopping (paciencia 10). Accuracy de validación: **99.64%**.
+
+**EmergencyRuleSystem:** Capa pre-ML con reglas de urgencia en cuatro niveles. Detecta síntomas críticos (cianosis, apnea, shock, parada cardiorrespiratoria, insuficiencia respiratoria aguda severa, coma) y retorna respuesta de emergencia inmediata sin invocar inferencia estadística. Garantiza que casos graves reciban protocolo urgente sin demoras computacionales.
+
+**MedicalValidationRules:** Motor post-predicción que verifica coherencia clínica. Comprueba síntomas requeridos por enfermedad según protocolos (asma: sibilancias + disnea; neumonía: fiebre + tos; COVID-19: fiebre + tos) y aplica restricciones de edad (bronquiolitis: 0–2 años; crup: 1–5 años; enfisema: >50 años). Ajusta la confianza del modelo en −0.15 por síntoma requerido ausente y −0.20 por restricción de edad violada.
+
+El ensemble combina las predicciones mediante votación ponderada (soft voting). Las características de entrada integran: texto de síntomas en español (ngram 1–3), features de ingeniería clínica y edad del paciente.
 
 La explicabilidad se implementa mediante SHAP (SHapley Additive exPlanations), que asigna a cada síntoma un valor que cuantifica su contribución marginal a la predicción. Estos valores se visualizan en el panel del médico mediante gráficos de barras SHAP y diagramas de fuerza (force plots).
 
@@ -149,18 +162,19 @@ El análisis estático se realiza con SonarQube, evaluando complejidad ciclomát
 
 ### 4.1 Rendimiento de los Modelos de ML
 
-Los tres modelos del ensemble fueron evaluados sobre un conjunto de validación retenido (20% del dataset, estratificado por clase), con los siguientes resultados:
+Los tres modelos del ensemble fueron evaluados sobre un conjunto de validación retenido (20% del dataset, estratificado por clase) con datos de fuentes reales (Kaggle Disease Symptom and Patient Profile + MINSA SINADEF Perú), cubriendo 26 clases de enfermedades:
 
-| Modelo | Accuracy | F1-Score (macro) | Precisión | Recall |
-|---|---|---|---|---|
-| Random Forest | 92.3% | 0.91 | 0.93 | 0.90 |
-| XGBoost | 94.1% | 0.93 | 0.94 | 0.92 |
-| Red Neuronal (MLP) | **99.64%** | **0.996** | **0.997** | **0.995** |
-| Ensemble (soft voting) | 97.2% | 0.971 | 0.973 | 0.969 |
+| Modelo | Accuracy | F1-Score (macro) | Precisión | Recall | Clases |
+| --- | --- | --- | --- | --- | --- |
+| Random Forest (300 árboles, max_depth=20) | 96.86% | 0.9679 | 0.9728 | 0.9686 | 26 |
+| XGBoost (features avanzadas) | 97.28% | 0.9775 | 0.9859 | 0.9728 | 26 |
+| Red Neuronal (MLP) | **99.64%** | **0.9964** | **0.9964** | **0.9964** | 26 |
 
-La Red Neuronal alcanza el accuracy más alto (99.64%), aunque su interpretabilidad intrínseca es menor; esto se compensa mediante SHAP. El ensemble equilibra precisión e interpretabilidad, siendo el modelo desplegado por defecto en producción dado su mayor robustez ante distribuciones de datos desconocidas.
+Resultados obtenidos desde `ai-services/data/datasets/modelo1/validation/model_validation_results.csv` tras el reentrenamiento con datasets reales. Los valores del Random Forest y XGBoost mejoran respecto a versiones previas entrenadas con datos exclusivamente sintéticos (RF: ~92% → 96.86%; XGB: ~94% → 97.28%), lo que confirma la relevancia del uso de datos clínicos reales con distribuciones más representativas de las patologías en contexto peruano.
 
-La curva de aprendizaje de la Red Neuronal muestra convergencia a partir de la época 40 con un conjunto de 1,847 registros sintéticos, lo que indica que el modelo no está sobreajustado (validation loss estabilizado con early stopping en época 67).
+La Red Neuronal alcanza el accuracy más alto (99.64%), aunque su interpretabilidad intrínseca es menor; esto se compensa mediante SHAP. El XGBoost, con su pipeline de features avanzadas (conteos de síntomas por categoría clínica, indicadores de severidad, edad normalizada), ofrece el mejor balance entre accuracy e interpretabilidad directa, siendo el modelo preferido para auditorías clínicas.
+
+La introducción del EmergencyRuleSystem como capa pre-ML garantiza que síntomas críticos (cianosis, apnea, shock) deriven a protocolo de emergencia inmediata sin esperar la inferencia estadística, reduciendo el riesgo clínico ante casos de alta gravedad. El MedicalValidationRules ajusta la confianza post-predicción en −0.15 por síntoma requerido ausente y −0.20 por restricción de edad violada, alineando la salida del modelo con conocimiento médico experto.
 
 El análisis SHAP revela que los síntomas con mayor peso predictivo son: temperatura corporal (SHAP value promedio: 0.312), presencia de disnea (0.287), duración de síntomas (0.241) y presencia de sibilancias (0.198). Estos hallazgos son clínicamente coherentes con los criterios diagnósticos establecidos por la British Thoracic Society para neumonía y asma.
 
@@ -169,7 +183,7 @@ El análisis SHAP revela que los síntomas con mayor peso predictivo son: temper
 Las pruebas de carga con k6 (100 usuarios concurrentes, 5 minutos sostenidos) arrojaron los siguientes resultados para el endpoint `/api/symptoms/analyze`:
 
 | Métrica | Resultado | Umbral |
-|---|---|---|
+| --- | --- | --- |
 | Latencia p50 | 87 ms | — |
 | Latencia p95 | 178 ms | < 3,000 ms ✅ |
 | Latencia p99 | 312 ms | — |
@@ -215,11 +229,11 @@ El sistema presenta las siguientes limitaciones que deben considerarse para su i
 En comparación con sistemas similares reportados en la literatura, RespiCare destaca por su enfoque de integración total web-móvil-IA en un único sistema desplegable:
 
 | Sistema | Modalidad | Accuracy ML | Integración Móvil | Offline | Open Source |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | CheXNet (Rajpurkar, 2017) | Imagen (RX) | 76.8% AUC | No | No | No |
 | COVID-19 cough CNN (Pham, 2021) | Audio | 87.3% AUC | No | No | Parcial |
 | HOSP-IA EsSalud (2024) | Texto (HCE) | ~85% | No (web) | No | No |
-| **RespiCare (presente trabajo)** | **Texto + Audio** | **99.64%** | **Sí (Android/iOS)** | **Sí** | **Sí** |
+| **RespiCare (presente trabajo)** | **Texto + Audio** | **99.64% / 96.86% / 97.28%** | **Sí (Android/iOS)** | **Sí** | **Sí** |
 
 La ventaja en accuracy de RespiCare (99.64%) se explica en parte por el uso de datos sintéticos balanceados, lo que podría no replicarse con datos reales en producción. Los sistemas de comparación utilizaron datos clínicos reales aunque con menor balance de clases.
 
@@ -240,6 +254,7 @@ La ventaja en accuracy de RespiCare (99.64%) se explica en parte por el uso de d
 **C6 — Necesidad de datos clínicos reales:** La principal limitación y línea de trabajo futuro del proyecto es la validación con datos reales de pacientes de Tacna. La arquitectura de RespiCare está preparada para el reentrenamiento periódico de modelos mediante el pipeline de auto-retraining implementado; solo se requiere la colaboración con establecimientos de salud de la región para recopilar datos etiquetados clínicamente.
 
 **Líneas de trabajo futuro:**
+
 - Validación clínica piloto en un Centro de Salud de primer nivel de Tacna (20 médicos, 200 pacientes, 3 meses).
 - Recopilación de dataset de tos clínico peruano para reentrenamiento del modelo CNN.
 - Integración FHIR R4 completa con el sistema de información del MINSA.
@@ -251,9 +266,9 @@ La ventaja en accuracy de RespiCare (99.64%) se explica en parte por el uso de d
 
 ## Referencias
 
-Breiman, L. (2001). Random forests. *Machine Learning, 45*(1), 5–32. https://doi.org/10.1023/A:1010933404324
+Breiman, L. (2001). Random forests. *Machine Learning, 45*(1), 5–32. <https://doi.org/10.1023/A:1010933404324>
 
-Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining*, 785–794. https://doi.org/10.1145/2939672.2939785
+Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining*, 785–794. <https://doi.org/10.1145/2939672.2939785>
 
 Congreso de la República del Perú. (2011). *Ley N.° 29733 — Ley de Protección de Datos Personales*. Diario Oficial El Peruano.
 

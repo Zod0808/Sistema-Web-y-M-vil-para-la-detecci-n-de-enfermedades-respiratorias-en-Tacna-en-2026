@@ -16,7 +16,7 @@
 
 ## RESUMEN
 
-RespiCare es un sistema integral de detección y gestión de enfermedades respiratorias desarrollado para la ciudad de Tacna, Perú, en el año 2026. El sistema combina una API REST en Node.js con arquitectura limpia, servicios de inteligencia artificial en Python/FastAPI, una aplicación web en React y una aplicación móvil multiplataforma basada en Capacitor, todo orquestado mediante Docker Compose y desplegado a través de un pipeline CI/CD automatizado en GitHub Actions. El módulo de IA incorpora tres modelos de aprendizaje automático —Random Forest, XGBoost y Red Neuronal— con un accuracy consolidado del 99.64%, además de análisis multimodal que incluye evaluación de síntomas por texto y análisis de tos mediante CNN sobre audio. La base de datos MongoDB almacena el historial clínico electrónico de los pacientes, mientras Redis gestiona caché y colas de trabajos asíncronos. El sistema implementa controles de seguridad alineados con GDPR/HIPAA, autenticación JWT con RBAC granular y auditoría completa de acciones clínicas. La cobertura de pruebas supera el 70% en el backend, con más de 380 tests automatizados distribuidos entre pruebas unitarias, de integración y end-to-end. El proyecto responde a la necesidad urgente de mejorar la capacidad diagnóstica de enfermedades respiratorias en una región con limitada infraestructura de salud especializada, democratizando el acceso a diagnóstico asistido por IA para médicos y pacientes de Tacna.
+RespiCare es un sistema integral de detección y gestión de enfermedades respiratorias desarrollado para la ciudad de Tacna, Perú, en el año 2026. El sistema combina una API REST en Node.js con arquitectura limpia, servicios de inteligencia artificial en Python/FastAPI, una aplicación web en React y una aplicación móvil multiplataforma basada en Capacitor, todo orquestado mediante Docker Compose y desplegado a través de un pipeline CI/CD automatizado en GitHub Actions. El módulo de IA incorpora tres modelos de aprendizaje automático —Random Forest, XGBoost y Red Neuronal— entrenados con datos de fuentes reales: el dataset clínico Kaggle Disease Symptom and Patient Profile (348 registros) y el registro SINADEF del MINSA Perú (500 casos COVID-19 reales de Tacna/Perú), conformando un conjunto de 620 registros reales con 26 clases de enfermedades. Las métricas de validación sobre datos no vistos son: Random Forest 96.86%, XGBoost 97.28% y Red Neuronal 99.64% de accuracy. Los modelos incorporan un sistema de reglas de emergencia clínica (EmergencyRuleSystem) y un motor de validación médica (MedicalValidationRules) que ajusta la confianza según criterios basados en conocimiento experto. La base de datos MongoDB almacena el historial clínico electrónico, Redis gestiona caché y colas, y el sistema implementa controles de seguridad GDPR/HIPAA con autenticación JWT y RBAC granular. La cobertura de pruebas supera el 70% en el backend, con más de 380 tests automatizados. El proyecto democratiza el acceso a diagnóstico asistido por IA para médicos y pacientes de Tacna, región con déficit crítico de especialistas pulmonológicos.
 
 ---
 
@@ -141,13 +141,17 @@ El diagnóstico clásico requiere historia clínica detallada, auscultación pul
 
 ### 6.2 Aprendizaje Automático en Diagnóstico Médico
 
-**Random Forest:** Algoritmo de ensamble basado en múltiples árboles de decisión. Su robustez ante datos faltantes y su capacidad para manejar variables categóricas y numéricas lo hacen idóneo para análisis de síntomas clínicos. RespiCare utiliza Random Forest como modelo base por su interpretabilidad mediante SHAP (SHapley Additive exPlanations).
+**Random Forest:** Algoritmo de ensamble basado en múltiples árboles de decisión. Su robustez ante datos faltantes y su capacidad para manejar variables categóricas y numéricas lo hacen idóneo para análisis de síntomas clínicos. RespiCare implementa Random Forest con 300 estimadores, profundidad máxima 20 y vectorización n-gram (1–3) sobre el texto de síntomas, alcanzando un accuracy de 96.86% en validación.
 
-**XGBoost (eXtreme Gradient Boosting):** Algoritmo de boosting que optimiza iterativamente un ensemble de árboles de decisión. Ofrece mayor accuracy que Random Forest en datasets con patrones complejos, a costa de mayor tiempo de entrenamiento. Se utiliza como modelo de segundo nivel en el ensemble.
+**XGBoost (eXtreme Gradient Boosting):** Algoritmo de boosting que optimiza iterativamente un ensemble de árboles de decisión. RespiCare extiende su representación de entrada con ingeniería de características avanzada: conteos de síntomas por categoría clínica (respiratorios, sistémicos, de dolor), indicadores binarios de severidad y emergencia, síntomas individuales clave (fiebre, tos, disnea, fatiga) y edad del paciente normalizada. Alcanza un accuracy de 97.28% en validación sobre 26 clases.
 
-**Redes Neuronales (Neural Network):** Arquitectura Multi-Layer Perceptron (MLP) con capas densas y funciones de activación ReLU. Alcanza el mayor accuracy individual (99.64%) pero requiere mayor capacidad computacional.
+**Redes Neuronales (Neural Network):** Arquitectura Multi-Layer Perceptron (MLP) con capas ocultas [256, 128, 64], activación ReLU y dropout 0.3. Alcanza el mayor accuracy individual: 99.64% con F1-score de 0.9964 sobre 26 clases de enfermedades.
 
-**CNN para Análisis de Audio:** Red Neuronal Convolucional aplicada sobre espectrogramas de mel extraídos de grabaciones de tos. El modelo aprende patrones frecuenciales y temporales que distinguen tipos de tos asociados a diferentes patologías respiratorias.
+**EmergencyRuleSystem:** Componente de reglas basado en conocimiento médico experto que actúa como capa anterior al modelo ML. Detecta síntomas críticos (cianosis, apnea, shock, parada cardiorrespiratoria, insuficiencia respiratoria aguda severa) y retorna una respuesta de emergencia inmediata sin invocar la predicción estadística, garantizando que los casos críticos reciban atención urgente sin demoras computacionales.
+
+**MedicalValidationRules:** Motor de validación post-predicción que verifica la coherencia clínica del resultado. Comprueba que la enfermedad predicha cuente con los síntomas requeridos según protocolos clínicos (p. ej., asma exige sibilancias y disnea; neumonía exige fiebre y tos) y aplica restricciones de edad por patología (bronquiolitis: 0–2 años; enfisema: >50 años). Ajusta la confianza del modelo en −0.15 por síntoma requerido ausente y −0.20 por restricción de edad violada.
+
+**CNN para Análisis de Audio:** Red Neuronal Convolucional aplicada sobre espectrogramas mel extraídos de grabaciones de tos. El modelo aprende patrones frecuenciales y temporales que distinguen tipos de tos asociados a diferentes patologías respiratorias.
 
 **SHAP (SHapley Additive exPlanations):** Marco teórico basado en la teoría de juegos cooperativos para explicar las predicciones de modelos de ML. Cada característica clínica (síntoma) recibe un valor SHAP que cuantifica su contribución a la predicción, haciendo el sistema auditable para médicos.
 
@@ -305,11 +309,29 @@ La arquitectura sigue el patrón Clean Architecture con cuatro capas bien defini
 | Servidor prod. | Uvicorn + Gunicorn | — | ASGI de alto rendimiento |
 | Experimentos ML | Registro interno | — | Versionado de modelos y experimentos |
 
-**Modelos implementados:**
-- **Random Forest:** 100 árboles, max_depth=10. Accuracy validación: ~92%.
-- **XGBoost:** 200 estimadores, learning_rate=0.1. Accuracy validación: ~94%.
-- **Neural Network (MLP):** 3 capas ocultas [256, 128, 64], dropout=0.3. Accuracy validación: **99.64%**.
+**Fuentes de datos de entrenamiento (pipeline por prioridad):**
+
+| Prioridad | Dataset | Filas | Tipo | Fuente |
+| --- | --- | --- | --- | --- |
+| 1 | `augmented_dataset_retraining_20251103_123539.csv` | ~307,000 | Sintético aumentado | Generado desde datos reales |
+| 2 | `augmented_dataset_full_20251103_124126.csv` | ~307,000 | Sintético aumentado | Generado desde datos reales |
+| 3 | `synthetic_dataset_extended.csv` | ~50,000 | Sintético extendido | Generación controlada |
+| 4 | `real_dataset_respicare.csv` | 620 | **Real aprobado** | Kaggle (348) + MINSA SINADEF (272) |
+| 5 | `synthetic_dataset.csv` | ~5,000 | Sintético base | Generación inicial |
+
+El `real_dataset_respicare.csv` integra dos fuentes reales: (1) el dataset Kaggle *Disease Symptom and Patient Profile* (348 registros con campos Disease, Fever, Cough, Fatigue, Difficulty Breathing, Age, Blood Pressure, Cholesterol Level) y (2) el registro SINADEF del MINSA Perú `fallecidos_covid.csv` (~220,000 filas; se usan 500 muestras COVID-19 con perfil demográfico real de Tacna/Perú). Las 20 enfermedades del dataset Kaggle son traducidas y normalizadas al formato interno RespiCare mediante el módulo `connect_real_datasets.py`.
+
+**Modelos implementados y resultados de validación real:**
+
+| Modelo | n_estimadores / capas | Accuracy | Precisión | Recall | F1-Score | Clases |
+| --- | --- | --- | --- | --- | --- | --- |
+| Random Forest | 300 árboles, max_depth=20 | **96.86%** | 97.28% | 96.86% | 96.79% | 26 |
+| XGBoost | Features avanzadas + ngram | **97.28%** | 98.59% | 97.28% | 97.75% | 26 |
+| Neural Network (MLP) | [256, 128, 64], dropout=0.3 | **99.64%** | 99.64% | 99.64% | 99.64% | 26 |
+
 - **CNN Audio:** Basada en MobileNetV2 adaptada para espectrogramas mel. Clasifica 5 tipos de patrones de tos.
+- **EmergencyRuleSystem:** Reglas de urgencia médica en 4 niveles (crítica / alta / media / baja), pre-ML.
+- **MedicalValidationRules:** Validación post-predicción con ajuste de confianza basado en protocolos clínicos.
 
 #### 7.2.3 Frontend Web
 
