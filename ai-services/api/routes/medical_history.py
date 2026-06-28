@@ -182,7 +182,9 @@ async def search_medical_histories(
             query["created_at"] = date_query
         
         if search_params.diagnosis:
-            query["data.diagnosis_suggestions"] = {"$regex": search_params.diagnosis, "$options": "i"}
+            import re
+            escaped_diagnosis = re.escape(search_params.diagnosis)
+            query["data.diagnosis_suggestions"] = {"$regex": escaped_diagnosis, "$options": "i"}
         
         if search_params.symptoms:
             query["data.symptoms.symptom"] = {"$in": search_params.symptoms}

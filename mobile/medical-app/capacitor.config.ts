@@ -1,4 +1,4 @@
-import { CapacitorConfig } from '@capacitor/cli';
+﻿import { CapacitorConfig } from '@capacitor/cli';
 import { KeyboardResize } from '@capacitor/keyboard';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -13,9 +13,9 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
 
     // ── DESARROLLO: descomentar para live reload ────────────────────────
-    // url: 'http://10.0.2.2:8083',   // emulador Android
-    // url: 'https://are-collecting-aids-females.trycloudflare.com',  // tunnel Cloudflare
-    // cleartext: true,
+    url: 'http://10.0.2.2:8083',   // emulador Android
+    // url: 'https://sensors-contain-kingdom-nails.trycloudflare.com',  // tunnel Cloudflare
+    cleartext: true,
 
     // Tiempo máximo de carga antes de mostrar error (ms)
     errorPath: '/error.html',

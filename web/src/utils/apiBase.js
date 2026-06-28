@@ -1,4 +1,4 @@
-const normalize = (value) => {
+﻿const normalize = (value) => {
   if (!value) return '';
   return value.endsWith('/') ? value.slice(0, -1) : value;
 };
@@ -34,7 +34,7 @@ const resolveBackendBase = () => {
   const raw =
     process.env.REACT_APP_BACKEND_URL ||
     process.env.REACT_APP_API_URL ||
-    'https://are-collecting-aids-females.trycloudflare.com';
+    'https://sensors-contain-kingdom-nails.trycloudflare.com';
 
   const rewritten = maybeRewriteForBrowser(raw, '3001');
   return normalize(rewritten);
@@ -58,7 +58,7 @@ const resolveApiBase = () => {
 };
 
 const resolveAiBase = () => {
-  const raw = process.env.REACT_APP_AI_URL || 'https://are-collecting-aids-females.trycloudflare.com/ai';
+  const raw = process.env.REACT_APP_AI_URL || 'https://sensors-contain-kingdom-nails.trycloudflare.com/ai';
   const rewritten = maybeRewriteForBrowser(raw, '8000');
   const base = normalize(rewritten);
 
