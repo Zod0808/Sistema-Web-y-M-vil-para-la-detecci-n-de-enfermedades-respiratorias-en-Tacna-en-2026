@@ -1,4 +1,4 @@
-onst normalize = (value) => {
+const normalize = (value) => {
   if (!value) return '';
   return value.endsWith('/') ? value.slice(0, -1) : value;
 };
