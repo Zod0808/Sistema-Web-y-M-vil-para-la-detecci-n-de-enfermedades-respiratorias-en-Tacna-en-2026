@@ -16,6 +16,9 @@ const nextConfig = {
   // turbopack: {} declara compatibilidad explícita con el nuevo bundler.
   turbopack: {},
 
+  // Permite que el emulador Android (10.0.2.2) acceda al servidor dev
+  allowedDevOrigins: ['10.0.2.2'],
+
   // Optimizaciones de chunks (webpack) — se aplican con `next build --webpack`
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {

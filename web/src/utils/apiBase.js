@@ -1,4 +1,4 @@
-onst normalize = (value) => {
+const normalize = (value) => {
   if (!value) return '';
   return value.endsWith('/') ? value.slice(0, -1) : value;
 };
@@ -83,5 +83,3 @@ export const AI_BASE_URL = resolveAiBase();
 export const LEGACY_API_BASE = `${BACKEND_BASE_URL}/api`;
 
 export default API_BASE;
-
-
