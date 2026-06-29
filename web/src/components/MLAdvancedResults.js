@@ -13,8 +13,7 @@ import axios from 'axios';
 import SHAPVisualization from './SHAPVisualization';
 import FactorChart from './FactorChart';
 import './MLAdvancedResults.css';
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api/v1';
+import { API_BASE } from '../utils/apiBase';
 
 function MLAdvancedResults({ analysisId, experimentId, sessionId }) {
   const [activeTab, setActiveTab] = useState('explanations');
