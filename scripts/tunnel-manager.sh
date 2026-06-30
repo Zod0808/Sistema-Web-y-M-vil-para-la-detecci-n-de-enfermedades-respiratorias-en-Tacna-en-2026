@@ -15,9 +15,9 @@ update_configs() {
     local new_url="$1"
     local new_domain="${new_url#https://}"
 
-    # Obtener dominio actual de los archivos
+    # Obtener dominio actual de los archivos (excluye líneas de comentario)
     local current_domain
-    current_domain=$(grep -oP '[a-z0-9-]+\.trycloudflare\.com' "$REPO/.env" 2>/dev/null | head -1 || echo "")
+    current_domain=$(grep -v '^\s*#' "$REPO/.env" 2>/dev/null | grep -oP '[a-z0-9-]+\.trycloudflare\.com' | head -1 || echo "")
 
     if [ "$new_domain" = "$current_domain" ]; then
         log "URL sin cambios ($new_url) — no se requiere actualización"
