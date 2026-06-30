@@ -10,16 +10,13 @@ export interface Referral {
   patientId: string
   referringDoctorId: string
   referredDoctorId?: string
-  referredSpecialty: string
+  specialty: string
   reason: string
   urgency: 'routine' | 'urgent' | 'emergency'
   status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled'
   notes?: string
-  diagnosis?: string
-  attachments?: string[]
-  scheduledAt?: string
-  completedAt?: string
-  rejectionReason?: string
+  scheduledDate?: string
+  rejectedReason?: string
   metadata?: Record<string, any>
   createdAt: string
   updatedAt: string

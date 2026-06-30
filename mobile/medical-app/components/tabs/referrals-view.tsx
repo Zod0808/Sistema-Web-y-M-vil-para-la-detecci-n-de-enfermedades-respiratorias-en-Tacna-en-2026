@@ -92,7 +92,7 @@ export function ReferralsView({ setCurrentView }: ReferralsViewProps) {
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>{sc.label}</span>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${uc.color}`}>{uc.label}</span>
                     </div>
-                    <p className="font-semibold text-sm dark:text-white">{ref.referredSpecialty}</p>
+                    <p className="font-semibold text-sm dark:text-white">{ref.specialty}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ref.reason}</p>
                     <p className="text-xs text-muted-foreground mt-1">{format(new Date(ref.createdAt), "d MMM yyyy", { locale: es })}</p>
                   </div>
@@ -143,7 +143,7 @@ function ReferralDetail({ referral: ref, onBack, onUpdate }: { referral: Referra
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Especialidad referida</p>
-          <p className="font-semibold dark:text-white">{ref.referredSpecialty}</p>
+          <p className="font-semibold dark:text-white">{ref.specialty}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Motivo</p>
@@ -163,7 +163,7 @@ function ReferralDetail({ referral: ref, onBack, onUpdate }: { referral: Referra
         )}
         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground border-t pt-2">
           <span>Creado: {format(new Date(ref.createdAt), "d MMM yyyy", { locale: es })}</span>
-          {ref.scheduledAt && <span>Cita: {format(new Date(ref.scheduledAt), "d MMM yyyy", { locale: es })}</span>}
+          {ref.scheduledDate && <span>Cita: {format(new Date(ref.scheduledDate), "d MMM yyyy", { locale: es })}</span>}
         </div>
       </ModernCard>
 

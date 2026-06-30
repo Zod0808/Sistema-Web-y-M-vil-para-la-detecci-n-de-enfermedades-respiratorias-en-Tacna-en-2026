@@ -8,24 +8,24 @@ import { API_ENDPOINTS } from '../config'
 export interface LabResult {
   _id: string
   patientId: string
-  orderedBy: string
   testName: string
   testCode?: string
-  category: 'hematology' | 'biochemistry' | 'microbiology' | 'imaging' | 'pulmonary' | 'other'
-  status: 'ordered' | 'collected' | 'processing' | 'completed' | 'cancelled'
-  results?: {
-    value: string | number
-    unit?: string
-    referenceRange?: string
-    interpretation?: 'normal' | 'low' | 'high' | 'critical'
-    notes?: string
-  }[]
-  reportUrl?: string
-  orderedAt: string
-  collectedAt?: string
-  completedAt?: string
+  value: number | string
+  unit?: string
+  status: 'normal' | 'abnormal'
+  date: string
+  referenceRange?: {
+    low?: number
+    high?: number
+    text?: string
+  }
+  laboratoryId?: string
+  laboratoryName?: string
+  orderId?: string
+  flagged?: boolean
+  reviewedBy?: string
+  reviewedAt?: string
   notes?: string
-  metadata?: Record<string, any>
   createdAt: string
   updatedAt: string
 }
@@ -34,7 +34,6 @@ export interface LabFilters {
   page?: number
   limit?: number
   status?: LabResult['status']
-  category?: LabResult['category']
   patientId?: string
 }
 

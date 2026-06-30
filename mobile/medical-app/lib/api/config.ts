@@ -134,7 +134,7 @@ export const API_ENDPOINTS = {
     accept: (id: string) => buildEndpoint('/referrals/' + id + '/accept'),
     reject: (id: string) => buildEndpoint('/referrals/' + id + '/reject'),
     complete: (id: string) => buildEndpoint('/referrals/' + id + '/complete'),
-    myReferrals: buildEndpoint('/referrals/my-referrals'),
+    myReferrals: buildEndpoint('/referrals'),
   },
 
   // Emergencias
@@ -150,7 +150,7 @@ export const API_ENDPOINTS = {
   lab: {
     results: buildEndpoint('/lab/results'),
     result: (id: string) => buildEndpoint('/lab/results/' + id),
-    patientResults: (patientId: string) => buildEndpoint('/lab/results/patient/' + patientId),
+    patientResults: (patientId: string) => buildEndpoint('/lab/results/' + patientId + '/history'),
     pendingOrders: buildEndpoint('/lab/orders/pending'),
     createOrder: buildEndpoint('/lab/orders'),
   },

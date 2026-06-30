@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { FlaskConical, ChevronRight, RefreshCw, TrendingUp, TrendingDown, Minus, Clock, ArrowLeft } from "lucide-react"
+import { FlaskConical, ChevronRight, RefreshCw, AlertTriangle, CheckCircle, ArrowLeft } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import { ModernCard } from "@/components/ui/ModernCard"
 import type { ViewState } from "@/lib/translations"
@@ -13,28 +13,9 @@ import { es } from "date-fns/locale"
 
 interface LabResultsViewProps { setCurrentView?: (view: ViewState) => void }
 
-const STATUS_CONFIG: Record<LabResult['status'], { label: string; color: string }> = {
-  ordered:    { label: 'Solicitado',    color: 'bg-gray-100 text-gray-600' },
-  collected:  { label: 'Recolectado',  color: 'bg-blue-100 text-blue-600' },
-  processing: { label: 'Procesando',   color: 'bg-yellow-100 text-yellow-700' },
-  completed:  { label: 'Completado',   color: 'bg-green-100 text-green-700' },
-  cancelled:  { label: 'Cancelado',    color: 'bg-red-100 text-red-600' },
-}
-
-const INTERP_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
-  normal: { color: 'text-green-600',  icon: <Minus className="w-3 h-3" /> },
-  low:    { color: 'text-blue-600',   icon: <TrendingDown className="w-3 h-3" /> },
-  high:   { color: 'text-orange-600', icon: <TrendingUp className="w-3 h-3" /> },
-  critical:{ color: 'text-red-600',   icon: <TrendingUp className="w-3 h-3" /> },
-}
-
-const CATEGORY_LABELS: Record<LabResult['category'], string> = {
-  hematology:   'Hematología',
-  biochemistry: 'Bioquímica',
-  microbiology: 'Microbiología',
-  imaging:      'Imágenes',
-  pulmonary:    'Función Pulmonar',
-  other:        'Otros',
+const STATUS_CONFIG: Record<LabResult['status'], { label: string; color: string; icon: React.ReactNode }> = {
+  normal:   { label: 'Normal',   color: 'bg-green-100 text-green-700',  icon: <CheckCircle className="w-3 h-3" /> },
+  abnormal: { label: 'Anormal',  color: 'bg-red-100 text-red-600',      icon: <AlertTriangle className="w-3 h-3" /> },
 }
 
 export function LabResultsView({ setCurrentView }: LabResultsViewProps) {
@@ -84,9 +65,9 @@ export function LabResultsView({ setCurrentView }: LabResultsViewProps) {
         </ModernButton>
       </div>
 
-      {/* Status filter */}
+      {/* Filtro por estado */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(['all', 'ordered', 'processing', 'completed'] as const).map(s => (
+        {(['all', 'normal', 'abnormal'] as const).map(s => (
           <button
             key={s}
             onClick={() => setFilterStatus(s)}
@@ -111,26 +92,32 @@ export function LabResultsView({ setCurrentView }: LabResultsViewProps) {
         <div className="space-y-3">
           {filtered.map(r => {
             const sc = STATUS_CONFIG[r.status]
-            const hasAbnormal = r.results?.some(v => v.interpretation && v.interpretation !== 'normal')
             return (
               <ModernCard
                 key={r._id}
-                className={`p-4 cursor-pointer hover:bg-accent/5 transition-colors ${hasAbnormal ? 'border-l-4 border-l-orange-400' : ''}`}
+                className={`p-4 cursor-pointer hover:bg-accent/5 transition-colors ${r.flagged ? 'border-l-4 border-l-red-400' : ''}`}
                 onClick={() => setSelected(r)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>{sc.label}</span>
-                      <span className="text-xs text-muted-foreground">{CATEGORY_LABELS[r.category]}</span>
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
+                        {sc.icon}{sc.label}
+                      </span>
+                      {r.laboratoryName && (
+                        <span className="text-xs text-muted-foreground truncate">{r.laboratoryName}</span>
+                      )}
                     </div>
                     <p className="font-semibold text-sm dark:text-white">{r.testName}</p>
-                    {r.testCode && <p className="text-xs text-muted-foreground">Código: {r.testCode}</p>}
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">{format(new Date(r.orderedAt), "d MMM yyyy", { locale: es })}</p>
-                      {hasAbnormal && <span className="text-xs text-orange-600 font-medium">⚠ Valores anormales</span>}
-                    </div>
+                    <p className="text-sm font-medium mt-0.5 dark:text-white">
+                      {r.value} {r.unit}
+                      {r.referenceRange?.text && (
+                        <span className="text-xs text-muted-foreground ml-2">Ref: {r.referenceRange.text}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(r.date), "d MMM yyyy", { locale: es })}
+                    </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                 </div>
@@ -153,60 +140,60 @@ function LabResultDetail({ result: r, onBack }: { result: LabResult; onBack: () 
       </div>
 
       <ModernCard className="p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${sc.color}`}>{sc.label}</span>
-          <span className="text-xs text-muted-foreground">{CATEGORY_LABELS[r.category]}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${sc.color}`}>
+            {sc.icon}{sc.label}
+          </span>
+          {r.flagged && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+              <AlertTriangle className="w-3 h-3" /> Requiere seguimiento
+            </span>
+          )}
         </div>
+
+        {/* Valor principal */}
+        <div className="bg-muted/50 rounded-lg p-3">
+          <p className="text-xs text-muted-foreground mb-1">Resultado</p>
+          <p className={`text-2xl font-bold ${r.status === 'abnormal' ? 'text-red-600' : 'text-green-600'}`}>
+            {r.value} <span className="text-base font-normal text-muted-foreground">{r.unit}</span>
+          </p>
+          {r.referenceRange?.text && (
+            <p className="text-xs text-muted-foreground mt-1">Rango normal: {r.referenceRange.text}</p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Solicitado</p>
-            <p className="dark:text-white">{format(new Date(r.orderedAt), "d MMM yyyy", { locale: es })}</p>
+            <p className="text-xs text-muted-foreground">Fecha</p>
+            <p className="dark:text-white">{format(new Date(r.date), "d MMM yyyy", { locale: es })}</p>
           </div>
-          {r.completedAt && (
+          {r.laboratoryName && (
             <div>
-              <p className="text-xs text-muted-foreground">Completado</p>
-              <p className="dark:text-white">{format(new Date(r.completedAt), "d MMM yyyy", { locale: es })}</p>
+              <p className="text-xs text-muted-foreground">Laboratorio</p>
+              <p className="dark:text-white">{r.laboratoryName}</p>
+            </div>
+          )}
+          {r.orderId && (
+            <div>
+              <p className="text-xs text-muted-foreground">Orden</p>
+              <p className="dark:text-white">{r.orderId}</p>
+            </div>
+          )}
+          {r.testCode && (
+            <div>
+              <p className="text-xs text-muted-foreground">Código</p>
+              <p className="dark:text-white">{r.testCode}</p>
             </div>
           )}
         </div>
-        {r.notes && <p className="text-sm text-muted-foreground border-t pt-2">{r.notes}</p>}
+
+        {r.notes && (
+          <div className="border-t pt-2">
+            <p className="text-xs text-muted-foreground mb-1">Notas</p>
+            <p className="text-sm dark:text-white">{r.notes}</p>
+          </div>
+        )}
       </ModernCard>
-
-      {r.results && r.results.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-semibold dark:text-white flex items-center gap-2">
-            <FlaskConical className="w-4 h-4" /> Valores ({r.results.length})
-          </h3>
-          {r.results.map((v, i) => {
-            const interp = v.interpretation ? INTERP_CONFIG[v.interpretation] : null
-            return (
-              <ModernCard key={i} className={`p-3 ${v.interpretation && v.interpretation !== 'normal' ? 'border-orange-200 dark:border-orange-800' : ''}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">{v.referenceRange && `Ref: ${v.referenceRange}`}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className={`font-bold ${interp?.color ?? 'dark:text-white'}`}>
-                        {v.value} {v.unit}
-                      </p>
-                      {interp && <span className={`flex items-center gap-1 text-xs ${interp.color}`}>{interp.icon}</span>}
-                    </div>
-                  </div>
-                  {v.interpretation && (
-                    <span className={`text-xs font-medium capitalize ${interp?.color}`}>{v.interpretation}</span>
-                  )}
-                </div>
-                {v.notes && <p className="text-xs text-muted-foreground mt-1">{v.notes}</p>}
-              </ModernCard>
-            )
-          })}
-        </div>
-      )}
-
-      {r.reportUrl && (
-        <ModernButton variant="primary" className="w-full" onClick={() => window.open(r.reportUrl)}>
-          Ver reporte completo en PDF
-        </ModernButton>
-      )}
     </div>
   )
 }
