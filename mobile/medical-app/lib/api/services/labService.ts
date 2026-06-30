@@ -50,7 +50,6 @@ class LabService {
     if (filters?.page) params.append('page', String(filters.page))
     if (filters?.limit) params.append('limit', String(filters.limit))
     if (filters?.status) params.append('status', filters.status)
-    if (filters?.category) params.append('category', filters.category)
     if (filters?.patientId) params.append('patientId', filters.patientId)
 
     const query = params.toString()
@@ -76,7 +75,6 @@ class LabService {
     patientId: string
     testName: string
     testCode?: string
-    category: LabResult['category']
     notes?: string
     metadata?: Record<string, unknown>
   }): Promise<LabResult> {

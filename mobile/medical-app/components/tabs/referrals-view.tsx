@@ -149,12 +149,6 @@ function ReferralDetail({ referral: ref, onBack, onUpdate }: { referral: Referra
           <p className="text-xs text-muted-foreground">Motivo</p>
           <p className="text-sm dark:text-white">{ref.reason}</p>
         </div>
-        {ref.diagnosis && (
-          <div>
-            <p className="text-xs text-muted-foreground">Diagnóstico</p>
-            <p className="text-sm dark:text-white">{ref.diagnosis}</p>
-          </div>
-        )}
         {ref.notes && (
           <div>
             <p className="text-xs text-muted-foreground">Notas</p>
