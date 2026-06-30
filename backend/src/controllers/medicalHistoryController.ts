@@ -68,8 +68,10 @@ export const getMedicalHistories = asyncHandler(async (req: AuthenticatedRequest
   // Construir filtros
   const filters: any = {};
 
-  // Si no es admin, solo mostrar historias del doctor actual
-  if (req.user?.role !== 'admin') {
+  // Filtrar según rol: paciente ve sus propias historias, doctor las suyas, admin todas
+  if (req.user?.role === 'patient') {
+    filters.patientId = req.user?._id?.toString();
+  } else if (req.user?.role !== 'admin') {
     filters.doctorId = req.user?._id;
   }
 
