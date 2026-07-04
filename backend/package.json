@@ -94,7 +94,7 @@
     "redis": "^4.6.10",
     "sharp": "^0.33.0",
     "socket.io": "^4.7.4",
-    "swagger-jsdoc": "^6.2.8",
+    "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.0",
     "twilio": "^5.10.6",
     "uuid": "^9.0.1",
