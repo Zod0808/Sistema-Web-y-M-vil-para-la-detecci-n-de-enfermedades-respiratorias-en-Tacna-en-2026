@@ -6,7 +6,7 @@ pydantic==2.5.0
 # AI/ML libraries - FULL VERSION (para producción)
 openai==1.3.7
 transformers==4.35.2
-torch==2.1.1
+torch==2.12.1
 scikit-learn==1.3.2
 numpy==1.24.3
 pandas==2.1.3
