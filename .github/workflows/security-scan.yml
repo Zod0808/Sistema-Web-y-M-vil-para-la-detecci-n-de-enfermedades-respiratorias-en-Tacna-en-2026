@@ -39,29 +39,45 @@ jobs:
 
   # ---------------------------------------------------------------------------
   trivy-image-scan:
-    name: Trivy Docker Image Scan
+    name: Trivy Docker Image Scan (${{ matrix.service.name }})
     runs-on: ubuntu-latest
     needs: trivy-fs-scan
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: api
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - name: web
+            context: ./web
+            dockerfile: ./web/Dockerfile
+          - name: ai
+            context: ./ai-services
+            dockerfile: ./ai-services/Dockerfile.prod
+          - name: nginx
+            context: ./nginx
+            dockerfile: ./nginx/Dockerfile
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Build backend Docker image
-        run: docker build -t respicare-api:scan ./backend
+      - name: Build ${{ matrix.service.name }} Docker image
+        run: docker build -f ${{ matrix.service.dockerfile }} -t respicare-${{ matrix.service.name }}:scan ${{ matrix.service.context }}
 
       - name: Run Trivy image scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: respicare-api:scan
+          image-ref: respicare-${{ matrix.service.name }}:scan
           severity: CRITICAL,HIGH,MEDIUM
           format: table
-          output: trivy-image-results.txt
+          output: trivy-image-${{ matrix.service.name }}-results.txt
 
       - name: Upload Trivy image results
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: trivy-image-results
-          path: trivy-image-results.txt
+          name: trivy-image-results-${{ matrix.service.name }}
+          path: trivy-image-${{ matrix.service.name }}-results.txt
 
   # ---------------------------------------------------------------------------
   sbom-generation:
@@ -106,9 +122,25 @@ jobs:
 
   # ---------------------------------------------------------------------------
   sign-image:
-    name: Sign Container with Cosign (keyless)
+    name: Sign Container with Cosign (${{ matrix.service.name }})
     runs-on: ubuntu-latest
     needs: [trivy-image-scan, sbom-generation]
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: api
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - name: web
+            context: ./web
+            dockerfile: ./web/Dockerfile
+          - name: ai
+            context: ./ai-services
+            dockerfile: ./ai-services/Dockerfile.prod
+          - name: nginx
+            context: ./nginx
+            dockerfile: ./nginx/Dockerfile
     permissions:
       contents: read
       id-token: write   # requerido para OIDC keyless de Sigstore
@@ -127,12 +159,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend image
+      - name: Build and push ${{ matrix.service.name }} image
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}/api
-          docker build -t $IMAGE:${{ github.sha }} ./backend
+          IMAGE=ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+          docker build -f ${{ matrix.service.dockerfile }} -t $IMAGE:${{ github.sha }} ${{ matrix.service.context }}
           docker push $IMAGE:${{ github.sha }}
 
       - name: Sign with Cosign (keyless / OIDC)
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+          cosign sign --yes ghcr.io/${{ github.repository }}/${{ matrix.service.name }}:${{ github.sha }}
