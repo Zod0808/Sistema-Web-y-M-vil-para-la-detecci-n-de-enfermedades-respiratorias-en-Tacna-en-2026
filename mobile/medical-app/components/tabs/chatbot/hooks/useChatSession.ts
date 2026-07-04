@@ -109,7 +109,9 @@ export function useChatSession({ userId, isEmergencyMode, t, storage }: UseChatS
   }, [userId, isEmergencyMode])
 
   const handleSendMessage = async (content?: string) => {
-    const text = content || inputValue.trim()
+    // Guard: si se invoca como onClick, React pasa el evento como argumento.
+    // Solo aceptar strings; cualquier otra cosa usa el valor del input.
+    const text = (typeof content === 'string' ? content : '') || inputValue.trim()
     if (!text || isLoading || !sessionId) return
 
     const userMsg: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString() }

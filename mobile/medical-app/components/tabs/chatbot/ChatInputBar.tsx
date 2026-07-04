@@ -89,7 +89,7 @@ export function ChatInputBar({
 
         <ModernButton
           size="icon"
-          onClick={onSend}
+          onClick={() => onSend()}
           disabled={!inputValue.trim() || isLoading || !sessionId}
           className="w-12 h-12 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
