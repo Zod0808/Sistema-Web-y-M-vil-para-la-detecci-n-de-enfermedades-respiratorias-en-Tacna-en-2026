@@ -161,10 +161,12 @@ jobs:
 
       - name: Build and push ${{ matrix.service.name }} image
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=ghcr.io/$REPO_LC/${{ matrix.service.name }}
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           docker build -f ${{ matrix.service.dockerfile }} -t $IMAGE:${{ github.sha }} ${{ matrix.service.context }}
           docker push $IMAGE:${{ github.sha }}
 
       - name: Sign with Cosign (keyless / OIDC)
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}/${{ matrix.service.name }}:${{ github.sha }}
+          cosign sign --yes $IMAGE:${{ github.sha }}
