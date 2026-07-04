@@ -28,7 +28,7 @@
     "react-scripts": "^5.0.1",
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^1.8.11",
-    "recharts": "^3.3.0",
+    "recharts": "^3.9.2",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
