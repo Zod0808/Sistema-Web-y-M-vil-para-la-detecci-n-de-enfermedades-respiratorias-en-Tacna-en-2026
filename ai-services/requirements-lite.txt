@@ -10,7 +10,7 @@ numpy==1.24.3
 pandas==2.1.3
 
 # Medical text processing - MINIMAL (sin scispacy pesado)
-spacy==3.6.1
+spacy==3.8.14
 nltk==3.8.1
 # scispacy==0.5.3  # Comentado - muy pesado para dev rápido
 

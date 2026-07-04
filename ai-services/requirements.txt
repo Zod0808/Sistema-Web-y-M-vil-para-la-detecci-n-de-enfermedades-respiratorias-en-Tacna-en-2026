@@ -14,7 +14,7 @@ shap==0.44.0
 transformers==4.44.2
 
 # Medical text processing - SIN scispacy (problemas de compatibilidad con Python 3.11)
-spacy==3.6.1
+spacy==3.8.14
 nltk==3.8.1
 # scispacy==0.5.3  # Comentado - nmslib no compila en Python 3.11
 
