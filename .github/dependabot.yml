@@ -1,0 +1,62 @@
+version: 2
+updates:
+  # Backend (Node.js + TypeScript)
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+
+  # Frontend web (React)
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+
+  # App movil (React Native / Expo)
+  - package-ecosystem: npm
+    directory: /mobile/medical-app
+    schedule:
+      interval: weekly
+    labels:
+      - "dependencies"
+
+  # Servicio de IA (Python)
+  - package-ecosystem: pip
+    directory: /ai-services
+    schedule:
+      interval: daily
+    labels:
+      - "dependencies"
+      - "security"
+
+  # Imagenes Docker
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /web
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ai-services
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /nginx
+    schedule:
+      interval: weekly
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

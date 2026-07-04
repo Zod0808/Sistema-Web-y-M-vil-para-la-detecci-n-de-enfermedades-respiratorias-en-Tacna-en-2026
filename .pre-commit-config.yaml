@@ -1,0 +1,19 @@
+# Pre-commit hooks - Pipeline de Seguridad de Cadena de Suministro (CSS) - RespiCare
+# Ejecuta TruffleHog para detectar secretos antes de cada commit.
+# Instalacion:  pre-commit install
+# Ejecucion manual: pre-commit run --all-files
+repos:
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.82.6
+    hooks:
+      - id: trufflehog
+        name: TruffleHog - deteccion de secretos
+        entry: trufflehog git file://. --since-commit HEAD --only-verified --fail
+        language: system
+        stages: [pre-commit]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: Gitleaks - deteccion de secretos (complementario)

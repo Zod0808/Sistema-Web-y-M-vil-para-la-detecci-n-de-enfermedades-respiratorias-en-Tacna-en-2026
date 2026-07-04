@@ -1,5 +1,5 @@
 # Stage 1: Build React app
-FROM node:18-alpine AS builder
+FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ ARG REACT_APP_ENV=production
 RUN npm run build
 
 # Stage 2: Serve static files with nginx
-FROM nginx:alpine
+FROM nginx:alpine@sha256:54f2a904c251d5a34adf545a72d32515a15e08418dae0266e23be2e18c66fefa
 
 COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx-spa.conf /etc/nginx/conf.d/default.conf

@@ -129,7 +129,39 @@ Si encuentras una vulnerabilidad de seguridad:
 - [ ] Auditoría de seguridad para funcionalidades multimodales
 - [ ] Penetration testing específico para endpoints de audio/imagen
 
+## 🔗 Pipeline de Seguridad de Cadena de Suministro (CSS)
+
+### Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 3.x.x   | :white_check_mark: |
+| < 3.0   | :x:                |
+
+### Reporting a Vulnerability
+
+1. **Do NOT** open a public GitHub issue.
+2. Email: security@respicare.example.com
+3. Include: description, steps to reproduce, and potential impact.
+4. Expected response time: 48 hours.
+
+### Herramientas del pipeline CSS
+
+Este proyecto implementa un pipeline completo de Software Supply Chain Security:
+
+- **Detección de secretos** — TruffleHog + Gitleaks (pre-commit hooks y escaneo histórico)
+- **Escaneo de vulnerabilidades (SCA)** — Trivy (filesystem e imágenes de contenedor)
+- **Generación de SBOM** — Syft (CycloneDX / SPDX)
+- **Análisis de SBOM** — Grype + OWASP Dependency-Track
+- **SAST** — Semgrep (reglas security-audit, nodejs, python, typescript)
+- **Firma de artefactos** — Sigstore / Cosign (firma efímera keyless OIDC)
+- **Monitoreo de dependencias** — Dependabot (npm, pip, Docker, GitHub Actions)
+- **Fijación de imágenes base** — Todas las imágenes Docker fijadas por digest SHA256
+- **Fijación de Actions** — Todas las GitHub Actions fijadas por SHA de commit
+- **Auditoría Python** — pip-audit
+- **Medición de postura** — OpenSSF Scorecard
+
 ---
 
-**Última actualización:** Noviembre 2025
+**Última actualización:** Junio 2026
 **Responsable:** Equipo de Desarrollo RespiCare Tacna
