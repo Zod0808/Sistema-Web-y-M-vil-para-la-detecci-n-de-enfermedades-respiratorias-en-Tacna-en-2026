@@ -7,7 +7,10 @@ on:
   push:
     branches: [ fabian, main, master ]
     paths:
-      - '.github/workflows/scorecard.yml'
+      - '.github/workflows/**'
+      - 'SECURITY.md'
+      - 'dependabot.yml'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 permissions: read-all
