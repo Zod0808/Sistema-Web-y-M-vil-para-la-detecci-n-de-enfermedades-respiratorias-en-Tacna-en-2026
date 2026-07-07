@@ -3,13 +3,13 @@
 # Instalacion:  pre-commit install
 # Ejecucion manual: pre-commit run --all-files
 repos:
-  - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.82.6
+  - repo: local
     hooks:
       - id: trufflehog
-        name: TruffleHog - deteccion de secretos
-        entry: trufflehog git file://. --since-commit HEAD --only-verified --fail
+        name: TruffleHog - deteccion de secretos (via Docker)
+        entry: docker run --rm -v .:/repo trufflesecurity/trufflehog:3.82.6 git file:///repo --since-commit HEAD --only-verified --fail
         language: system
+        pass_filenames: false
         stages: [pre-commit]
 
   - repo: https://github.com/gitleaks/gitleaks

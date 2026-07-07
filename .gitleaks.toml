@@ -1,0 +1,22 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixtures y valores dummy usados en tests / setup local"
+paths = [
+    '''backend/tests/env\.setup\.ts''',
+    '''.*\.test\.(ts|js|tsx|jsx)''',
+    '''.*\.spec\.(ts|js|tsx|jsx)''',
+    '''.*/__tests__/.*''',
+    '''.*/__mocks__/.*''',
+    '''.*\.env\.example''',
+    '''.*\.env\.test''',
+]
+regexes = [
+    '''test-jwt-secret-[0-9a-f-]+''',
+    '''test-jwt-refresh-secret-[0-9a-f-]+''',
+    '''test-api-key''',
+    '''internal-test-token''',
+    '''dummy-.*-key''',
+    '''fake-.*-secret''',
+]
