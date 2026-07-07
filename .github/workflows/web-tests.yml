@@ -41,7 +41,7 @@ jobs:
         run: npm run test:unit -- --watchAll=false --coverage
       
       - name: Upload test reports (JUnit XML)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-test-reports
@@ -50,7 +50,7 @@ jobs:
           retention-days: 14
       
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-coverage-reports

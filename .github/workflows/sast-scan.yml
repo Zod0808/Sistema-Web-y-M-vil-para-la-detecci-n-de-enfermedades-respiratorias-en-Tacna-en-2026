@@ -68,7 +68,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Snyk report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: snyk-backend-report
@@ -105,7 +105,7 @@ jobs:
           args: --severity-threshold=high --file=package.json
       
       - name: Upload Snyk report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: snyk-web-report
@@ -184,7 +184,7 @@ jobs:
           args: --severity-threshold=high --file=package.json
       
       - name: Upload Snyk report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: snyk-mobile-report
@@ -223,7 +223,7 @@ jobs:
           args: --severity-threshold=high --file=requirements.txt
       
       - name: Upload Snyk report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: snyk-python-report
@@ -342,7 +342,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bandit-report
@@ -411,7 +411,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload npm audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: npm-audit-backend-report

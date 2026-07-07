@@ -32,7 +32,7 @@ jobs:
           output: trivy-fs-results.txt
 
       - name: Upload Trivy FS results
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: trivy-fs-results
           path: trivy-fs-results.txt
@@ -74,7 +74,7 @@ jobs:
           output: trivy-image-${{ matrix.service.name }}-results.txt
 
       - name: Upload Trivy image results
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: trivy-image-results-${{ matrix.service.name }}
           path: trivy-image-${{ matrix.service.name }}-results.txt
@@ -96,7 +96,7 @@ jobs:
           echo "Componentes: $(cat sbom-respicare.cdx.json | jq '.components | length')"
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sbom-cyclonedx
           path: sbom-respicare.cdx.json
@@ -115,7 +115,7 @@ jobs:
         run: semgrep scan --config=p/security-audit --config=p/nodejs --config=p/python --config=p/typescript --error --sarif --output=semgrep.sarif || true
 
       - name: Upload Semgrep results
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: semgrep-results
           path: semgrep.sarif

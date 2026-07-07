@@ -258,7 +258,7 @@ jobs:
           fail_action: false
       
       - name: Upload ZAP HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-baseline-report-html
@@ -266,7 +266,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP Markdown report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-baseline-report-md
@@ -274,7 +274,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP JSON report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-baseline-report-json
@@ -282,7 +282,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP SARIF report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-baseline-report-sarif
@@ -334,7 +334,7 @@ jobs:
           fail_action: false
       
       - name: Upload ZAP HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-full-report-html
@@ -342,7 +342,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP Markdown report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-full-report-md
@@ -350,7 +350,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP JSON report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-full-report-json
@@ -358,7 +358,7 @@ jobs:
           retention-days: 30
       
       - name: Upload ZAP SARIF report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-full-report-sarif
@@ -403,7 +403,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload ZAP HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-api-report-html
@@ -412,7 +412,7 @@ jobs:
           if-no-files-found: ignore
       
       - name: Upload ZAP Markdown report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-api-report-md
@@ -421,7 +421,7 @@ jobs:
           if-no-files-found: ignore
       
       - name: Upload ZAP JSON report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-api-report-json
@@ -478,7 +478,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-container-reports

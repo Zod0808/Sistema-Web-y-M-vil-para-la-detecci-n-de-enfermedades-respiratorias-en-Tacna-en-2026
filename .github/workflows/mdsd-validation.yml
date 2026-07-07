@@ -162,7 +162,7 @@ jobs:
     #   run: npm run validate:models
         
     # - name: 📤 Upload generated artifacts
-    #   uses: actions/upload-artifact@v4
+    #   uses: actions/upload-artifact@v7
     #   if: always()
     #   with:
     #     name: generated-code
@@ -216,7 +216,7 @@ jobs:
         echo "Total PNG files generated: $file_count"
         
     - name: 📤 Upload diagrams
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: uml-diagrams
@@ -302,7 +302,7 @@ jobs:
         EOF
         
     - name: 📤 Upload report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: mdsd-report
         path: mdsd-report.md

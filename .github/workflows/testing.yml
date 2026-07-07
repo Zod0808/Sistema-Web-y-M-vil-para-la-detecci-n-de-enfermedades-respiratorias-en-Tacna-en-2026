@@ -70,7 +70,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: ai-services-test-results
@@ -149,7 +149,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: backend-test-results
@@ -204,7 +204,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: web-test-results
@@ -255,7 +255,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: mobile-test-results
@@ -366,7 +366,7 @@ jobs:
         snyk test || true
         
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: security-reports
@@ -442,7 +442,7 @@ jobs:
         echo "- Actual: 70%" >> coverage-summary.md
         
     - name: Upload coverage summary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-summary
         path: coverage-summary.md

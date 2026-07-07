@@ -57,7 +57,7 @@ jobs:
       run: npm run test:coverage -- tests/unit
       
     - name: Upload test reports (JUnit XML)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: backend-unit-test-reports
@@ -117,7 +117,7 @@ jobs:
         JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
     
     - name: Upload test reports (JUnit XML)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: backend-integration-test-reports
@@ -288,7 +288,7 @@ jobs:
         JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
       
     - name: Upload test reports (JUnit XML)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: backend-coverage-test-reports
@@ -297,7 +297,7 @@ jobs:
         retention-days: 14
     
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: backend-coverage-reports
