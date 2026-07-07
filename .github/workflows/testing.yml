@@ -10,6 +10,9 @@ env:
   NODE_VERSION: '18'
   PYTHON_VERSION: '3.11'
 
+permissions:
+  contents: read
+
 jobs:
   test-ai-services:
     runs-on: ubuntu-latest

@@ -18,6 +18,9 @@ env:
   JWT_SECRET: 'test-jwt-secret-for-ci'
   JWT_REFRESH_SECRET: 'test-jwt-refresh-secret-for-ci'
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest

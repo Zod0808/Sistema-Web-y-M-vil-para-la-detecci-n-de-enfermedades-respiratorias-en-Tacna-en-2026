@@ -22,6 +22,10 @@ on:
       - 'backend/src/**'
       - '.github/workflows/security-zap.yml'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   zap_scan:
     runs-on: ubuntu-latest

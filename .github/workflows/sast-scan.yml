@@ -26,6 +26,10 @@ env:
   NODE_VERSION: '18'
   PYTHON_VERSION: '3.11'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   snyk-backend:
     name: Snyk Scan - Backend

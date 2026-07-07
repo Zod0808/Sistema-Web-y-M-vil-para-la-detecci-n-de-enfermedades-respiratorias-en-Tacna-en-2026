@@ -7,6 +7,9 @@ on:
       - "ai-services/**"
       - ".github/workflows/ai-ml-trends.yml"
 
+permissions:
+  contents: read
+
 jobs:
   analyze-trends:
     runs-on: ubuntu-latest

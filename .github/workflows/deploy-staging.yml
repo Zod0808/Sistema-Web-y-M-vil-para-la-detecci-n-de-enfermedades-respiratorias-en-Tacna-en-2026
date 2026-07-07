@@ -19,6 +19,9 @@ env:
   WEB_IMAGE: ${{ github.repository }}/respicare-web
   KUBERNETES_NAMESPACE: respicare-staging
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     name: Build and Push Docker Images

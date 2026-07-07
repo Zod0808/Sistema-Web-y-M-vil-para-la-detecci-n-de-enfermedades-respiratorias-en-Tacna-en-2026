@@ -10,6 +10,9 @@ on:
       - 'ai-services/**'
       - '.github/workflows/ai-services-tests.yml'
 
+permissions:
+  contents: read
+
 jobs:
   ai-services-tests:
     runs-on: ubuntu-latest

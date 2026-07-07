@@ -17,6 +17,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository }}
 
+permissions:
+  contents: read
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest

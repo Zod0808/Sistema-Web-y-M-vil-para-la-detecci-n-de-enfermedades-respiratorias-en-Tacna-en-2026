@@ -15,6 +15,9 @@ on:
       - 'backend/src/models/**'
       - 'backend/openapi/**'
 
+permissions:
+  contents: read
+
 jobs:
   validate-models:
     name: Validate Domain Models

@@ -29,6 +29,10 @@ env:
   BACKEND_PORT: 3001
   AI_SERVICES_PORT: 8000
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   start-backend:
     name: Start Backend for DAST

@@ -20,6 +20,9 @@ env:
   WEB_IMAGE: ${{ github.repository }}/respicare-web
   KUBERNETES_NAMESPACE: respicare-production
 
+permissions:
+  contents: read
+
 jobs:
   pre-deployment-checks:
     name: Pre-Deployment Checks

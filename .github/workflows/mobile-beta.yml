@@ -6,6 +6,9 @@ on:
       - 'beta-*'
       - 'mobile-beta-*'
 
+permissions:
+  contents: read
+
 jobs:
   build-beta-artifact:
     runs-on: ubuntu-latest
