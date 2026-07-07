@@ -12,7 +12,6 @@ env:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   # Backend Tests
@@ -372,7 +371,9 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

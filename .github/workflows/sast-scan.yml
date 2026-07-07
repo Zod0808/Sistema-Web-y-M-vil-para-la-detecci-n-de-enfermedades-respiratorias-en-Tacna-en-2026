@@ -28,14 +28,15 @@ env:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   snyk-backend:
     name: Snyk Scan - Backend
     runs-on: ubuntu-latest
     continue-on-error: true
-    
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

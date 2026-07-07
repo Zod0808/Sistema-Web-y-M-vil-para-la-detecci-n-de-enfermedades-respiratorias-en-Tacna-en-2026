@@ -31,7 +31,6 @@ env:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   start-backend:
@@ -151,6 +150,9 @@ jobs:
   zap-baseline-scan:
     name: OWASP ZAP Baseline Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     if: github.event.inputs.scan_type == 'baseline' || github.event.inputs.scan_type == '' || github.event_name == 'schedule' || github.event_name == 'push'
     
     services:
@@ -318,6 +320,9 @@ jobs:
   zap-full-scan:
     name: OWASP ZAP Full Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     needs: start-backend
     if: github.event.inputs.scan_type == 'full-scan' || github.event_name == 'schedule'
     
@@ -432,7 +437,9 @@ jobs:
   trivy-container-scan:
     name: Trivy Container Scan
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
