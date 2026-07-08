@@ -258,12 +258,12 @@ RespiCare Testing Architecture
 ## 📊 Métricas de Calidad
 
 ### Cobertura de Código
-| Componente | Cobertura mínima | Cobertura ideal | Estado actual |
+| Componente | Cobertura mínima | Cobertura ideal | Estado actual (líneas) |
 |------------|------------------|-----------------|---------------|
-| Backend API | 80% | 90%+ | ✅ 98% |
-| Web Frontend | 70% | 80%+ | ⚙️ ~62% (plan: 82% tras Sprints 12-13) |
-| Mobile App | 70% | 80%+ | ⚙️ ~68% (plan: 80% con suites offline/sync) |
-| AI Services | 85% | 95%+ | ⚙️ ~83% (suite `ml_tests` con fairness/drift + endpoints `ml_monitoring`) |
+| Backend API | 80% | 90%+ | ✅ 80.44% (cumplido al límite) |
+| Web Frontend | 70% | 80%+ | ⚙️ 75.67% (plan: 82% tras Sprints 12-13) |
+| Mobile App | 70% | 80%+ | ⚠️ Sin métrica global (Jest instrumenta solo 2 archivos) |
+| AI Services | 60% | 95%+ | ⚠️ 49.37% (suite `ml_tests` con fairness/drift + endpoints `ml_monitoring`) |
 | APIs críticas | 90% | 95%+ | ✅ 94% |
 | Lógica crítica (auth, alertas, ML core) | 100% | 100% | ⚙️ 95% (gap en adversarial testing) |
 

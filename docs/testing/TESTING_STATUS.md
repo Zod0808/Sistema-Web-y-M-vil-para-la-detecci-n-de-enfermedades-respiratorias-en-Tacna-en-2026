@@ -1,15 +1,15 @@
 # 🧪 Estado de Testing - RespiCare Tacna
 
-**Última actualización:** Noviembre 2025
+**Última actualización:** Julio 2026 (cobertura real de los reportes generados)
 
 ## 📊 Resumen Ejecutivo
 
-| Componente | Tests | Cobertura | Estado |
+| Componente | Tests | Cobertura (líneas) | Estado |
 |------------|-------|-----------|--------|
-| **Backend** | 380+ | 98% | ✅ Completo |
-| **Web** | 40+ | ~70% | ✅ Funcional |
-| **Mobile** | 50+ | ~75% | ✅ Funcional |
-| **AI Services** | 12+ | ~83% | ✅ Funcional |
+| **Backend** | 380+ | 80.44% | ✅ Cumplido |
+| **Web** | 40+ | 75.67% | ⚠️ Cercano |
+| **Mobile** | 50+ | No medible* | ⚠️ Sin métrica |
+| **AI Services** | 12+ | 49.37% | ⚠️ Por debajo |
 | **E2E** | 15+ flujos | - | ✅ Completo |
 | **Seguridad** | 25+ | OWASP Top 10 | ✅ Completo |
 | **Performance** | 30+ | - | ✅ Completo |
@@ -18,7 +18,7 @@
 
 ### Backend (Node.js/TypeScript)
 - ✅ **380+ tests automatizados**
-- ✅ **98% cobertura global** (objetivo ≥80% superado)
+- ✅ **80.44% cobertura global de líneas** (objetivo ≥80% cumplido al límite)
 - ✅ Tests unitarios, integración, E2E, seguridad, performance
 - **Ubicación**: `backend/tests/`
 - **Ver detalles**: [backend/tests/README.md](../backend/tests/README.md)
@@ -26,20 +26,20 @@
 ### Frontend Web (React)
 - ✅ **40+ tests implementados**
 - ✅ Tests unitarios, E2E (Cypress), accesibilidad, responsive
-- ✅ Cobertura ~70% (objetivo 80%)
+- ✅ Cobertura 75.67% líneas (objetivo 80%)
 - **Ubicación**: `web/tests/` y `web/src/tests/`
 - **Ver detalles**: [web/tests/README.md](../web/tests/README.md)
 
 ### Mobile (React Native/Expo)
 - ✅ **50+ tests implementados**
 - ✅ Tests unitarios, integración, E2E (Detox), offline, sincronización
-- ✅ Cobertura ~75% (objetivo 80%)
+- ⚠️ Sin cobertura global medible (Jest instrumenta solo 2 archivos; objetivo 80%)
 - **Ubicación**: `mobile/__tests__/` y `mobile/e2e/`
 - **Ver detalles**: [mobile/__tests__/README.md](../mobile/__tests__/README.md)
 
 ### AI Services (Python/FastAPI)
 - ✅ **12+ tests de ML** (fairness, drift, monitoreo)
-- ✅ Cobertura ~83% en monitoreo/fairness/drift
+- ⚠️ Cobertura 49.37% líneas global (`coverage.xml`; objetivo 60%)
 - ✅ Tests de modelos ML, validación de predicciones, performance
 - **Ubicación**: `ai-services/tests/`
 - **Ver detalles**: [ai-services/TESTING_GUIDE.md](../ai-services/TESTING_GUIDE.md)
@@ -47,10 +47,12 @@
 ## 🎯 Tipos de Tests Implementados
 
 ### ✅ Unit Tests
-- Backend: 98% cobertura
-- Web: ~70% cobertura
-- Mobile: ~75% cobertura
-- AI Services: ~83% cobertura (ML)
+- Backend: 80.44% cobertura de líneas
+- Web: 75.67% cobertura de líneas
+- Mobile: sin métrica global (Jest instrumenta solo 2 archivos)
+- AI Services: 49.37% cobertura de líneas
+
+\* *Cifras extraídas de los reportes reales generados (`coverage-summary.json` / `coverage.xml`).*
 
 ### ✅ Integration Tests
 - Backend: Completo

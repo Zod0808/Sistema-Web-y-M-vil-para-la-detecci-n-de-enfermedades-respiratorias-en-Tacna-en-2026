@@ -459,12 +459,14 @@ Todos los componentes están configurados para subir reportes a Codecov:
 
 ### Umbrales de Cobertura en CI
 
-| Componente | Umbral Mínimo | Objetivo |
+| Componente | Umbral Mínimo | Actual (líneas) |
 |------------|---------------|----------|
-| Backend    | 80%           | 98%      |
-| Web        | 70%           | 80%      |
-| Mobile     | 70%           | 80%      |
-| AI Services| 70%           | 83%      |
+| Backend    | 80%           | 80.44%   |
+| Web        | 70%           | 75.67%   |
+| Mobile     | 70%           | Sin métrica global* |
+| AI Services| 60%           | 49.37%   |
+
+\* *Mobile: el `jest.config.js` instrumenta solo 2 archivos, por lo que no hay cobertura global representativa.*
 
 **Nota**: Los umbrales mínimos están configurados para que CI falle si no se alcanzan.
 

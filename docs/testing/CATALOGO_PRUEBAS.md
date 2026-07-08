@@ -1,7 +1,7 @@
 # Catálogo de Pruebas — Sistema de Enfermedades Respiratorias
 
-**Versión:** 10.0  
-**Fecha:** 2026-04-15  
+**Versión:** 11.0  
+**Fecha:** 2026-07-04  
 **Total de archivos de prueba:** 260 (179 TypeScript/JS + 81 Python)  
 **Cobertura:** Backend API · Frontend Web (Cypress + Jest) · Visual Regression · Accesibilidad (WCAG 2.1 AA + teclado + lector de pantalla) · Performance/Carga · LLM Testing · Seguridad (auth/authz + prompt injection) · AI Services (Python/FastAPI) · Compatibilidad (cross-browser + APIs + mobile)
 

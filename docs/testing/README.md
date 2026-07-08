@@ -18,7 +18,7 @@ Esta carpeta contiene toda la documentación relacionada con testing, cobertura 
 - **[SECURITY_TESTS_COMPLETE.md](SECURITY_TESTS_COMPLETE.md)** - Tests de seguridad (OWASP Top 10)
 
 ### Reportes por Componente
-- **[backend-coverage-2025-11.md](backend-coverage-2025-11.md)** - Cobertura detallada del backend (98%)
+- **[backend-coverage-2025-11.md](backend-coverage-2025-11.md)** - Cobertura detallada del backend (snapshot histórico Nov-2025; cobertura actual 80.44%)
 - **[MOBILE_INTEGRATION_TESTS_COMPLETE.md](MOBILE_INTEGRATION_TESTS_COMPLETE.md)** - Tests de integración mobile
 - **[MOBILE_PERFORMANCE_TESTS_COMPLETE.md](MOBILE_PERFORMANCE_TESTS_COMPLETE.md)** - Tests de performance mobile
 - **[WEB_INTEGRATION_TESTS_SUMMARY.md](WEB_INTEGRATION_TESTS_SUMMARY.md)** - Resumen de tests de integración web
@@ -27,12 +27,14 @@ Esta carpeta contiene toda la documentación relacionada con testing, cobertura 
 
 ## 📊 Métricas Actuales
 
-| Componente | Tests | Cobertura | Estado |
+| Componente | Tests | Cobertura (líneas) | Estado |
 |------------|-------|-----------|--------|
-| Backend | 380+ | 98% | ✅ Completo |
-| Web | 40+ | ~70% | ✅ Funcional |
-| Mobile | 50+ | ~75% | ✅ Funcional |
-| AI Services | 12+ | ~83% | ✅ Funcional |
+| Backend | 380+ | 80.44% | ✅ Cumplido |
+| Web | 40+ | 75.67% | ⚠️ Cercano |
+| Mobile | 50+ | No medible* | ⚠️ Sin métrica |
+| AI Services | 12+ | 49.37% | ⚠️ Por debajo |
+
+\* *Mobile: Jest instrumenta solo 2 archivos. Cifras reales de `coverage-summary.json` / `coverage.xml`, Julio 2026.*
 
 ## 🎯 Audiencia
 
