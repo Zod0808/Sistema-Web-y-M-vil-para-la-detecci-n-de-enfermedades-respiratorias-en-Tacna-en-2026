@@ -1,4 +1,4 @@
-import { referralService } from '../../../src/services/referralService';
+import referralService from '../../../src/services/referralService';
 
 jest.mock('../../../src/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
@@ -70,8 +70,9 @@ describe('referralService', () => {
       reason: 'Evaluación neumológica',
     };
 
-    it('crea un referido exitosamente', async () => {
+    it('crea un referido exitosamente y notifica a los admins', async () => {
       UserModel.findById.mockResolvedValue(buildDoctor());
+      UserModel.find.mockResolvedValue([{ _id: { toString: () => 'admin-1' } }]);
       const referral = buildReferral();
       ReferralModel.create.mockResolvedValue(referral);
 
@@ -81,7 +82,34 @@ describe('referralService', () => {
         patientId: 'patient-1',
         status: 'pending',
       }));
+      // Sin doctor destino → alerta a los admins
+      expect(UserModel.find).toHaveBeenCalledWith(expect.objectContaining({ role: 'admin' }));
+      expect(alertService.createAlert).toHaveBeenCalled();
       expect(result).toEqual(referral);
+    });
+
+    it('valida el doctor destino y le crea alerta cuando se especifica', async () => {
+      UserModel.findById
+        .mockResolvedValueOnce(buildDoctor())
+        .mockResolvedValueOnce(buildDoctor({ _id: 'doctor-2', name: 'Dr. Destino' }));
+      const referral = buildReferral();
+      ReferralModel.create.mockResolvedValue(referral);
+
+      await referralService.createReferral({ ...validPayload, referredToDoctorId: 'doctor-2' });
+
+      expect(alertService.createAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'doctor-2', category: 'referral' })
+      );
+    });
+
+    it('lanza error cuando el doctor destino no es válido', async () => {
+      UserModel.findById
+        .mockResolvedValueOnce(buildDoctor())
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        referralService.createReferral({ ...validPayload, referredToDoctorId: 'doctor-2' })
+      ).rejects.toThrow('El doctor destino no existe o no es válido');
     });
 
     it('lanza error cuando el doctor que refiere no existe', async () => {

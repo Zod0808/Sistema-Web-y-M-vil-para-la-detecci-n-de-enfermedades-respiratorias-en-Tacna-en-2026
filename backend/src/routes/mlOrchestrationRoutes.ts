@@ -7,11 +7,17 @@
 import { Router, Response } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { asyncHandler } from '../utils/asyncHandler';
+import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import mlOrchestrationService from '../services/mlOrchestrationService';
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+// Every ML orchestration endpoint requires a signed-in user. Without this the
+// downstream requireRole() guards observed req.user as undefined and rejected
+// every request with 401.
+router.use(authenticate);
 
 /**
  * POST /api/v1/ml/rl/session/start

@@ -178,7 +178,7 @@ const ReferralSchema = new Schema<ReferralDocument, ReferralModel>(
     timestamps: true,
     toJSON: {
       transform: (doc, ret) => {
-        ret._id = ret._id.toString();
+        ret._id = String(ret._id);
         return ret;
       },
     },

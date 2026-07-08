@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from ml_models.random_forest_model import RandomForestModel
 from ml_models.xgboost_model import XGBoostDiseaseClassifier
-from ml_models.neural_network_model import NeuralNetworkModel
+from ml_models.neural_network_model import MultiTaskNeuralNetwork as NeuralNetworkModel
 from ml_models.ensemble_predictor import EnsemblePredictor
 
 

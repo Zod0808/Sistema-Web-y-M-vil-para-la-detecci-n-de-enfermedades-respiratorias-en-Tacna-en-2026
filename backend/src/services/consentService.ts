@@ -100,7 +100,7 @@ class ConsentService {
     });
 
     logger.info('Consentimiento informado creado', {
-      consentId: consent._id.toString(),
+      consentId: String(consent._id),
       patientId: payload.patientId,
       doctorId: payload.doctorId,
     });
@@ -137,12 +137,12 @@ class ConsentService {
       channels: ['push', 'in_app'],
       trigger: {
         source: 'informed_consent',
-        referenceId: consent._id.toString(),
+        referenceId: String(consent._id),
       },
     });
 
     logger.info('Consentimiento presentado al paciente', {
-      consentId: consent._id.toString(),
+      consentId: String(consent._id),
       presentedBy,
     });
 
@@ -206,13 +206,13 @@ class ConsentService {
         channels: ['push', 'in_app'],
         trigger: {
           source: 'informed_consent',
-          referenceId: consent._id.toString(),
+          referenceId: String(consent._id),
         },
       });
     }
 
     logger.info('Firma agregada al consentimiento', {
-      consentId: consent._id.toString(),
+      consentId: String(consent._id),
       signerId: signature.signerId,
       signerRole: signature.signerRole,
     });
@@ -310,7 +310,7 @@ class ConsentService {
     await consent.save();
 
     logger.info('Consentimiento actualizado', {
-      consentId: consent._id.toString(),
+      consentId: String(consent._id),
       updatedBy,
     });
 
@@ -345,12 +345,12 @@ class ConsentService {
       channels: ['push', 'in_app'],
       trigger: {
         source: 'informed_consent',
-        referenceId: consent._id.toString(),
+        referenceId: String(consent._id),
       },
     });
 
     logger.info('Consentimiento revocado', {
-      consentId: consent._id.toString(),
+      consentId: String(consent._id),
       revokedBy,
     });
 

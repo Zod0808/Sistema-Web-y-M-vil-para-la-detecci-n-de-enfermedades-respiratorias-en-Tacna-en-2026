@@ -30,7 +30,7 @@ export function startLabImportJobs(): void {
         isActive: true,
       }).select('_id');
 
-      const patientIds = activePatients.map((p) => p._id.toString());
+      const patientIds = activePatients.map((p) => String(p._id));
 
       if (patientIds.length === 0) {
         logger.info('No hay pacientes activos para importar resultados');

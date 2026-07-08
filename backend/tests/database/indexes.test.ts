@@ -10,10 +10,10 @@
  */
 
 import mongoose from 'mongoose';
-import { User } from '../../src/models/User';
-import { MedicalHistory } from '../../src/models/MedicalHistory';
-import { Appointment } from '../../src/models/Appointment';
-import { AIAnalysis } from '../../src/models/AIAnalysis';
+import User from '../../src/models/User';
+import MedicalHistory from '../../src/models/MedicalHistory';
+import Appointment from '../../src/models/Appointment';
+import AIAnalysis from '../../src/models/AIAnalysis';
 
 describe('MongoDB Indexes Tests', () => {
   beforeAll(async () => {

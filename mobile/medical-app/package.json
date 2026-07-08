@@ -16,7 +16,7 @@
     "android:lan": "npm run build:lan && npm run capacitor:sync",
     "android:release:production": "npm run build:production && npm run capacitor:sync && cd android && gradlew.bat assembleRelease",
     "dev": "next dev -p 8083",
-    "lint": "eslint .",
+    "lint": "eslint app components lib hooks",
     "start": "next start -p 8083",
     "capacitor:sync": "npx cap sync",
     "capacitor:copy": "npx cap copy",
@@ -111,6 +111,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.1.9",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -119,7 +120,11 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript-eslint/parser": "^8.63.0",
     "dotenv-cli": "^7.4.2",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.10",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.5",

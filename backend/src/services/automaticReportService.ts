@@ -49,7 +49,7 @@ class AutomaticReportService {
     logger.info(`Generando reporte ${reportType} para período ${period.startDate.toISOString()} - ${period.endDate.toISOString()}`);
 
     // Crear registro de reporte
-    let report = new AutomaticReport({
+    const report = new AutomaticReport({
       reportType,
       period,
       status: 'generating',
@@ -176,7 +176,7 @@ class AutomaticReportService {
 
       // Exportar automáticamente si está habilitado
       if (autoExport) {
-        await this.exportReport(report._id.toString(), exportFormat);
+        await this.exportReport(String(report._id), exportFormat);
       }
 
       logger.info(`Reporte ${reportType} generado exitosamente: ${report._id}`);

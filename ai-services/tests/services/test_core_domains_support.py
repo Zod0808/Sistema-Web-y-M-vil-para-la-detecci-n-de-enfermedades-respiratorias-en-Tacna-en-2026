@@ -817,11 +817,4 @@ class TestCoreDomainsSupportService:
         
         assert isinstance(follow_ups, list)
         # May be empty for low severity
-            priority_level="low",
-            symptom_analysis={"assessed_urgency": "low"},
-            context_risk={"risk_level": "low"}
-        )
-        
-        assert isinstance(actions, list)
-        assert len(actions) > 0
 

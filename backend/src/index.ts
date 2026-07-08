@@ -244,10 +244,14 @@ class App {
     this.app.use('/api/v1/integrations', integrationRoutes);
     this.app.use('/api/v1/lab', labRoutes);
     this.app.use('/api/v1/emergencies', emergencyRoutes);
+    // Legacy singular alias: existing clients and older integration tests still POST /emergency.
+    this.app.use('/api/v1/emergency', emergencyRoutes);
     this.app.use('/api/v1/sms/webhooks', smsWebhookRoutes);
     this.app.use('/api/v1/sms', smsRoutes);
     this.app.use('/api/v1/referrals', referralRoutes);
     this.app.use('/api/v1/informed-consents', informedConsentRoutes);
+    // Legacy singular alias used by older integration tests and API consumers.
+    this.app.use('/api/v1/informed-consent', informedConsentRoutes);
     // Chat routes (conversations, audio, image)
     this.app.use('/api/chat-conversations', chatConversationsRoutes);
     this.app.use('/api/v1/chat', chatAudioRoutes);

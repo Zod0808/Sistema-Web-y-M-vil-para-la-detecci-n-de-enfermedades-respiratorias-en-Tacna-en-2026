@@ -39,7 +39,7 @@ export interface SMSResponse {
 }
 
 export class SMSService {
-  private config: SMSConfig;
+  private config: SMSConfig & { provider: NonNullable<SMSConfig['provider']> };
   private twilioClient: any = null;
   private awsSnsClient: any = null;
   private messagebirdClient: any = null;

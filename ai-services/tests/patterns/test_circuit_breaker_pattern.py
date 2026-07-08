@@ -136,7 +136,8 @@ class TestCircuitBreaker:
         
         assert circuit_breaker.state == CircuitState.OPEN
     
-    def test_circuit_breaker_state_transitions(self, circuit_breaker):
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_state_transitions(self, circuit_breaker):
         """Test circuit breaker state transitions"""
         # Initial state should be closed
         assert circuit_breaker.state == CircuitState.CLOSED

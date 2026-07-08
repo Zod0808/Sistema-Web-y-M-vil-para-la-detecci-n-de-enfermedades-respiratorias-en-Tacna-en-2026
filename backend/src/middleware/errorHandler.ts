@@ -36,6 +36,23 @@ const handleJWTExpiredError = (): AppError => {
   return new AppError('Token expirado', 401);
 };
 
+// AppError instances typically carry a specific human-readable message from
+// controllers/services (e.g. "El usuario ya existe con este email"). The
+// createErrorResponse helper produces a generic i18n message from a code, which
+// makes assertions on specific messages fail. Preserve the original AppError
+// message on the response when it exists.
+const preserveErrorMessage = (
+  errorResponse: ReturnType<typeof createErrorResponse>,
+  err: AppError,
+) => {
+  if (err.message && !(err as any).code) {
+    errorResponse.message = err.message;
+    errorResponse.error.message = err.message;
+    errorResponse.error.userMessage = err.message;
+  }
+  return errorResponse;
+};
+
 // Enviar error en desarrollo
 const sendErrorDev = (err: AppError, res: Response, req: Request) => {
   // Usar DTO de error localizado
@@ -50,7 +67,7 @@ const sendErrorDev = (err: AppError, res: Response, req: Request) => {
     req.path
   );
 
-  res.status(err.statusCode).json(errorResponse);
+  res.status(err.statusCode).json(preserveErrorMessage(errorResponse, err));
 };
 
 // Enviar error en producción
@@ -64,7 +81,7 @@ const sendErrorProd = (err: AppError, res: Response, req: Request) => {
       req.path
     );
 
-    res.status(err.statusCode).json(errorResponse);
+    res.status(err.statusCode).json(preserveErrorMessage(errorResponse, err));
   } else {
     // No enviar detalles de errores de programación
     logger.error('ERROR 💥', err);

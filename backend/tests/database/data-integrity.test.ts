@@ -9,11 +9,11 @@
  */
 
 import mongoose from 'mongoose';
-import { User } from '../../src/models/User';
-import { MedicalHistory } from '../../src/models/MedicalHistory';
-import { Appointment } from '../../src/models/Appointment';
-import { Prescription } from '../../src/models/Prescription';
-import { Alert } from '../../src/models/Alert';
+import User from '../../src/models/User';
+import MedicalHistory from '../../src/models/MedicalHistory';
+import Appointment from '../../src/models/Appointment';
+import Prescription from '../../src/models/Prescription';
+import Alert from '../../src/models/Alert';
 
 describe('MongoDB Data Integrity Tests', () => {
   beforeAll(async () => {

@@ -48,8 +48,8 @@ except ImportError:
 
 # Add paths
 sys.path.insert(0, os.path.dirname(__file__))
-# ml_models is in the parent directory, not in tests/
-parent_dir = os.path.dirname(os.path.dirname(__file__))
+# ml_models lives at ai-services/ml_models, which is 2 levels up from this test file (tests/ml_models/test_*.py)
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 ml_models_path = os.path.join(parent_dir, 'ml_models')
 sys.path.insert(0, ml_models_path)
 

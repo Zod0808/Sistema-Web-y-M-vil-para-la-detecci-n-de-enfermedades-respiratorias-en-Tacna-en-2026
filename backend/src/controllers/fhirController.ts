@@ -258,7 +258,7 @@ export const parseHl7ToFhir = asyncHandler(
     }
 
     try {
-      let observation = null;
+      let observation: any = null;
 
       if (format === 'v3' || format === 'xml') {
         // Parsear HL7 v3 XML

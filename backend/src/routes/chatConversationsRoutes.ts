@@ -44,7 +44,7 @@ const normalizeStringArray = (items: unknown): string[] => {
     try { parsed = JSON.parse(items); } catch { return [items]; }
   }
   if (!Array.isArray(parsed)) return [];
-  return (parsed as any[]).map(i => {
+  return (parsed).map(i => {
     if (typeof i === 'string') return i;
     if (typeof i === 'object' && i)
       return i.symptom ?? i.name ?? i.disease ?? i.token ?? String(i);
@@ -120,9 +120,9 @@ router.post('/:sessionId/messages', optionalAuth, async (req: AuthenticatedReque
     // Obtain AI response for user messages
     let assistantMessage: any = null;
     if (role === 'user') {
+      const aiServiceURL = process.env['AI_SERVICE_URL'] ?? 'http://ai-services:8000';
+      const chatAnalyzeURL = `${aiServiceURL}/api/v1/analyze`;
       try {
-        const aiServiceURL = process.env['AI_SERVICE_URL'] ?? 'http://ai-services:8000';
-        const chatAnalyzeURL = `${aiServiceURL}/api/v1/analyze`;
 
         const conversationHistory = conversation.messages
           .slice(-10)

@@ -39,7 +39,7 @@ export const syncWearableData = async (req: AuthenticatedRequest, res: Response)
     }
 
     // Validar y guardar datos
-    const savedData = [];
+    const savedData: any[] = [];
     for (const item of data) {
       const wearableData = new WearableData({
         patientId,

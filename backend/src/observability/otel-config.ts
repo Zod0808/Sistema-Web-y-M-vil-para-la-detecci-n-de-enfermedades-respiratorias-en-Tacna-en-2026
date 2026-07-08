@@ -25,10 +25,13 @@ type Meter = any;
 type Tracer = any;
 type Span = any;
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 let sdk: NodeSDK | null = null;
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 let meterProvider: MeterProvider | null = null;
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 let tracerProvider: TracerProvider | null = null;
-let businessMetrics: Map<string, any> = new Map();
+const businessMetrics: Map<string, any> = new Map();
 let shutdownFn: (() => Promise<void>) | null = null;
 
 /**
@@ -82,7 +85,7 @@ export async function initOpenTelemetry(): Promise<void> {
 
     // Configurar exportador de trazas
     const exporterType = (process.env.OTEL_EXPORTER || 'otlp').toLowerCase();
-    let traceExporter: OTLPTraceExporter | JaegerExporter;
+    let traceExporter: OTLPTraceExporter  ;
 
     if (exporterType === 'jaeger') {
       const { JaegerExporter } = await import('@opentelemetry/exporter-jaeger');

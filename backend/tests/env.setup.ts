@@ -5,8 +5,8 @@
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
 process.env.HOST = 'localhost';
-process.env.JWT_SECRET = 'test-jwt-secret';
-process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret';
+process.env.JWT_SECRET = 'test-jwt-secret-0123456789abcdef-32b';
+process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-0123456789abcdef-32b';
 process.env.JWT_EXPIRE = '7d';
 process.env.JWT_REFRESH_EXPIRE = '30d';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/respicare-test';

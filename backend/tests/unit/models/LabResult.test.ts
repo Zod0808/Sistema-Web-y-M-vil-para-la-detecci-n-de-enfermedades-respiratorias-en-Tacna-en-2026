@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import LabResultModel from '../../../src/models/LabResult';
+import { LabResult as LabResultModel } from '../../../src/models/LabResult';
 
 jest.mock('../../../src/utils/encryption', () => ({
   applyFieldEncryption: (_schema: any) => {},

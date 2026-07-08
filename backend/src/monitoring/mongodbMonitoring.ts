@@ -198,6 +198,7 @@ export function getSlowQueries(limit: number = 10): SlowQueryAlert[] {
  */
 export function setupMongooseMonitoring(): void {
   // Interceptar queries de Mongoose
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const originalExec = mongoose.Query.prototype.exec;
 
   mongoose.Query.prototype.exec = function(...args: any[]) {
@@ -205,7 +206,7 @@ export function setupMongooseMonitoring(): void {
     const collection = this.model?.collection?.name || 'unknown';
     const operation = this.op || 'find';
 
-    return originalExec.apply(this, args).then((result: any) => {
+    return originalExec.apply(this, args as []).then((result: any) => {
       const duration = Date.now() - start;
       
       // Registrar métrica

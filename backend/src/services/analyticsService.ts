@@ -243,7 +243,10 @@ class AnalyticsService {
       const totalAlertsInPeriod = Object.values(alertStatus).reduce((acc, value) => acc + value, 0);
 
       const predictiveInsights = this.buildPredictiveInsights(
-        symptomTimeline || [],
+        (symptomTimeline || []).map((item: any) => ({
+          date: item._id?.day ?? '',
+          total: item.total ?? 0,
+        })),
         topDiagnoses || [],
         appointmentLookup,
       );

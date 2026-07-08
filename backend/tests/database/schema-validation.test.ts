@@ -11,11 +11,11 @@
  */
 
 import mongoose from 'mongoose';
-import { User, UserDocument } from '../../src/models/User';
-import { MedicalHistory, MedicalHistoryDocument } from '../../src/models/MedicalHistory';
-import { Appointment, AppointmentDocument } from '../../src/models/Appointment';
-import { Prescription, PrescriptionDocument } from '../../src/models/Prescription';
-import { Alert, AlertDocument } from '../../src/models/Alert';
+import User, { UserDocument } from '../../src/models/User';
+import MedicalHistory, { MedicalHistoryDocument } from '../../src/models/MedicalHistory';
+import Appointment, { AppointmentDocument } from '../../src/models/Appointment';
+import Prescription, { PrescriptionDocument } from '../../src/models/Prescription';
+import Alert, { AlertDocument } from '../../src/models/Alert';
 
 describe('MongoDB Schema Validation Tests', () => {
   beforeAll(async () => {

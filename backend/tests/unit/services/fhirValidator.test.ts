@@ -219,4 +219,98 @@ describe('fhirValidator', () => {
       expect(result.errors).toHaveLength(0);
     });
   });
+
+  describe('validadores de recursos adicionales', () => {
+    const code = { coding: [{ system: 'http://loinc.org', code: '1234-5' }] };
+    const subject = { reference: 'Patient/1' };
+
+    it('Medication válido e inválido', () => {
+      expect(validateFhirResource({ resourceType: 'Medication', code } as any).valid).toBe(true);
+      const bad = validateFhirResource({ resourceType: 'Medication' } as any);
+      expect(bad.valid).toBe(false);
+      expect(bad.errors.some((e) => e.path === 'code')).toBe(true);
+    });
+
+    it('MedicationStatement válido, sin campos e inválido por status', () => {
+      expect(
+        validateFhirResource({
+          resourceType: 'MedicationStatement',
+          status: 'active',
+          medicationCodeableConcept: code,
+          subject,
+        } as any).valid
+      ).toBe(true);
+
+      const missing = validateFhirResource({ resourceType: 'MedicationStatement' } as any);
+      expect(missing.valid).toBe(false);
+      expect(missing.errors.length).toBeGreaterThanOrEqual(3);
+
+      const badStatus = validateFhirResource({
+        resourceType: 'MedicationStatement',
+        status: 'no-existe',
+        medicationReference: subject,
+        subject,
+      } as any);
+      expect(badStatus.errors.some((e) => e.code === 'invalid-value')).toBe(true);
+    });
+
+    it('Procedure válido e inválido', () => {
+      expect(
+        validateFhirResource({ resourceType: 'Procedure', status: 'completed', code, subject } as any).valid
+      ).toBe(true);
+      expect(validateFhirResource({ resourceType: 'Procedure', status: 'x' } as any).valid).toBe(false);
+    });
+
+    it('DiagnosticReport válido e inválido', () => {
+      expect(
+        validateFhirResource({ resourceType: 'DiagnosticReport', status: 'final', code, subject } as any).valid
+      ).toBe(true);
+      expect(validateFhirResource({ resourceType: 'DiagnosticReport' } as any).valid).toBe(false);
+    });
+
+    it('Encounter válido e inválido', () => {
+      expect(
+        validateFhirResource({
+          resourceType: 'Encounter',
+          status: 'finished',
+          class: { code: 'AMB' },
+          subject,
+        } as any).valid
+      ).toBe(true);
+      const bad = validateFhirResource({ resourceType: 'Encounter', status: 'bad' } as any);
+      expect(bad.errors.some((e) => e.path === 'class')).toBe(true);
+    });
+
+    it('AllergyIntolerance válido e inválido', () => {
+      expect(
+        validateFhirResource({
+          resourceType: 'AllergyIntolerance',
+          clinicalStatus: { coding: [{ code: 'active' }] },
+          verificationStatus: { coding: [{ code: 'confirmed' }] },
+          code,
+          patient: subject,
+        } as any).valid
+      ).toBe(true);
+      const bad = validateFhirResource({ resourceType: 'AllergyIntolerance' } as any);
+      expect(bad.errors.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it('Immunization válido e inválido por status', () => {
+      expect(
+        validateFhirResource({
+          resourceType: 'Immunization',
+          status: 'completed',
+          vaccineCode: code,
+          patient: subject,
+        } as any).valid
+      ).toBe(true);
+      const badStatus = validateFhirResource({
+        resourceType: 'Immunization',
+        status: 'invalido',
+        vaccineCode: code,
+        patient: subject,
+      } as any);
+      expect(badStatus.errors.some((e) => e.code === 'invalid-value')).toBe(true);
+    });
+  });
 });

@@ -332,7 +332,7 @@ export class LaboratoryIntegrationService {
         },
         effectiveDateTime: result.date.toISOString(),
         valueQuantity: {
-          value: typeof result.value === 'number' ? result.value : parseFloat(result.value as string),
+          value: typeof result.value === 'number' ? result.value : parseFloat(result.value),
           unit: result.unit,
           system: 'http://unitsofmeasure.org',
           code: result.unit,

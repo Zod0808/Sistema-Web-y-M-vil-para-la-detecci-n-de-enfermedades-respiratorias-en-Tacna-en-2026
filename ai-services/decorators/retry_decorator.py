@@ -346,3 +346,30 @@ def with_conditional_retry(
         )
         return retry_decorator(func)
     return decorator
+
+
+# Backward-compatible aliases for tests. `retry_decorator` is a public alias for
+# `with_retry`, and `RetryConfig` is a thin dataclass-like wrapper accepted by it.
+from dataclasses import dataclass as _dataclass
+
+@_dataclass
+class RetryConfig:
+    max_attempts: int = 3
+    delay: float = 1.0
+    backoff_multiplier: float = 2.0
+    max_delay: float = 60.0
+    exceptions: tuple = (Exception,)
+    jitter: bool = True
+
+
+def retry_decorator(config: 'RetryConfig | None' = None, **kwargs):
+    if config is not None:
+        return with_retry(
+            max_attempts=config.max_attempts,
+            delay=config.delay,
+            backoff_multiplier=config.backoff_multiplier,
+            max_delay=config.max_delay,
+            exceptions=config.exceptions,
+            jitter=config.jitter,
+        )
+    return with_retry(**kwargs)

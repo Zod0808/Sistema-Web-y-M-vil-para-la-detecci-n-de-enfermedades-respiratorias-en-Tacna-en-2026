@@ -65,7 +65,7 @@ export class FeatureFlagService {
   private provider: FeatureFlagProvider;
   private launchDarklyClient: AxiosInstance | null = null;
   private memoryFlags: Map<string, FeatureFlagDefinition> = new Map();
-  private config: FeatureFlagConfig;
+  private config: FeatureFlagConfig & { provider: FeatureFlagProvider };
   private cache: Map<string, { value: FeatureFlag; expires: number }> = new Map();
 
   constructor(config: FeatureFlagConfig = {}) {

@@ -201,7 +201,7 @@ class TelemedicineService {
     const config = this.providers[provider]
 
     switch (provider) {
-      case 'jitsi':
+      case 'jitsi': {
         const jitsiUrl = `${config.baseUrl}/${encodeURIComponent(roomName)}`
         const params = new URLSearchParams()
         if (token) params.append('jwt', token)
@@ -212,6 +212,7 @@ class TelemedicineService {
         params.append('config.enableScreenSharing', call.screenSharingEnabled ? 'true' : 'false')
         params.append('config.enableRecording', call.recordingEnabled ? 'true' : 'false')
         return `${jitsiUrl}?${params.toString()}`
+      }
 
       case 'zoom':
         // Integración con Zoom SDK requeriría configuración adicional

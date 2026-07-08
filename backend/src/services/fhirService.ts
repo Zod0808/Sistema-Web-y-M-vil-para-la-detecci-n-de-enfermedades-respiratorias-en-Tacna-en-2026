@@ -147,7 +147,7 @@ export class FhirService {
     }
 
     const existingTags = Array.isArray((resource.meta as { tag?: unknown[] })?.tag)
-      ? ((resource.meta as { tag?: unknown[] })!.tag as unknown[])
+      ? ((resource.meta as { tag?: unknown[] }).tag as unknown[])
       : [];
 
     return {

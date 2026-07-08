@@ -220,3 +220,8 @@ def with_external_service_circuit_breaker(service_name: str, base_url: str, **kw
         )
         return circuit_breaker_decorator(func)
     return decorator
+
+
+# Backward-compatible alias for tests importing `circuit_breaker_decorator` at
+# module level (they expect the factory to be exposed with the module name).
+circuit_breaker_decorator = with_circuit_breaker

@@ -23,6 +23,7 @@ import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 import { vitalsEmitter, VitalsReading } from './vitalsEmitter';
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type DoctorSocket = WebSocket & {
   userId?: string;
   subscribedPatients: Set<string>;

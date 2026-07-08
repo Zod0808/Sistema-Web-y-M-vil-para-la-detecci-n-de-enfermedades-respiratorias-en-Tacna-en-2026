@@ -1,219 +1,332 @@
-/**
- * Unit tests for Alert Controller
- */
+import { Types } from 'mongoose';
+import * as controller from '../../../src/controllers/alertController';
 
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import {
-  createCriticalSymptomAlert,
-  scheduleMedicationReminder,
-  getUserAlerts,
-  processAlertsNow,
-  getAlertMonitoringMetrics,
-} from '../../../src/controllers/alertController';
-import { alertService } from '../../../src/services/alertService';
-import { notificationService } from '../../../src/services/notificationService';
-import alertMonitoringService from '../../../src/services/alertMonitoringService';
-import { AppError } from '../../../src/utils/AppError';
+jest.mock('../../../src/utils/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
 
-jest.mock('../../../src/services/alertService');
-jest.mock('../../../src/services/notificationService');
-jest.mock('../../../src/services/alertMonitoringService');
+jest.mock('../../../src/services/alertService', () => ({
+  alertService: {
+    createCriticalSymptomAlert: jest.fn(),
+    scheduleMedicationReminder: jest.fn(),
+    scheduleFollowUpAlert: jest.fn(),
+    notifyDoctorForCriticalCase: jest.fn(),
+    acknowledgeAlert: jest.fn(),
+    getAlertsForUser: jest.fn(),
+    getDashboardSummary: jest.fn(),
+    processPendingAlerts: jest.fn(),
+  },
+}));
 
-const mockResponse = () => {
-  const res = {} as Response;
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  return res;
-};
+jest.mock('../../../src/services/notificationService', () => ({
+  notificationService: {
+    processScheduledQueue: jest.fn(),
+  },
+}));
 
-const createRequest = (options: Partial<Request & { user?: any }> = {}): Request & { user?: any } => ({
+jest.mock('../../../src/services/alertMonitoringService', () => ({
+  __esModule: true,
+  default: {
+    getSnapshot: jest.fn(),
+  },
+}));
+
+const { alertService } = require('../../../src/services/alertService');
+const { notificationService } = require('../../../src/services/notificationService');
+const alertMonitoringService = require('../../../src/services/alertMonitoringService').default;
+
+const buildReq = (overrides: Partial<any> = {}): any => ({
+  user: { _id: new Types.ObjectId().toHexString(), role: 'doctor' },
   body: {},
   params: {},
   query: {},
-  user: {
-    _id: new mongoose.Types.ObjectId().toHexString(),
-    role: 'doctor',
-  },
-  ...options,
+  ...overrides,
 });
 
-describe('Alert Controller - createCriticalSymptomAlert', () => {
-  it('crea una alerta crítica usando el servicio', async () => {
-    const mockAlert = { _id: 'alert-id', status: 'pending' };
-    (alertService.createCriticalSymptomAlert as jest.Mock).mockResolvedValue(mockAlert);
+const buildRes = () => {
+  const json = jest.fn();
+  const status = jest.fn().mockReturnValue({ json });
+  return { status, json } as any;
+};
 
-    const req = createRequest({
-      body: {
-        userId: 'user-id',
-        symptomName: 'tos',
-        severity: 'high',
-      },
+const flushMicrotasks = () => new Promise((resolve) => setImmediate(resolve));
+
+const runHandler = async (handler: any, req: any, res = buildRes(), next = jest.fn()) => {
+  await handler(req, res, next);
+  await flushMicrotasks();
+  return { res, next };
+};
+
+const expectStatusError = (next: jest.Mock, code: number) => {
+  expect(next).toHaveBeenCalled();
+  const arg = next.mock.calls[0]?.[0];
+  expect(arg).toBeInstanceOf(Error);
+  expect(arg.statusCode).toBe(code);
+};
+
+describe('alertController', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('createCriticalSymptomAlert', () => {
+    it('201 delegando al servicio con doctorId inferido del usuario', async () => {
+      const alert = { _id: 'a1', status: 'pending' };
+      alertService.createCriticalSymptomAlert.mockResolvedValue(alert);
+
+      const req = buildReq({
+        body: { userId: 'u1', symptomName: 'tos', severity: 'high' },
+      });
+      const { res } = await runHandler(controller.createCriticalSymptomAlert, req);
+
+      expect(alertService.createCriticalSymptomAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ doctorId: req.user._id, userId: 'u1' }),
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
     });
-    const res = mockResponse();
 
-    await createCriticalSymptomAlert(req, res);
-
-    expect(alertService.createCriticalSymptomAlert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user-id',
-        symptomName: 'tos',
-        severity: 'high',
-        doctorId: req.user?._id,
-      })
-    );
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: mockAlert,
-      })
-    );
-  });
-});
-
-describe('Alert Controller - scheduleMedicationReminder', () => {
-  it('lanza AppError si falta scheduleTime', async () => {
-    const req = createRequest({
-      body: {},
+    it('propaga error del servicio', async () => {
+      alertService.createCriticalSymptomAlert.mockRejectedValue(new Error('boom'));
+      const { next } = await runHandler(
+        controller.createCriticalSymptomAlert,
+        buildReq({ body: {} }),
+      );
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
-    const res = mockResponse();
-
-    await expect(scheduleMedicationReminder(req, res)).rejects.toBeInstanceOf(AppError);
-  });
-
-  it('programa un recordatorio de medicamento', async () => {
-    const mockAlert = { _id: 'alert-id', status: 'scheduled' };
-    (alertService.scheduleMedicationReminder as jest.Mock).mockResolvedValue(mockAlert);
-
-    const req = createRequest({
-      body: {
-        userId: 'patient-id',
-        medicationName: 'Ibuprofeno',
-        dosage: '200mg',
-        scheduleTime: new Date().toISOString(),
-      },
-    });
-    const res = mockResponse();
-
-    await scheduleMedicationReminder(req, res);
-
-    expect(alertService.scheduleMedicationReminder).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'patient-id',
-        medicationName: 'Ibuprofeno',
-        doctorId: req.user?._id,
-      })
-    );
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: mockAlert,
-      })
-    );
-  });
-});
-
-describe('Alert Controller - getUserAlerts', () => {
-  it('obtiene alertas del usuario autenticado cuando no es admin', async () => {
-    const req = createRequest({
-      user: {
-        _id: 'patient-id',
-        role: 'patient',
-      },
-    });
-    const res = mockResponse();
-
-    const mockAlerts = [{ _id: 'alert1' }];
-    (alertService.getAlertsForUser as jest.Mock).mockResolvedValue(mockAlerts);
-
-    await getUserAlerts(req, res);
-
-    expect(alertService.getAlertsForUser).toHaveBeenCalledWith('patient-id', expect.any(Object));
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: mockAlerts,
-      })
-    );
   });
 
-  it('permite a admin consultar alertas de otro usuario', async () => {
-    const req = createRequest({
-      user: { _id: 'admin-id', role: 'admin' },
-      query: { userId: 'target-id', status: ['pending', 'delivered'] },
+  describe('scheduleMedicationReminder', () => {
+    it('201 programa recordatorio con scheduleTime válido', async () => {
+      alertService.scheduleMedicationReminder.mockResolvedValue({ _id: 'a1' });
+      const { res } = await runHandler(
+        controller.scheduleMedicationReminder,
+        buildReq({
+          body: {
+            userId: 'p1',
+            medicationName: 'Ibuprofeno',
+            dosage: '200mg',
+            scheduleTime: new Date().toISOString(),
+          },
+        }),
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
     });
-    const res = mockResponse();
-    const mockAlerts = [{ _id: 'alert1' }];
 
-    (alertService.getAlertsForUser as jest.Mock).mockResolvedValue(mockAlerts);
+    it('400 cuando falta scheduleTime', async () => {
+      const { next } = await runHandler(
+        controller.scheduleMedicationReminder,
+        buildReq({ body: {} }),
+      );
+      expectStatusError(next, 400);
+    });
 
-    await getUserAlerts(req, res);
-
-    expect(alertService.getAlertsForUser).toHaveBeenCalledWith(
-      'target-id',
-      expect.objectContaining({
-        status: ['pending', 'delivered'],
-      })
-    );
+    it('400 cuando scheduleTime es inválido', async () => {
+      const { next } = await runHandler(
+        controller.scheduleMedicationReminder,
+        buildReq({ body: { scheduleTime: 'not-a-date' } }),
+      );
+      expectStatusError(next, 400);
+    });
   });
-});
 
-describe('Alert Controller - processAlertsNow', () => {
-  it('procesa alertas programadas y pendientes', async () => {
-    (notificationService.processScheduledQueue as jest.Mock).mockResolvedValue(2);
-    (alertService.processPendingAlerts as jest.Mock).mockResolvedValue({
-      processed: 3,
-      delivered: 3,
-      failed: 0,
+  describe('scheduleFollowUpAlert', () => {
+    it('201 con followUpDate válido', async () => {
+      alertService.scheduleFollowUpAlert.mockResolvedValue({ _id: 'a1' });
+      const { res } = await runHandler(
+        controller.scheduleFollowUpAlert,
+        buildReq({
+          body: { userId: 'p1', followUpDate: new Date().toISOString(), reason: 'checkup' },
+        }),
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
     });
 
-    const req = createRequest();
-    const res = mockResponse();
+    it('400 cuando falta followUpDate', async () => {
+      const { next } = await runHandler(
+        controller.scheduleFollowUpAlert,
+        buildReq({ body: {} }),
+      );
+      expectStatusError(next, 400);
+    });
+  });
 
-    await processAlertsNow(req, res);
+  describe('notifyDoctorForCriticalCase', () => {
+    it('201 con alerta creada', async () => {
+      alertService.notifyDoctorForCriticalCase.mockResolvedValue({ _id: 'a1' });
+      const { res } = await runHandler(
+        controller.notifyDoctorForCriticalCase,
+        buildReq({
+          body: {
+            doctorId: 'd1',
+            patientId: 'p1',
+            summary: 'Caso crítico',
+            urgency: 'high',
+          },
+        }),
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+  });
 
-    expect(notificationService.processScheduledQueue).toHaveBeenCalled();
-    expect(alertService.processPendingAlerts).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          scheduledProcessed: 2,
-          pendingResult: expect.objectContaining({
-            processed: 3,
+  describe('acknowledgeAlert', () => {
+    it('200 al reconocer una alerta con ObjectId válido', async () => {
+      const alertId = new Types.ObjectId().toHexString();
+      alertService.acknowledgeAlert.mockResolvedValue({ _id: alertId, status: 'acknowledged' });
+      const { res } = await runHandler(
+        controller.acknowledgeAlert,
+        buildReq({ params: { alertId } }),
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(alertService.acknowledgeAlert).toHaveBeenCalled();
+    });
+
+    it('401 sin usuario autenticado', async () => {
+      const { next } = await runHandler(
+        controller.acknowledgeAlert,
+        buildReq({ user: null, params: { alertId: new Types.ObjectId().toHexString() } }),
+      );
+      expectStatusError(next, 401);
+    });
+
+    it('400 con alertId inválido', async () => {
+      const { next } = await runHandler(
+        controller.acknowledgeAlert,
+        buildReq({ params: { alertId: 'not-an-object-id' } }),
+      );
+      expectStatusError(next, 400);
+    });
+  });
+
+  describe('getUserAlerts', () => {
+    it('200 usa userId del usuario autenticado (paciente)', async () => {
+      const req = buildReq({
+        user: { _id: 'patient-1', role: 'patient' },
+      });
+      alertService.getAlertsForUser.mockResolvedValue([{ _id: 'a1' }]);
+
+      const { res } = await runHandler(controller.getUserAlerts, req);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(alertService.getAlertsForUser).toHaveBeenCalledWith(
+        'patient-1',
+        expect.any(Object),
+      );
+    });
+
+    it('admin puede consultar alertas de otro userId', async () => {
+      const req = buildReq({
+        user: { _id: 'admin-1', role: 'admin' },
+        query: { userId: 'target-1' },
+      });
+      alertService.getAlertsForUser.mockResolvedValue([]);
+
+      await runHandler(controller.getUserAlerts, req);
+
+      expect(alertService.getAlertsForUser).toHaveBeenCalledWith(
+        'target-1',
+        expect.any(Object),
+      );
+    });
+
+    it('doctor puede consultar por patientId', async () => {
+      const req = buildReq({
+        user: { _id: 'doc-1', role: 'doctor' },
+        query: { patientId: 'p1' },
+      });
+      alertService.getAlertsForUser.mockResolvedValue([]);
+
+      await runHandler(controller.getUserAlerts, req);
+
+      expect(alertService.getAlertsForUser).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ patientId: 'p1' }),
+      );
+    });
+
+    it('aplica filtros status/category/priority como arrays', async () => {
+      const req = buildReq({
+        query: {
+          status: ['pending', 'delivered'],
+          category: 'symptom',
+          priority: ['high'],
+          doctorId: 'd1',
+        },
+      });
+      alertService.getAlertsForUser.mockResolvedValue([]);
+
+      await runHandler(controller.getUserAlerts, req);
+
+      const filters = alertService.getAlertsForUser.mock.calls[0][1];
+      expect(filters.status).toEqual(['pending', 'delivered']);
+      expect(filters.category).toEqual(['symptom']);
+      expect(filters.priority).toEqual(['high']);
+      expect(filters.doctorId).toBe('d1');
+    });
+
+    it('parsea from/to como Date', async () => {
+      alertService.getAlertsForUser.mockResolvedValue([]);
+      await runHandler(
+        controller.getUserAlerts,
+        buildReq({ query: { from: '2026-01-01', to: '2026-04-01' } }),
+      );
+      const filters = alertService.getAlertsForUser.mock.calls[0][1];
+      expect(filters.from).toBeInstanceOf(Date);
+      expect(filters.to).toBeInstanceOf(Date);
+    });
+
+    it('400 cuando from es una fecha inválida', async () => {
+      const { next } = await runHandler(
+        controller.getUserAlerts,
+        buildReq({ query: { from: 'invalid' } }),
+      );
+      expectStatusError(next, 400);
+    });
+
+    it('401 sin usuario autenticado', async () => {
+      const { next } = await runHandler(
+        controller.getUserAlerts,
+        buildReq({ user: null }),
+      );
+      expectStatusError(next, 401);
+    });
+  });
+
+  describe('getAlertDashboardSummary', () => {
+    it('200 con el resumen del servicio', async () => {
+      alertService.getDashboardSummary.mockResolvedValue({ total: 10 });
+      const { res } = await runHandler(controller.getAlertDashboardSummary, buildReq());
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('getAlertMonitoringMetrics', () => {
+    it('200 con snapshot de monitoreo', async () => {
+      alertMonitoringService.getSnapshot.mockResolvedValue({ queue: {}, alerts: {}, recentFailures: [] });
+      const { res } = await runHandler(controller.getAlertMonitoringMetrics, buildReq());
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(alertMonitoringService.getSnapshot).toHaveBeenCalled();
+    });
+  });
+
+  describe('processAlertsNow', () => {
+    it('200 con conteos procesados', async () => {
+      notificationService.processScheduledQueue.mockResolvedValue(2);
+      alertService.processPendingAlerts.mockResolvedValue({ processed: 3, delivered: 3, failed: 0 });
+
+      const res = buildRes();
+      const json = jest.fn();
+      res.status = jest.fn().mockReturnValue({ json });
+
+      await controller.processAlertsNow(buildReq(), res, jest.fn());
+      await flushMicrotasks();
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            scheduledProcessed: 2,
+            pendingResult: expect.objectContaining({ processed: 3 }),
           }),
         }),
-      })
-    );
+      );
+    });
   });
 });
-
-describe('Alert Controller - getAlertMonitoringMetrics', () => {
-  it('retorna snapshot de monitoreo', async () => {
-    const snapshot = {
-      queue: { scheduledSize: 2, nextScheduledAt: new Date(), nextScheduledAlertId: 'a1', scheduledWithinHour: 1 },
-      alerts: { pending: 1, scheduled: 1, failed: 0, deliveredToday: 3, failedLast24h: 0, criticalOpen: 0 },
-      recentFailures: [],
-    };
-    (alertMonitoringService.getSnapshot as jest.Mock).mockResolvedValue(snapshot);
-
-    const req = createRequest();
-    const res = mockResponse();
-
-    await getAlertMonitoringMetrics(req, res);
-
-    expect(alertMonitoringService.getSnapshot).toHaveBeenCalledTimes(1);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: snapshot,
-      })
-    );
-  });
-});
-

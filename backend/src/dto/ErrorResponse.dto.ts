@@ -6,6 +6,8 @@
 
 export interface ErrorResponseDTO {
   success: false;
+  /** Top-level message mirrors error.userMessage for legacy API consumers. */
+  message: string;
   error: {
     code: string;
     message: string;

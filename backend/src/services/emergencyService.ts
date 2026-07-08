@@ -123,7 +123,7 @@ export class EmergencyService {
           const ambulanceDispatch = await ambulanceService.dispatchAmbulance(request);
           logger.info('Ambulancia despachada automáticamente', {
             ambulanceId: ambulanceDispatch.ambulanceId,
-            emergencyId: emergencyResponse?.emergencyId,
+            emergencyId: (emergencyResponse as EmergencyResponse | null)?.emergencyId,
           });
         } catch (error: any) {
           logger.warn(`Error al despachar ambulancia: ${error.message}`, {
@@ -167,7 +167,7 @@ export class EmergencyService {
         },
       });
 
-      return emergencyResponse!;
+      return emergencyResponse;
     } catch (error: any) {
       logger.error(`Error al crear emergencia: ${error.message}`, {
         userId: request.userId,

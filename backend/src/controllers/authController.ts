@@ -160,7 +160,7 @@ export const refreshToken = asyncHandler(async (req: AuthenticatedRequest, res: 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { userId: string };
     
     // Buscar usuario
-    const user = await User.findById(decoded.userId) as UserDocument | null;
+    const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
       throw new AppError('Usuario no encontrado o inactivo', 401);
     }
@@ -406,7 +406,7 @@ export const adminToggleUserActive = asyncHandler(async (req: AuthenticatedReque
 
   const { id } = req.params;
 
-  if (id === (req.user._id as mongoose.Types.ObjectId).toString()) {
+  if (id === String(req.user._id)) {
     throw new AppError('No puedes desactivar tu propia cuenta', 400);
   }
 

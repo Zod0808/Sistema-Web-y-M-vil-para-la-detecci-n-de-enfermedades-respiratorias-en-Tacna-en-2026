@@ -1,6 +1,7 @@
 // DTO para Respuesta de Usuario - Capa de Interfaz
 import { UserEntity, UserRole } from '../../domain/entities/User';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface UserResponseDto {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ export interface UserResponseDto {
   updatedAt: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class UserResponseDto {
   static fromEntity(user: UserEntity): UserResponseDto {
     const dto: UserResponseDto = {

@@ -54,8 +54,8 @@ export const createEmergency = asyncHandler(
     }
 
     const emergencyRequest: EmergencyRequest = {
-      userId: req.user?._id?.toString(),
-      patientId: patientId || req.user?._id?.toString(),
+      userId: String(req.user?._id ?? ''),
+      patientId: String(patientId ?? req.user?._id ?? ''),
       patientName: patientName || req.user?.name,
       emergencyType,
       severity,

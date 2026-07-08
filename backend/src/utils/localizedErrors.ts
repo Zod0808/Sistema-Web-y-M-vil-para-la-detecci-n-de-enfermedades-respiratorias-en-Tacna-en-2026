@@ -147,6 +147,7 @@ export function formatErrorResponse(
   technicalDetails?: any
 ): {
   success: false;
+  message: string;
   error: {
     code: string;
     message: string;
@@ -157,9 +158,12 @@ export function formatErrorResponse(
   };
 } {
   const localized = getLocalizedError(code, field);
-  
+
   return {
     success: false,
+    // Legacy top-level mirror of userMessage for API consumers that still read
+    // `response.body.message` (older clients + existing test suites).
+    message: localized.userMessage,
     error: {
       code: localized.code,
       message: localized.message,

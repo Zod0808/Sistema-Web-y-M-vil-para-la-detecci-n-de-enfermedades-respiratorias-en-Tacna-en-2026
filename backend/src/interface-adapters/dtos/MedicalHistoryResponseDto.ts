@@ -2,6 +2,7 @@
 import { MedicalHistoryEntity, SyncStatus } from '../../domain/entities/MedicalHistory';
 import { SymptomSeverity } from '../../domain/value-objects/Symptom';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface MedicalHistoryResponseDto {
   id: string;
   patientId: string;
@@ -30,6 +31,7 @@ export interface MedicalHistoryResponseDto {
   updatedAt: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class MedicalHistoryResponseDto {
   static fromEntity(medicalHistory: MedicalHistoryEntity): MedicalHistoryResponseDto {
     const dto: MedicalHistoryResponseDto = {

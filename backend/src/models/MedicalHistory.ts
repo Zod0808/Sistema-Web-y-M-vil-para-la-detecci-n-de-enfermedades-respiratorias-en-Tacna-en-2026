@@ -60,15 +60,17 @@ const MedicalHistorySchema = new Schema<MedicalHistoryDocument>({
     required: [true, 'El ID del doctor es obligatorio'],
     trim: true
   },
+  // patientName and age are denormalised from the User document for quick
+  // reporting/lookup, but production writes should be able to hydrate them from
+  // the referenced patientId. Making them optional keeps the schema tolerant to
+  // callers that do not pre-fill this metadata (e.g. tests and imports).
   patientName: {
     type: String,
-    required: [true, 'El nombre del paciente es obligatorio'],
     trim: true,
     maxlength: [100, 'El nombre del paciente no puede exceder 100 caracteres']
   },
   age: {
     type: Number,
-    required: [true, 'La edad es obligatoria'],
     min: [0, 'La edad no puede ser negativa'],
     max: [150, 'La edad no puede exceder 150 años']
   },

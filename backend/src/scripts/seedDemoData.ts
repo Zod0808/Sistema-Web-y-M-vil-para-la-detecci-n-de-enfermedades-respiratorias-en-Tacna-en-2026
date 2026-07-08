@@ -645,7 +645,7 @@ type DoctorPatientContext = {
 function buildSymptomList(minCount: number, maxCount: number): Array<{ name: string; severity: string; duration: string; description?: string }> {
   const symptomCount = randomInt(minCount, maxCount);
   const selected = new Set<string>();
-  const symptoms = [];
+  const symptoms: Array<{ name: string; severity: 'mild' | 'moderate' | 'severe'; duration: string; description: string }> = [];
 
   while (symptoms.length < symptomCount) {
     const symptomName = randomItem(SYMPTOMS);
@@ -797,7 +797,7 @@ async function seedAIAnalyses(medicalHistoryIds: string[]): Promise<number> {
   histories.forEach((history) => {
     const analysisCount = randomInt(SEED_CONFIG.aiAnalysesPerHistoryMin, SEED_CONFIG.aiAnalysesPerHistoryMax);
     for (let index = 0; index < analysisCount; index += 1) {
-      const timestamp = new Date((history.date as Date).getTime() + randomInt(0, 4) * 60 * 60 * 1000);
+      const timestamp = new Date((history.date).getTime() + randomInt(0, 4) * 60 * 60 * 1000);
       const urgency = chooseUrgency();
       const confidence =
         urgency === 'critical'

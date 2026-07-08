@@ -9,9 +9,9 @@
  */
 
 import mongoose from 'mongoose';
-import { User } from '../../src/models/User';
-import { MedicalHistory } from '../../src/models/MedicalHistory';
-import { Appointment } from '../../src/models/Appointment';
+import User from '../../src/models/User';
+import MedicalHistory from '../../src/models/MedicalHistory';
+import Appointment from '../../src/models/Appointment';
 
 describe('MongoDB Aggregations Tests', () => {
   beforeAll(async () => {

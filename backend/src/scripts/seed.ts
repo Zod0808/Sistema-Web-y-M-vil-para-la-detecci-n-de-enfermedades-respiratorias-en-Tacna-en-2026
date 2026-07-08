@@ -189,10 +189,10 @@ async function clearDatabase(): Promise<void> {
 
 async function seedUsers(): Promise<{ doctors: any[], patients: any[], admin: any }> {
   try {
-    const users = [];
-    const doctors = [];
-    const patients = [];
-    let admin = null;
+    const users: any[] = [];
+    const doctors: any[] = [];
+    const patients: any[] = [];
+    let admin: any = null;
 
     for (const userData of sampleUsers) {
       const hashedPassword = await bcrypt.hash(userData.password, 12);
@@ -225,7 +225,7 @@ async function seedUsers(): Promise<{ doctors: any[], patients: any[], admin: an
 
 async function seedMedicalHistories(doctors: any[], patients: any[]): Promise<void> {
   try {
-    const medicalHistories = [];
+    const medicalHistories: any[] = [];
 
     for (let i = 0; i < sampleMedicalHistories.length; i++) {
       const historyData = sampleMedicalHistories[i];

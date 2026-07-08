@@ -30,6 +30,7 @@ jest.mock('../../../src/models/SymptomReport', () => ({
 jest.mock('../../../src/services/epidemiologicalService', () => ({
   epidemiologicalService: {
     predictOutbreaks: jest.fn(),
+    getDistrictTrends: jest.fn(),
   },
 }));
 

@@ -25,6 +25,7 @@ import { checkThresholdsAndAlert } from '../services/wearableAlertService';
 import { logger } from '../utils/logger';
 import { vitalsEmitter } from './vitalsEmitter';
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type AuthenticatedSocket = WebSocket & {
   patientId?: string;
   userId?: string;
@@ -134,7 +135,7 @@ export function attachWearableWebSocket(httpServer: HttpServer): WebSocketServer
           });
 
           // Verificar umbrales y emitir alertas si corresponde
-          const alerts = await checkThresholdsAndAlert(ws.patientId!, {
+          const alerts = await checkThresholdsAndAlert(ws.patientId, {
             heartRate: reading.heartRate,
             oxygenSaturation: reading.oxygenSaturation ?? reading.spO2,
             steps: reading.steps,

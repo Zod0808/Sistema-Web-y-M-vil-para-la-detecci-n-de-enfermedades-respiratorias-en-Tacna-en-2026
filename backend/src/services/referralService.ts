@@ -88,7 +88,7 @@ class ReferralService {
         channels: ['push', 'in_app'],
         trigger: {
           source: 'referral',
-          referenceId: referral._id.toString(),
+          referenceId: String(referral._id),
         },
       });
     } else {
@@ -96,7 +96,7 @@ class ReferralService {
       const admins = await UserModel.find({ role: 'admin', isActive: true });
       for (const admin of admins) {
         await alertService.createAlert({
-          userId: admin._id.toString(),
+          userId: String(admin._id),
           title: 'Nuevo Referido Pendiente de Asignación',
           message: `Nuevo referido de ${payload.referringDoctorName} para ${payload.patientName} - ${payload.referredToSpecialty || 'Especialidad no especificada'}`,
           category: 'referral',
@@ -104,14 +104,14 @@ class ReferralService {
           channels: ['push', 'in_app'],
           trigger: {
             source: 'referral',
-            referenceId: referral._id.toString(),
+            referenceId: String(referral._id),
           },
         });
       }
     }
 
     logger.info('Referido creado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       patientId: payload.patientId,
       referringDoctorId: payload.referringDoctorId,
     });
@@ -229,7 +229,7 @@ class ReferralService {
     await referral.save();
 
     logger.info('Referido actualizado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       updatedBy,
     });
 
@@ -272,12 +272,12 @@ class ReferralService {
       channels: ['push', 'in_app'],
       trigger: {
         source: 'referral',
-        referenceId: referral._id.toString(),
+        referenceId: String(referral._id),
       },
     });
 
     logger.info('Referido aceptado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       acceptedBy,
     });
 
@@ -312,12 +312,12 @@ class ReferralService {
       channels: ['push', 'in_app'],
       trigger: {
         source: 'referral',
-        referenceId: referral._id.toString(),
+        referenceId: String(referral._id),
       },
     });
 
     logger.info('Referido rechazado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       rejectedBy,
     });
 
@@ -352,12 +352,12 @@ class ReferralService {
       channels: ['push', 'in_app'],
       trigger: {
         source: 'referral',
-        referenceId: referral._id.toString(),
+        referenceId: String(referral._id),
       },
     });
 
     logger.info('Referido completado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       completedBy,
     });
 
@@ -381,7 +381,7 @@ class ReferralService {
     await referral.save();
 
     logger.info('Referido cancelado', {
-      referralId: referral._id.toString(),
+      referralId: String(referral._id),
       cancelledBy,
     });
 

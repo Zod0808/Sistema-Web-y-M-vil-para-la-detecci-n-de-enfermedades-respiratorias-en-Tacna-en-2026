@@ -71,6 +71,7 @@ const AppointmentSchema = new Schema<AppointmentDocument, AppointmentModel>(
       type: Date,
       required: true,
       index: true,
+      alias: 'date',
     },
     durationMinutes: {
       type: Number,
@@ -131,6 +132,20 @@ const AppointmentSchema = new Schema<AppointmentDocument, AppointmentModel>(
   }
 );
 
+// Backfill legacy field names before validation runs so callers that still use
+// { date, ... } (import scripts, older tests) satisfy the schema. Also default
+// createdBy to doctorId when the caller did not explicitly track the actor.
+AppointmentSchema.pre('validate', function (next) {
+  const self = this as any;
+  if (!self.scheduledAt && self.date instanceof Date) {
+    self.scheduledAt = self.date;
+  }
+  if (!self.createdBy && self.doctorId) {
+    self.createdBy = self.doctorId;
+  }
+  next();
+});
+
 // Cifrado en reposo para notas y dirección/sala
 applyFieldEncryption(AppointmentSchema, [
   'reason',
@@ -175,7 +190,7 @@ AppointmentSchema.methods.reschedule = async function reschedule(
   durationMinutes?: number,
   metadata?: Record<string, any>
 ) {
-  this.rescheduledFrom = this._id.toString();
+  this.rescheduledFrom = String(this._id);
   this.scheduledAt = newDate;
   if (durationMinutes) {
     this.durationMinutes = durationMinutes;

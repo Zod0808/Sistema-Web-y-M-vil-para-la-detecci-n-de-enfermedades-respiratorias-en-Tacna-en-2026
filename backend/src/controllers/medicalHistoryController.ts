@@ -158,7 +158,7 @@ export const getMedicalHistories = asyncHandler(async (req: AuthenticatedRequest
   }
 
   const [medicalHistories, total] = await Promise.all([
-    MedicalHistory.find(filters, searchProjection)
+    MedicalHistory.find(filters, searchProjection as any)
       .sort(sortQuery)
       .skip(skip)
       .limit(sanitizedLimit)
@@ -306,8 +306,8 @@ export const syncOfflineHistories = asyncHandler(async (req: AuthenticatedReques
     throw new AppError('Las historias médicas deben ser un array', 400);
   }
 
-  const syncedHistories = [];
-  const errors = [];
+  const syncedHistories: any[] = [];
+  const errors: Array<{ data: any; error: string }> = [];
 
   for (const historyData of histories) {
     try {

@@ -128,8 +128,7 @@ describe('AIIntegrationService', () => {
     expect((aiIntegrationService as any).isConnected).toBe(true);
   });
 
-  it('processMedicalHistory realiza chequeo de salud y retorna la respuesta procesada', async () => {
-    mockAxiosInstance.get.mockResolvedValueOnce({ status: 200 });
+  it('processMedicalHistory envía el payload y retorna la respuesta procesada', async () => {
     const aiResponse = {
       patient_id: 'patient-123',
       processed_at: '2024-01-01T00:00:00Z',
@@ -147,7 +146,6 @@ describe('AIIntegrationService', () => {
 
     const result = await aiIntegrationService.processMedicalHistory(requestPayload);
 
-    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/health');
     expect(mockAxiosInstance.post).toHaveBeenCalledWith(
       '/api/v1/medical-history/process',
       requestPayload
@@ -178,15 +176,18 @@ describe('AIIntegrationService', () => {
     });
   });
 
-  it('processMedicalHistory lanza AppError cuando el servicio no está disponible tras reintento', async () => {
-    mockAxiosInstance.get.mockResolvedValueOnce({ status: 503 });
+  it('processMedicalHistory lanza AppError 503 cuando el circuit breaker está abierto', async () => {
+    // Forzar 5 fallos consecutivos para abrir el circuito
+    (aiIntegrationService as any).cbState = 'OPEN';
+    (aiIntegrationService as any).cbFailures = 5;
+    (aiIntegrationService as any).cbOpenedAt = Date.now();
 
     await expect(
       aiIntegrationService.processMedicalHistory({ patient_id: 'p2', text: '...' })
     ).rejects.toEqual(
       expect.objectContaining<AppError>({
-        statusCode: 500,
-        message: 'Error interno del servicio de IA'
+        statusCode: 503,
+        message: 'Servicio de IA temporalmente no disponible (circuit breaker)'
       })
     );
 
@@ -312,41 +313,44 @@ describe('AIIntegrationService', () => {
     );
   });
 
-  it('analyzeSymptoms procesa correctamente las solicitudes válidas', async () => {
+  it('analyzeSymptoms mapea la respuesta ML al formato SymptomAnalysisResponse', async () => {
     const requestPayload = {
       patient_id: 'sym-1',
       symptoms: [
         { symptom: 'tos', severity: 'moderate', duration: '3d' }
       ]
     };
-    mockAxiosInstance.get.mockResolvedValueOnce({ status: 200 });
-    const analysisResponse = {
-      patient_id: 'sym-1',
-      analyzed_at: '2024-03-01T00:00:00Z',
+    const mlResponse = {
+      disease: 'Influenza',
+      confidence: 0.82,
       urgency_level: 'low',
-      severity_score: 0.25,
-      classification: {
-        urgency: 'low',
-        severity_score: 0.25,
-        recommendation: 'Descanso',
-        categories: ['respiratorio'],
-        confidence: 0.82
-      },
-      recommendations: ['Hidratación'],
-      warning_signs: [],
-      follow_up_required: false,
-      confidence_score: 0.82,
-      processing_time_ms: 85
+      needs_medical_attention: false,
+      personalized_recommendations: ['Hidratación'],
+      top_3_predictions: [{ disease: 'Influenza' }, { disease: 'Resfriado' }],
+      timestamp: '2024-03-01T00:00:00Z',
     };
-    mockAxiosInstance.post.mockResolvedValueOnce({ data: analysisResponse });
+    mockAxiosInstance.post.mockResolvedValueOnce({ data: mlResponse });
 
     const result = await aiIntegrationService.analyzeSymptoms(requestPayload);
 
     expect(mockAxiosInstance.post).toHaveBeenLastCalledWith(
-      '/api/v1/symptom-analyzer/analyze',
-      requestPayload
+      '/api/v1/ml-analyze',
+      { symptoms: ['tos'] },
     );
-    expect(result).toEqual(analysisResponse);
+    expect(result).toMatchObject({
+      patient_id: 'sym-1',
+      analyzed_at: '2024-03-01T00:00:00Z',
+      urgency_level: 'low',
+      severity_score: 0.3,
+      classification: expect.objectContaining({
+        urgency: 'low',
+        recommendation: 'Hidratación',
+        confidence: 0.82,
+      }),
+      recommendations: ['Hidratación'],
+      warning_signs: [],
+      follow_up_required: false,
+    });
   });
 
   it('analyzeSymptoms lanza AppError 503 cuando el servicio no está disponible', async () => {
@@ -490,6 +494,154 @@ describe('AIIntegrationService', () => {
         message: 'Error en búsqueda de historias médicas'
       })
     );
+  });
+
+  describe('circuit breaker', () => {
+    it('abre el circuito tras 5 fallos consecutivos y bloquea siguientes requests', async () => {
+      mockAxiosInstance.post.mockRejectedValue({ message: 'boom', response: { status: 500 } });
+
+      for (let i = 0; i < 5; i++) {
+        await expect(
+          aiIntegrationService.processMedicalHistory({ patient_id: `p${i}`, text: 't' }),
+        ).rejects.toThrow();
+      }
+
+      // Sexta llamada debe bloquearse por circuit breaker
+      await expect(
+        aiIntegrationService.processMedicalHistory({ patient_id: 'p6', text: 't' }),
+      ).rejects.toEqual(
+        expect.objectContaining<AppError>({
+          statusCode: 503,
+          message: expect.stringContaining('circuit breaker'),
+        }),
+      );
+    });
+
+    it('pasa a HALF_OPEN después del tiempo de recuperación', async () => {
+      (aiIntegrationService as any).cbState = 'OPEN';
+      (aiIntegrationService as any).cbFailures = 5;
+      (aiIntegrationService as any).cbOpenedAt = Date.now() - 40_000; // >30s
+
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: {
+          patient_id: 'p', processed_at: 'now', entities: [], symptoms: [],
+          diagnosis_suggestions: [], risk_factors: [], recommendations: [],
+          confidence_score: 0.9, processing_time_ms: 100,
+        },
+      });
+
+      await expect(
+        aiIntegrationService.processMedicalHistory({ patient_id: 'p', text: 't' }),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe('analyzeSymptomsML - checkHealth branch', () => {
+    it('llama checkHealth cuando no está conectado y falla (el AppError de checkHealth se envuelve en 500)', async () => {
+      (aiIntegrationService as any).isConnected = false;
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('down'));
+
+      await expect(
+        aiIntegrationService.analyzeSymptomsML({ symptoms: ['tos'] }),
+      ).rejects.toEqual(
+        expect.objectContaining<AppError>({ statusCode: 500 }),
+      );
+    });
+  });
+
+  describe('getSymptomTrends - checkHealth branch', () => {
+    it('lanza 503 si checkHealth falla', async () => {
+      (aiIntegrationService as any).isConnected = false;
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('down'));
+
+      await expect(
+        aiIntegrationService.getSymptomTrends('p1'),
+      ).rejects.toEqual(
+        expect.objectContaining<AppError>({ statusCode: 500 }),
+      );
+    });
+  });
+
+  describe('ML monitoring endpoints', () => {
+    it('getMlMonitoringMetrics extrae data de wrapper {success, data}', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { success: true, data: { accuracy: 0.9 } },
+      });
+      const result = await aiIntegrationService.getMlMonitoringMetrics({ days: 7 });
+      expect(result).toEqual({ accuracy: 0.9 });
+    });
+
+    it('getMlMonitoringMetrics retorna el objeto entero cuando no hay wrapper', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: { plain: 'body' } });
+      const result = await aiIntegrationService.getMlMonitoringMetrics();
+      expect(result).toEqual({ plain: 'body' });
+    });
+
+    it('getMlMonitoringMetrics lanza AppError cuando el GET falla', async () => {
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('down'));
+      await expect(aiIntegrationService.getMlMonitoringMetrics()).rejects.toEqual(
+        expect.objectContaining<AppError>({ statusCode: 500 }),
+      );
+    });
+
+    it('getMlFeatureInfluence extrae data del wrapper', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { success: true, data: { features: ['tos'] } },
+      });
+      const result = await aiIntegrationService.getMlFeatureInfluence({ top_n: 5 });
+      expect(result).toEqual({ features: ['tos'] });
+    });
+
+    it('getMlFeatureInfluence lanza AppError cuando falla', async () => {
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('down'));
+      await expect(aiIntegrationService.getMlFeatureInfluence()).rejects.toEqual(
+        expect.objectContaining<AppError>({ statusCode: 500 }),
+      );
+    });
+
+    it('getMlFairnessMetrics extrae data del wrapper', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { success: true, data: { fairness: 0.95 } },
+      });
+      const result = await aiIntegrationService.getMlFairnessMetrics({});
+      expect(result).toEqual({ fairness: 0.95 });
+    });
+
+    it('getMlFairnessMetrics lanza AppError cuando falla', async () => {
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('down'));
+      await expect(aiIntegrationService.getMlFairnessMetrics()).rejects.toEqual(
+        expect.objectContaining<AppError>({ statusCode: 500 }),
+      );
+    });
+  });
+
+  describe('interceptores - errores', () => {
+    it('el interceptor de error de request logea y rechaza', async () => {
+      const errorHandler = mockAxiosInstance.interceptors.request.use.mock.calls[0][1];
+      await expect(errorHandler(new Error('req-error'))).rejects.toThrow('req-error');
+      expect(loggerMock.error).toHaveBeenCalledWith('AI Service Request Error', expect.any(Error));
+    });
+
+    it('el interceptor de éxito de response logea', () => {
+      const responseHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][0];
+      loggerMock.debug.mockClear();
+      responseHandler({
+        status: 200,
+        config: { url: '/x' },
+        headers: { 'x-processing-time': '42ms' },
+      });
+      expect(loggerMock.debug).toHaveBeenCalledWith('AI Service Response', expect.any(Object));
+    });
+
+    it('el interceptor de error de response logea el status', async () => {
+      const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+      const err = { response: { status: 500 }, message: 'boom', config: { url: '/x' } };
+      await expect(errorHandler(err)).rejects.toBe(err);
+      expect(loggerMock.error).toHaveBeenCalledWith(
+        'AI Service Response Error',
+        expect.objectContaining({ status: 500 }),
+      );
+    });
   });
 });
 

@@ -90,7 +90,7 @@ export const invalidateCacheByPattern = async (pattern: string): Promise<void> =
   try {
     const keysToDelete: string[] = [];
     for await (const key of client.scanIterator({ MATCH: pattern, COUNT: 100 })) {
-      keysToDelete.push(key as string);
+      keysToDelete.push(key);
     }
 
     if (keysToDelete.length > 0) {

@@ -36,7 +36,7 @@ export function decryptString(ciphertextB64: string, key: Buffer): string {
   return decrypted.toString('utf8');
 }
 
-export function applyFieldEncryption(schema: Schema, fields: string[]) {
+export function applyFieldEncryption(schema: Schema<any, any, any, any, any, any, any, any, any>, fields: string[]) {
   const keyGetter = () => getEncryptionKey();
 
   function encryptDoc(this: any) {

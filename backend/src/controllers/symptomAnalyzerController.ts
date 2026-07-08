@@ -255,7 +255,7 @@ export const getSymptomStatistics = asyncHandler(async (req: AuthenticatedReques
   try {
     // Calculate date range based on period
     const endDate = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
     
     switch (period) {
       case '7d':

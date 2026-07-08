@@ -58,9 +58,9 @@ export class MedicalHistoryController {
       }
 
       const result = await this.medicalHistoryService.getMedicalHistory({
-        medicalHistoryId: id!,
-        userId: userId!,
-        userRole: userRole!
+        medicalHistoryId: id,
+        userId: userId,
+        userRole: userRole
       });
       
       const response: ApiResponse<MedicalHistoryResponseDto> = {
@@ -96,7 +96,7 @@ export class MedicalHistoryController {
       }
 
       const result = await this.medicalHistoryService.getMedicalHistoriesByPatient(
-        patientId!,
+        patientId,
         userId,
         userRole,
         page,
@@ -141,9 +141,9 @@ export class MedicalHistoryController {
       }
 
       const result = await this.medicalHistoryService.getMedicalHistoriesByDoctor(
-        doctorId!,
-        userId!,
-        userRole!,
+        doctorId,
+        userId,
+        userRole,
         page,
         limit
       );
@@ -348,7 +348,7 @@ export class MedicalHistoryController {
         return;
       }
 
-      const syncedMedicalHistory = await this.medicalHistoryService.syncMedicalHistory(id!);
+      const syncedMedicalHistory = await this.medicalHistoryService.syncMedicalHistory(id);
       
       const response: ApiResponse<MedicalHistoryResponseDto> = {
         success: true,

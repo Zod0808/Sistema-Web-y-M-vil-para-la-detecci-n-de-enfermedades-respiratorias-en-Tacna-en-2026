@@ -19,6 +19,16 @@ os.environ["CACHE_ENABLED"] = "false"
 os.environ["CIRCUIT_BREAKER_ENABLED"] = "false"
 os.environ["AI_RATE_LIMIT_ENABLED"] = "0"  # Deshabilitar rate limiting en tests
 
+# Guard: transformers calls importlib.util.find_spec("librosa") to check for the
+# optional audio dependency, which raises ValueError: "librosa.__spec__ is not set"
+# when librosa was uninstalled but a stale reference remains in sys.modules. Register
+# a stub with a proper ModuleSpec so find_spec returns cleanly.
+import importlib.machinery as _machinery
+import types as _types
+_librosa_stub = _types.ModuleType('librosa')
+_librosa_stub.__spec__ = _machinery.ModuleSpec('librosa', None)
+sys.modules['librosa'] = _librosa_stub
+
 # Mock torch BEFORE any imports to avoid DLL issues in Windows
 # This must be done at the very beginning, before any module that might import torch
 if 'torch' not in sys.modules:

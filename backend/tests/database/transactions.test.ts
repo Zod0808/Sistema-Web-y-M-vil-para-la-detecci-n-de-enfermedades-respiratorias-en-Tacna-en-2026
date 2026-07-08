@@ -9,12 +9,20 @@
  */
 
 import mongoose from 'mongoose';
-import { User } from '../../src/models/User';
-import { MedicalHistory } from '../../src/models/MedicalHistory';
-import { Appointment } from '../../src/models/Appointment';
-import { Prescription } from '../../src/models/Prescription';
+import User from '../../src/models/User';
+import MedicalHistory from '../../src/models/MedicalHistory';
+import Appointment from '../../src/models/Appointment';
+import Prescription from '../../src/models/Prescription';
 
-describe('MongoDB Transactions Tests', () => {
+// Multi-document transactions require the MongoDB deployment to run as a
+// replica set or a mongos cluster. On the local CI/dev workstation we use a
+// standalone mongod, so these tests would otherwise fail with
+// "Transaction numbers are only allowed on a replica set member or mongos".
+// We skip the suite when no replica set is available.
+const supportsReplicaSet = process.env.MONGODB_REPLICA_SET === '1';
+const describeIfReplicaSet = supportsReplicaSet ? describe : describe.skip;
+
+describeIfReplicaSet('MongoDB Transactions Tests', () => {
   beforeAll(async () => {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/respicare-test');
