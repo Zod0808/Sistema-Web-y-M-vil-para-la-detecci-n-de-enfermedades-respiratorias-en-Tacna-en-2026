@@ -560,7 +560,7 @@ Para garantizar que los cambios futuros no rompan el sistema, se escribieron pru
 ```
 Tipo de prueba          Porcentaje cubierto
 ────────────────────────────────────────────
-Pruebas unitarias              98%
+Pruebas unitarias (backend)    80.44%
 Pruebas de integración         95%
 Pruebas de seguridad           Flujos críticos
 Pruebas de modelos de IA       Validación cruzada

@@ -9,7 +9,7 @@
 | **Estudiante** | Chávez Linares, Cesar Fabian — 2019063854 |
 | **Institución** | Universidad Privada de Tacna — EPIS |
 | **Iteración evaluada** | Sprint 1 y Sprint 2 |
-| **Fecha** | Abril 2026 |
+| **Fecha** | Julio 2026 |
 
 ---
 
@@ -48,16 +48,19 @@ Donde **KLOC** = miles de líneas de código fuente del módulo medidas con herr
 
 ## 2. Resumen Ejecutivo de Cobertura por Módulo
 
+> **Fuente de las cifras:** medición real extraída de los reportes de cobertura generados por las suites (`backend/coverage/coverage-summary.json` — 04-jul-2026; `web/coverage/coverage-summary.json`; `ai-services/coverage.xml`). Métrica reportada: **cobertura de líneas**.
+
 | Módulo | Tests Implementados | Líneas Cubiertas | Cobertura Real | Meta | Brecha | Estado |
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Backend API | 380+ | 21,560 / 22,000 | **98 %** | ≥ 80 % | +18 % | ✅ Superado |
+| Backend API | 380+ | 6,608 / 8,214 | **80.44 %** | ≥ 80 % | +0.44 % | ✅ Cumplido (al límite) |
 | AI Services | 150+ | 4,297 / 8,704 | **49.37 %** | ≥ 60 % | −10.6 % | ⚠️ Por debajo |
-| Frontend Web | 40+ | 8,400 / 12,000 | **~70 %** | ≥ 80 % | −10 % | ⚠️ Por debajo |
-| Mobile App | 50+ | 6,000 / 8,000 | **~75 %** | ≥ 80 % | −5 % | ⚠️ Cercano |
-| **Total** | **690+** | — | **~73 %** | ≥ 80 % | −7 % | ⚠️ En mejora |
+| Frontend Web | 40+ | 2,296 / 3,034 | **75.67 %** | ≥ 80 % | −4.3 % | ⚠️ Cercano |
+| Mobile App | 50+ | s/d (instrumentación limitada a 2 archivos) | **No medible** | ≥ 80 % | — | ⚠️ Sin métrica global |
+| **Total (módulos instrumentados)** | **690+** | 13,201 / 19,952 | **66.16 %** | ≥ 80 % | −13.8 % | ⚠️ En mejora |
 
 **Cobertura al inicio del proyecto (línea base):** 17.89 % (AI Services antes de correcciones)  
-**Cobertura AI Services post-correcciones:** 49.37 % registrado en `coverage.xml`; proyectado 51.86 % con correcciones pendientes
+**Cobertura AI Services post-correcciones:** 49.37 % registrado en `coverage.xml`  
+**Nota Mobile:** el `jest.config.js` de la app móvil restringe `collectCoverageFrom` a `useAppStore.ts` y `symptom-analyzer.tsx`, por lo que no existe una medición de cobertura global representativa del módulo. Se registra como deuda técnica ampliar la instrumentación a todo `medical-app/`.
 
 ---
 
@@ -88,7 +91,7 @@ Donde **KLOC** = miles de líneas de código fuente del módulo medidas con herr
 
 **Defectos totales encontrados en sprint:** 8  
 **Densidad de Defectos:** 8 / 22.00 KLOC = **0.36 defectos/KLOC**  
-*(Densidad baja — refleja la alta cobertura del 98 %)*
+*(Densidad baja — refleja la cobertura de líneas del 80.44 %)*
 
 | ID Caso de Prueba & Tipo | Métrica del Módulo | Descripción de la Falla / Anomalía | Estado de Resolución |
 |:---:|:---|:---|:---:|
@@ -212,14 +215,14 @@ Donde **KLOC** = miles de líneas de código fuente del módulo medidas con herr
 
 ## 7. Conclusiones
 
-Los resultados de pruebas del Plan de Iteraciones revelan un sistema en un estado de **calidad controlada pero mejorable**. El módulo Backend alcanzó una densidad de defectos excelente (0.36 def/KLOC) con 98 % de cobertura, consolidándose como el módulo más estable del sistema. El módulo AI Services presentó la mayor concentración de defectos (densidad inicial de 50.11 def/KLOC), originada principalmente en fallos de configuración de entorno de testing y desincronización entre tests e implementación; tras las correcciones del sprint, la densidad residual se redujo al 1.72 def/KLOC, dentro del umbral aceptable.
+Los resultados de pruebas del Plan de Iteraciones revelan un sistema en un estado de **calidad controlada pero mejorable**. El módulo Backend alcanzó una densidad de defectos baja (0.36 def/KLOC) con **80.44 %** de cobertura de líneas (cumpliendo justo el umbral del 80 %), consolidándose como el módulo más estable del sistema. El módulo AI Services presentó la mayor concentración de defectos (densidad inicial de 50.11 def/KLOC), originada principalmente en fallos de configuración de entorno de testing y desincronización entre tests e implementación; tras las correcciones del sprint, la densidad residual se redujo al 1.72 def/KLOC, dentro del umbral aceptable.
 
 Los dos defectos de gobernanza ML (sesgo demográfico en mayores de 70 años y drift en `respiratory_rate`) son los de mayor criticidad médica y deben ser atendidos con prioridad en el Sprint 3-4, ya que impactan directamente la equidad y confiabilidad diagnóstica del sistema.
 
-La cobertura global del sistema (73 %) está por debajo del objetivo del 80 %, siendo el Frontend Web (70 %) y AI Services (49.37 %) los módulos que requieren mayor inversión en pruebas durante las siguientes iteraciones.
+La cobertura global de los módulos instrumentados (66.16 %) está por debajo del objetivo del 80 %, siendo AI Services (49.37 %) el módulo que requiere mayor inversión en pruebas. El Frontend Web (75.67 %) quedó cercano al umbral, y la app Mobile carece de una medición global válida porque su configuración de Jest instrumenta solo dos archivos — ampliar esa instrumentación es prioridad para las siguientes iteraciones.
 
 ---
 
-*Documento: RESPICARE-PRUEBAS-S5 · Estándar: SWEBOK V4 · Iteraciones: Sprint 1 y Sprint 2 · Fecha: Abril 2026*  
+*Documento: RESPICARE-PRUEBAS-S5 · Estándar: SWEBOK V4 · Iteraciones: Sprint 1 y Sprint 2 · Fecha: Julio 2026*  
 *Elaborado por: Chávez Linares, Cesar Fabian (2019063854)*  
 *Revisado por: Mag. Alberto Johnatan Flor Rodríguez*

@@ -8,9 +8,9 @@
 ## "Desarrollo Basado en Pruebas TDD"
 
 ### Curso: Construcción de Software I
-### Docente: Mtro. Alberto Johnatan Flor Rodríguez
+### Docente: Mag. Alberto Johnatan Flor Rodríguez
 ### Estudiante: Cesar Fabian Chávez Linares
-### Fecha: Noviembre 2025
+### Fecha: Julio 2026
 ### TACNA – PERÚ
 
 ---

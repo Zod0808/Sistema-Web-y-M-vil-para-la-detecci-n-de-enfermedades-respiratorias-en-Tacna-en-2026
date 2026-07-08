@@ -330,7 +330,7 @@ La realidad del proyecto RespiCare muestra que, aunque PSP es el proceso dominan
 | **Proceso principal adoptado** | **PSP — Personal Software Process** |
 | **Procesos descartados** | CMMI Nivel 3+ (sobredimensionado para 1 persona); Agile Quality + PDCA (requiere equipo ≥ 5 personas) |
 | **Prácticas PSP evidenciadas** | Estimación personal T/E por tarea ✅; TDD como prevención temprana ✅; Defect Recording Log ✅; Density analysis personal ✅; Checklist de revisión ✅; Ajuste de velocidad basado en datos propios ✅ |
-| **Resultado de calidad alcanzado** | Cobertura global: 73 %; Backend: 98 %; ML accuracy: 99.81 %; Densidad residual: 0.99 def/KLOC (dentro del umbral de calidad para software médico). |
+| **Resultado de calidad alcanzado** | Cobertura módulos instrumentados: 66.16 %; Backend: 80.44 %; ML accuracy: 99.81 %; Densidad residual: 0.99 def/KLOC (dentro del umbral de calidad para software médico). |
 
 ---
 

@@ -210,7 +210,7 @@
 **Fecha**: Semana 13-14
 
 **Entregables**:
-- ✅ 380+ tests backend (98% cobertura)
+- ✅ 380+ tests backend (80.44% cobertura de líneas)
 - ✅ Tests de patrones de diseño (AI Services)
 - ✅ Tests de modelos ML
 - ✅ Tests de integración

@@ -3,8 +3,9 @@
 **Proyecto**: Sistema Web y Móvil para la Detección de Enfermedades Respiratorias en Tacna  
 **Universidad**: Universidad Privada de Tacna  
 **Curso**: Construcción de Software I  
-**Año**: 2025  
-**Última actualización**: Enero 2025
+**Docente**: Mag. Alberto Johnatan Flor Rodríguez  
+**Año**: 2026  
+**Última actualización**: Julio 2026
 
 ---
 
@@ -12,15 +13,17 @@
 
 | Componente | Total Tests | Cobertura | Estado | Framework |
 |------------|-------------|-----------|--------|-----------|
-| **Backend** | 380+ | 98% | ✅ Completo | Jest + Supertest |
-| **Web Frontend** | 40+ | ~70% | ✅ Funcional | Jest + React Testing Library + Cypress |
-| **Mobile App** | 50+ | ~75% | ✅ Funcional | Jest + Detox |
-| **AI Services** | 150+ | ~83% | ✅ Funcional | pytest + pytest-asyncio |
+| **Backend** | 380+ | 80.44% | ✅ Cumplido | Jest + Supertest |
+| **Web Frontend** | 40+ | 75.67% | ⚠️ Cercano | Jest + React Testing Library + Cypress |
+| **Mobile App** | 50+ | No medible* | ⚠️ Sin métrica | Jest + Detox |
+| **AI Services** | 150+ | 49.37% | ⚠️ Por debajo | pytest + pytest-asyncio |
 | **E2E** | 15+ flujos | - | ✅ Completo | Cypress + Detox |
 | **Seguridad** | 25+ | OWASP Top 10 | ✅ Completo | Jest + OWASP ZAP |
 | **Performance** | 30+ | - | ✅ Completo | Jest + Artillery |
 
 **Total de Pruebas**: 690+ casos de prueba implementados
+
+\* *Mobile: el `jest.config.js` instrumenta solo `useAppStore.ts` y `symptom-analyzer.tsx`; no hay medición de cobertura global del módulo. Cifras de cobertura tomadas de los reportes reales generados (`coverage-summary.json` / `coverage.xml`), métrica de líneas.*
 
 ---
 
@@ -44,7 +47,7 @@
 ### 1.1 Resumen General
 
 - **Total de Tests**: 380+
-- **Cobertura Global**: 98% (objetivo ≥80% superado)
+- **Cobertura Global**: 80.44% líneas (objetivo ≥80% cumplido al límite)
 - **Framework**: Jest + Supertest
 - **Ubicación**: `backend/tests/`
 - **Documentación**: [backend/tests/README.md](../backend/tests/README.md)
@@ -267,7 +270,7 @@
 ### 2.1 Resumen General
 
 - **Total de Tests**: 40+
-- **Cobertura**: ~70% (objetivo 80%)
+- **Cobertura**: 75.67% líneas (objetivo 80%)
 - **Framework**: Jest + React Testing Library + Cypress
 - **Ubicación**: `web/tests/` y `web/src/tests/`
 - **Documentación**: [web/tests/README.md](../web/tests/README.md)
@@ -352,7 +355,7 @@
 ### 3.1 Resumen General
 
 - **Total de Tests**: 50+
-- **Cobertura**: ~75% (objetivo 80%)
+- **Cobertura**: No medible globalmente (Jest instrumenta solo 2 archivos; objetivo 80%)
 - **Framework**: Jest + Detox
 - **Ubicación**: `mobile/__tests__/` y `mobile/e2e/`
 - **Documentación**: [mobile/__tests__/README.md](../mobile/__tests__/README.md)
@@ -428,7 +431,7 @@
 ### 4.1 Resumen General
 
 - **Total de Tests**: 150+
-- **Cobertura**: ~83% (ML: monitoreo, fairness, drift)
+- **Cobertura**: 49.37% (medida real en `coverage.xml`; objetivo ≥60%. Ver *Informe de Resultados de Pruebas* CP-AI-001..010)
 - **Framework**: pytest + pytest-asyncio
 - **Ubicación**: `ai-services/tests/`
 - **Documentación**: [ai-services/TESTING_GUIDE.md](../ai-services/TESTING_GUIDE.md)
@@ -781,10 +784,10 @@ asyncio_mode = auto
 
 | Componente | Objetivo | Actual | Estado |
 |------------|----------|--------|--------|
-| Backend | ≥80% | 98% | ✅ Superado |
-| Web | ≥70% | ~70% | ✅ Cumplido |
-| Mobile | ≥70% | ~75% | ✅ Superado |
-| AI Services | ≥85% | ~83% | ⚠️ Cercano |
+| Backend | ≥80% | 80.44% | ✅ Cumplido (+0.44%) |
+| Web | ≥80% | 75.67% | ⚠️ Cercano (−4.3%) |
+| Mobile | ≥80% | No medible | ⚠️ Sin métrica global |
+| AI Services | ≥60% | 49.37% | ⚠️ Por debajo (−10.6%) |
 
 ### 11.2 Tiempos de Ejecución
 
@@ -846,11 +849,11 @@ El proyecto RespiCare Tacna cuenta con un **catálogo completo de 690+ pruebas**
 - ✅ **Pruebas de rendimiento** (load, stress, spike, endurance, scalability)
 - ✅ **Pruebas de patrones de diseño** (5 patrones principales)
 
-La cobertura global supera los objetivos establecidos, con **98% en backend**, garantizando alta calidad y confiabilidad del sistema.
+El backend cumple el objetivo de cobertura (**80.44% en líneas**); Web (75.67%) y AI Services (49.37%) están por debajo del 80% y concentran el plan de mejora de las siguientes iteraciones.
 
 ---
 
-**Última actualización**: Enero 2025  
-**Versión del Catálogo**: 1.0.0  
+**Última actualización**: Julio 2026  
+**Versión del Catálogo**: 2.0.0  
 **Estado**: ✅ Completo y actualizado
 

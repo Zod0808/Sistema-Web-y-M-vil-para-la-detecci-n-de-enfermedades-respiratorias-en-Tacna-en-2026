@@ -8,7 +8,7 @@
 | **Estándar** | SWEBOK V4 — Fase de Construcción y Planificación de Iteraciones |
 | **Estudiante** | Chávez Linares, Cesar Fabian — 2019063854 |
 | **Institución** | Universidad Privada de Tacna — EPIS |
-| **Fecha** | Abril 2026 |
+| **Fecha** | Julio 2026 |
 
 ---
 
@@ -16,7 +16,7 @@
 
 El presente informe documenta los resultados obtenidos durante la ejecución del Plan de Iteraciones del proyecto RespiCare, desarrollado bajo la metodología ágil SCRUM. Se registra, por cada requerimiento del backlog, el estado de construcción alcanzado, las desviaciones de tiempo y esfuerzo respecto a las estimaciones originales, y la decisión de aprobación emitida por el proceso de Aseguramiento de la Calidad del Software (SQA).
 
-La construcción se organizó en dos iteraciones principales. La **Iteración 1 (Sprint 1)** abarcó los módulos de autenticación e historial clínico (EPIC-01 y EPIC-02). La **Iteración 2 (Sprint 2)** —actualmente en ejecución— abarca el sistema de diagnóstico inteligente de síntomas respiratorios (EPIC-03), compuesto por 14 tareas técnicas distribuidas en tres historias de usuario.
+La construcción se organizó en dos iteraciones principales. La **Iteración 1 (Sprint 1)** abarcó los módulos de autenticación e historial clínico (EPIC-01 y EPIC-02). La **Iteración 2 (Sprint 2)** —ya ejecutada— abarcó el sistema de diagnóstico inteligente de síntomas respiratorios (EPIC-03), compuesto por 14 tareas técnicas distribuidas en tres historias de usuario.
 
 ---
 
@@ -195,6 +195,6 @@ Todas las historias de usuario de la Iteración 2 fueron aprobadas por SQA, con 
 
 ---
 
-*Documento: RESPICARE-ITER-RESULTADOS-S5 · Estándar: SWEBOK V4 · Iteración: Sprint 1 y Sprint 2 · Fecha: Abril 2026*  
+*Documento: RESPICARE-ITER-RESULTADOS-S5 · Estándar: SWEBOK V4 · Iteración: Sprint 1 y Sprint 2 · Fecha: Julio 2026*  
 *Elaborado por: Chávez Linares, Cesar Fabian (2019063854)*  
 *Revisado por: Mag. Alberto Johnatan Flor Rodríguez*

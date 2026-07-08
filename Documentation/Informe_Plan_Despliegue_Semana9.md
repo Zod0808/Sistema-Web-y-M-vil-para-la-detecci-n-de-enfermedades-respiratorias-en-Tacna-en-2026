@@ -295,10 +295,10 @@ La testabilidad de un sistema depende directamente de su grado de modularidad: m
 
 | Microservicio | Framework de Test | Tests implementados | Cobertura | Aislamiento de test |
 |:---|:---:|:---:|:---:|:---|
-| Backend API | Jest + Supertest | 380+ | 98 % | Mocks de MongoDB con `mongodb-memory-server` |
+| Backend API | Jest + Supertest | 380+ | 80.44 % | Mocks de MongoDB con `mongodb-memory-server` |
 | AI Services | pytest + pytest-asyncio | 150+ | 49.37 % | Mocks de OpenAI, Whisper, SHAP en `conftest.py` |
-| Frontend Web | Jest + React Testing Library | 40+ | ~70 % | Mocks de `fetch` y contextos React |
-| Mobile App | Jest + React Testing Library | 50+ | ~75 % | Mocks de Capacitor plugins |
+| Frontend Web | Jest + React Testing Library | 40+ | 75.67 % | Mocks de `fetch` y contextos React |
+| Mobile App | Jest + React Testing Library | 50+ | Sin métrica global* | Mocks de Capacitor plugins |
 
 #### 2.1.2 Clean Architecture en el Backend
 
@@ -494,7 +494,7 @@ Los criterios Go/No-Go son las condiciones necesarias y suficientes que deben cu
 |:---:|:---|:---|:---:|:---:|
 | G1 | Compilación TypeScript sin errores | `npx tsc --noEmit` | 0 errores | ✅ Go |
 | G2 | Tipo check Python sin errores | `mypy ai-services/` | 0 errores | ✅ Go |
-| G3 | Cobertura Backend ≥ 80 % | `jest --coverage` | 98 % ≥ 80 % | ✅ Go |
+| G3 | Cobertura Backend ≥ 80 % | `jest --coverage` | 80.44 % ≥ 80 % | ✅ Go |
 | G4 | Cobertura AI Services ≥ 35 % | `pytest --cov` | 49.37 % ≥ 35 % | ✅ Go |
 | G5 | 0 tests fallidos en suite completa | `jest` + `pytest` | 0 failures | ✅ Go |
 | G6 | 0 vulnerabilidades críticas (SAST) | `static-code-analysis.yml` | CVSS < 7.0 | ✅ Go |
@@ -662,9 +662,9 @@ docker-compose -f docker-compose.prod.yml up -d backend ai-services
   │  FASE 2: INTEGRACIÓN CONTINUA (GitHub Actions)                              │
   │  ───────────────────────────────────────────────                            │
   │  4. Trigger automático → testing.yml                                         │
-  │     ├── backend-tests.yml     (Jest, 98% coverage)                          │
+  │     ├── backend-tests.yml     (Jest, 80.44% coverage)                      │
   │     ├── ai-services-tests.yml (pytest, 49.37%)                              │
-  │     ├── web-tests.yml         (Jest RTL, 70%)                               │
+  │     ├── web-tests.yml         (Jest RTL, 75.67%)                            │
   │     ├── static-code-analysis.yml (ESLint, SonarQube, mypy)                  │
   │     ├── sast-scan.yml         (análisis de seguridad estático)               │
   │     └── ai-ml-bench.yml       (benchmarks ML, accuracy, drift)              │
