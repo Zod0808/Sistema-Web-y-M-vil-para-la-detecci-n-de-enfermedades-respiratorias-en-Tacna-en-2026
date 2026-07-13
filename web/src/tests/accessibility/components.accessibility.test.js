@@ -82,14 +82,16 @@ const withTheme = (component) => render(<ThemeProvider>{component}</ThemeProvide
 describe('ThemeToggle — WCAG 2.1 AA (axe-core)', () => {
   it('should have no accessibility violations in light mode', async () => {
     localStorageMock.getItem.mockReturnValue('light');
-    const { container } = withTheme(<require('../../components/ThemeToggle').default />);
+    const ThemeToggleCmp = require('../../components/ThemeToggle').default;
+    const { container } = withTheme(<ThemeToggleCmp />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   it('should have no accessibility violations in dark mode', async () => {
     localStorageMock.getItem.mockReturnValue('dark');
-    const { container } = withTheme(<require('../../components/ThemeToggle').default />);
+    const ThemeToggleCmp = require('../../components/ThemeToggle').default;
+    const { container } = withTheme(<ThemeToggleCmp />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

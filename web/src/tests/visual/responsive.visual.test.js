@@ -12,6 +12,16 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import Navbar from '../../components/Navbar';
 
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: null, token: null, isAuthenticated: false, isLoading: false, login: jest.fn(), logout: jest.fn() }),
+  AuthProvider: ({ children }) => children,
+}));
+
+jest.mock('../../components/ThemeProvider', () => ({
+  ThemeProvider: ({ children }) => children,
+  useThemeContext: () => ({ theme: 'light', toggleTheme: jest.fn(), setTheme: jest.fn() }),
+}));
+
 // Helper: simula matchMedia para un ancho dado
 const mockMatchMedia = (width) => {
   Object.defineProperty(window, 'matchMedia', {

@@ -32,3 +32,7 @@ exclude = [
 exclude_dirs = ['venv', '__pycache__', 'migrations', 'models', 'tests']
 skips = ['B101']  # Skip assert_used warnings
 
+# La configuración real de coverage.py (omit, precision, exclude_lines) vive
+# en .coveragerc. Se mantiene ahí para que también la respeten `coverage run`
+# y `coverage report` invocados fuera de pytest.
+

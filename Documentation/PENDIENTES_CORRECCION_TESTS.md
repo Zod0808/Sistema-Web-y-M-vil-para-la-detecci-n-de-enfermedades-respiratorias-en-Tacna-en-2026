@@ -7,7 +7,7 @@ Contexto: Revisión de salud del código en `backend/`, `web/`, `mobile/medical-
 
 | Componente | Tests failing (antes) | Tests failing (ahora) | Tests failing (objetivo) |
 |---|---|---|---|
-| **Backend** | 203 / 2379 | **140** / 2379 | 0 |
+| **Backend** | 203 / 2379 | **64** / 2379 | 0 |
 | **Web** | 287 / 1083 | 287 / 1083 (sin tocar) | 0 |
 | **Mobile** | 0 / 7 ✅ | 0 / 7 ✅ | 0 ✅ |
 | **AI-services** | 15 collection errors | 0 collection errors ✅ / 55 runtime fails | 0 |
@@ -16,7 +16,9 @@ TSC y ESLint: **0 errores en backend + mobile** (baseline: 38 tsc + 16 lint en b
 
 ---
 
-## 1. Backend — 140 tests failing (44 suites)
+## 1. Backend — 64 tests failing (44 suites)
+
+> Nota: el header y esta sección hablan del mismo estado post-sesión (64 fails). Los clusters de §1.1–§1.9 suman los 64. La lista de §1.10 es orientativa (algunos tests entran en más de un cluster).
 
 ### 1.1 Cluster: `expect().toBe()` inequality (15 tests)
 
@@ -306,11 +308,49 @@ Los detalles están en la conversación de esta sesión y en el `git log` de los
 
 ## 7. Cambios pendientes de commit
 
-**Ninguno de los cambios de esta sesión está aún committeado.** Antes de retomar:
+Los fixes de calidad (Track B: TSC + ESLint + pytest collection + parte del drift de tests) quedaron recogidos en:
 
-```bash
-git status
-git diff --stat
+```
+03bc5d2 chore(quality): fix TSC, ESLint and pytest collection errors + test drift
 ```
 
-Revisar y decidir si commitear como un solo "chore(quality): stabilise TSC + backend tests" o separar por área.
+Sin embargo, `git status` sigue mostrando modificaciones en `backend/src/**` y `backend/tests/**` que corresponden a iteraciones posteriores del arreglo de tests (§1). **Antes de retomar**, revisar qué es nuevo drift y qué son restos de esta sesión:
+
+```powershell
+git status
+git diff --stat
+git diff backend/src/models/Appointment.ts   # ejemplo: revisar 1-a-1 lo que aún no está en HEAD
+```
+
+Recomendación: agrupar el próximo commit por cluster (§1.6 route aliases, §1.4 role fixes, §1.8 Mongoose 8) para que el `git log` refleje el orden de trabajo sugerido en §5.
+
+---
+
+## 8. Cómo reanudar (checklist rápido)
+
+1. **Reproducir el baseline** (verificar que la cifra de 64 fails backend sigue vigente):
+   ```powershell
+   cd backend
+   npm test -- --silent 2>&1 | Select-String -Pattern "Tests:"
+   ```
+2. **Elegir un cluster de §1** siguiendo el orden de §5.
+3. **Aislar la suite**: `npm test -- --testPathPattern="<archivo>" --verbose`.
+4. **Aplicar el fix del cluster** (patrón único, no ir suite por suite si el fix es en masa).
+5. **Verificar delta**: la cifra global de failing debe bajar por el número exacto del cluster; si no, hay solapamiento con otro cluster — anotarlo aquí antes de continuar.
+6. **Actualizar la tabla del header y el título de §1** con la nueva cifra.
+7. **Commit por cluster** con mensaje `test(backend): fix cluster §1.X — <descripción>`.
+
+Para web y AI-services el flujo es análogo pero con `cd web` / `cd ai-services` y `pytest -k <patrón>` respectivamente.
+
+---
+
+## 9. Salidas para adjuntar como evidencia
+
+Cuando el objetivo (0 fails) esté cerca, capturar como evidencia en `Documentation/` o `evidencias/`:
+
+- `backend/coverage/lcov-report/index.html` (o el summary de texto).
+- `web/coverage/lcov-report/index.html`.
+- `ai-services/htmlcov/index.html` (si `pytest --cov` está configurado).
+- Output final de `npm test` / `pytest` mostrando `Tests: X passed, 0 failed`.
+
+Cruzar con las cifras vigentes en la memoria del proyecto (`project_coverage_real.md`): backend 80.44 %, web 75.67 %, AI 49.37 %. Cualquier regresión >2 puntos debe justificarse en el commit.

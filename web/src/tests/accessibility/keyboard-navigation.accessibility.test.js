@@ -362,8 +362,8 @@ describe('KEY-05/06 — Modal: foco y Escape', () => {
 
 describe('KEY-07 — Skip to main content', () => {
   it('la página Home tiene un landmark main o role=main', () => {
-    jest.mock('../../components/AlertConsole', () => () => <div />);
-    jest.mock('../../components/AppointmentCalendar', () => () => <div />);
+    jest.mock('../../components/AlertConsole', () => () => require('react').createElement('div'));
+    jest.mock('../../components/AppointmentCalendar', () => () => require('react').createElement('div'));
 
     try {
       Storage.prototype.getItem = jest.fn(() => null);

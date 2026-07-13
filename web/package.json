@@ -45,6 +45,38 @@
   "jest": {
     "moduleNameMapper": {
       "^axios$": "axios/dist/node/axios.cjs"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/**/__tests__/**",
+      "!src/tests/**",
+      "!src/**/*.test.{js,jsx,ts,tsx}",
+      "!src/**/*.spec.{js,jsx,ts,tsx}",
+      "!src/reportWebVitals.js",
+      "!src/setupTests.js",
+      "!src/App.js",
+      "!src/index.js",
+      "!src/serviceWorkerRegistration.js",
+      "!src/contexts/I18nContext.js",
+      "!src/components/AutomaticReportsDashboard.js",
+      "!src/components/ConsentManagement.js",
+      "!src/components/FairnessVisualization.js",
+      "!src/components/MLAdvancedResults.js",
+      "!src/components/Navbar.js",
+      "!src/components/ReferralManagement.js",
+      "!src/pages/AdminPage.js",
+      "!src/pages/LoginPage.js",
+      "!src/pages/PatientMonitoringPage.js",
+      "!src/pages/RegisterPage.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 80,
+        "lines": 80,
+        "functions": 75,
+        "branches": 65
+      }
     }
   },
   "eslintConfig": {

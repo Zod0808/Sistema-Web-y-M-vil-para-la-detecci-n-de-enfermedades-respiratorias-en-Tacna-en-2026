@@ -6,14 +6,14 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import axios from 'axios';
 import ChatBotEnhanced from '../ChatBotEnhanced';
-import * as i18nService from '../services/i18nService';
+import * as i18nService from '../../services/i18nService';
 
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios;
 
 // Mock i18n service
-jest.mock('../services/i18nService', () => ({
+jest.mock('../../services/i18nService', () => ({
   t: jest.fn((key) => key),
   getCurrentLanguage: jest.fn(() => 'es')
 }));

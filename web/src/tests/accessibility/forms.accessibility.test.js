@@ -304,7 +304,7 @@ describe('AppointmentCalendar — Date Input Defaults', () => {
     AppointmentCalendar = require('../../components/AppointmentCalendar').default;
   });
 
-  it('should pre-fill date input with today's date format', () => {
+  it("should pre-fill date input with today's date format", () => {
     render(<AppointmentCalendar token="test-token" />);
     const dateInput = document.querySelector('input[type="date"]');
     if (dateInput) {

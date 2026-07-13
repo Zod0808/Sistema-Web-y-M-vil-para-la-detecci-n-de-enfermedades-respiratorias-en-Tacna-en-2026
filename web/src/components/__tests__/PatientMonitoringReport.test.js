@@ -5,6 +5,17 @@ import PatientMonitoringReport from '../PatientMonitoringReport';
 
 jest.mock('axios');
 jest.mock('../../utils/apiBase', () => ({ API_BASE: 'http://test-api' }));
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'u1', role: 'patient', name: 'Test' },
+    token: 'test-token',
+    isAuthenticated: true,
+    isLoading: false,
+    login: jest.fn(),
+    logout: jest.fn(),
+  }),
+  AuthProvider: ({ children }) => children,
+}));
 
 global.ResizeObserver = class {
   observe() {}

@@ -32,6 +32,16 @@ jest.mock('axios', () => ({
   post: jest.fn().mockResolvedValue({ data: { success: true } }),
 }));
 
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: null, token: null, isAuthenticated: false, isLoading: false, login: jest.fn(), logout: jest.fn() }),
+  AuthProvider: ({ children }) => children,
+}));
+
+jest.mock('../../components/ThemeProvider', () => ({
+  ThemeProvider: ({ children }) => children,
+  useThemeContext: () => ({ theme: 'light', toggleTheme: jest.fn(), setTheme: jest.fn() }),
+}));
+
 jest.mock('../../utils/apiBase', () => ({
   default: 'http://localhost:3001/api/v1',
   API_BASE: 'http://localhost:3001/api/v1',

@@ -17,6 +17,16 @@ import ThemeToggle from '../../components/ThemeToggle';
 import ChatBotEnhanced from '../../components/ChatBotEnhanced';
 import axios from 'axios';
 
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: null, token: null, isAuthenticated: false, isLoading: false, login: jest.fn(), logout: jest.fn() }),
+  AuthProvider: ({ children }) => children,
+}));
+
+jest.mock('../../components/ThemeProvider', () => ({
+  ThemeProvider: ({ children }) => children,
+  useThemeContext: () => ({ theme: 'light', toggleTheme: jest.fn(), setTheme: jest.fn() }),
+}));
+
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios;

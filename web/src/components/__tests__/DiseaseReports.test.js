@@ -92,25 +92,21 @@ describe('DiseaseReports', () => {
   it('should filter by period', async () => {
     render(<DiseaseReports />);
     
-    await waitFor(() => {
-      // Find period selector
+    // Wait for the button to appear, click it, then wait for the axios call.
+    const periodButton = await waitFor(() => {
       const periodButtons = screen.getAllByRole('button');
-      const periodButton = periodButtons.find(btn => btn.textContent.includes('7 días'));
-      
-      if (periodButton) {
-        fireEvent.click(periodButton);
-        
-        await waitFor(() => {
-          expect(mockedAxios.get).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({
-              params: expect.objectContaining({
-                period: '7d'
-              })
-            })
-          );
-        });
-      }
+      const btn = periodButtons.find(b => b.textContent.includes('7 días'));
+      if (!btn) throw new Error('period button not yet rendered');
+      return btn;
+    });
+    fireEvent.click(periodButton);
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          params: expect.objectContaining({ period: '7d' }),
+        })
+      );
     });
   });
 

@@ -4,7 +4,6 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { jest } from '@jest/globals';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Mock DOMPurify
