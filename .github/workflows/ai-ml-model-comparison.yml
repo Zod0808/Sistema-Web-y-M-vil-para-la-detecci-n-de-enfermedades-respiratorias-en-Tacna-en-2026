@@ -46,6 +46,71 @@ jobs:
           pip install -r requirements-ci.txt
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
+      - name: Ensure dataset exists (generate synthetic sample if absent)
+        run: |
+          # El dataset real (52 MB) vive en modelo1/synthetic/ y está
+          # gitignored (ver .gitignore línea "ai-services/data/datasets/modelo1/synthetic/").
+          # En CI no está disponible, así que generamos un dataset sintético
+          # equivalente en esquema (columnas disease, symptoms + opcionales)
+          # con enfermedades respiratorias representativas. Es lo mínimo para
+          # ejercitar el pipeline de comparación de modelos en CI.
+          mkdir -p data/datasets
+          TARGET="data/datasets/augmented_dataset_full_20251103_124126.csv"
+          if [ ! -f "$TARGET" ]; then
+            python - <<'PY'
+          import csv, random, itertools
+          random.seed(42)
+          diseases = {
+              "neumonia":      ["fiebre","tos_productiva","dificultad_respirar","dolor_pecho","escalofrios","fatiga"],
+              "asma":          ["sibilancias","dificultad_respirar","tos_seca","opresion_toracica","fatiga"],
+              "bronquitis":    ["tos_persistente","flema","fatiga","dolor_pecho","fiebre_leve"],
+              "gripe":         ["fiebre","dolor_cabeza","dolor_muscular","tos","congestion_nasal","fatiga"],
+              "covid":         ["fiebre","tos_seca","fatiga","perdida_olfato","perdida_gusto","dificultad_respirar"],
+              "tuberculosis":  ["tos_prolongada","perdida_peso","sudores_nocturnos","fiebre","fatiga","hemoptisis"],
+              "laringitis":    ["ronquera","dolor_garganta","tos_seca","dificultad_tragar"],
+              "sinusitis":     ["congestion_nasal","dolor_facial","cefalea","secrecion_nasal","tos"],
+              "faringitis":    ["dolor_garganta","fiebre","dificultad_tragar","tos"],
+              "rinitis_alergica": ["estornudos","picazon_nasal","secrecion_nasal","ojos_llorosos"],
+              "epoc":          ["dificultad_respirar","tos_cronica","flema","sibilancias","fatiga"],
+              "resfriado_comun": ["congestion_nasal","estornudos","tos_leve","dolor_garganta"],
+          }
+          rows = []
+          for _ in range(3200):
+              disease = random.choice(list(diseases.keys()))
+              pool = diseases[disease]
+              k = random.randint(2, min(5, len(pool)))
+              chosen = random.sample(pool, k)
+              # Añadir 0-1 síntomas de otra enfermedad para simular ruido
+              if random.random() < 0.3:
+                  noise_disease = random.choice([d for d in diseases if d != disease])
+                  chosen.append(random.choice(diseases[noise_disease]))
+              rows.append({
+                  "disease": disease,
+                  "disease_name": disease.replace("_", " ").title(),
+                  "symptoms": ", ".join(chosen),
+                  "urgency": random.choice(["baja","media","alta"]),
+                  "severity": random.choice(["leve","moderada","severa"]),
+                  "category": "respiratoria",
+                  "patient_age": random.randint(5, 85),
+                  "symptom_count": len(chosen),
+                  "source": "synthetic_ci",
+                  "feedback_id": "",
+                  "timestamp": "2026-07-13T00:00:00Z",
+              })
+          import os
+          target = os.environ.get("TARGET", "data/datasets/augmented_dataset_full_20251103_124126.csv")
+          with open(target, "w", newline="", encoding="utf-8") as f:
+              w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+              w.writeheader()
+              w.writerows(rows)
+          print(f"Generated {len(rows)} synthetic rows -> {target}")
+          PY
+          else
+            echo "Dataset $TARGET ya presente en el checkout — se usará ese."
+          fi
+        env:
+          TARGET: data/datasets/augmented_dataset_full_20251103_124126.csv
+
       - name: Run model comparison (v2)
         run: |
           python scripts/validation/validate_models_comparison_v2.py --dataset data/datasets/augmented_dataset_full_20251103_124126.csv --test-size 3000
