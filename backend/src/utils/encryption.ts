@@ -85,7 +85,8 @@ export function applyFieldEncryption(schema: Schema<any, any, any, any, any, any
     next();
   });
 
-  schema.post('find', function (docs: any[]) {
+  schema.post('find', function (docs: any) {
+    if (!Array.isArray(docs)) return;
     for (const doc of docs) decryptDoc(doc);
   });
   schema.post('findOne', function (doc: any) {

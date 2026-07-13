@@ -232,7 +232,7 @@ export class HospitalSyncService {
     hospitalName: string,
     patientId: string,
     resourceTypes?: string[],
-  ): Promise<{ from: SyncResult; to: SyncResult }> {
+  ): Promise<{ from: SyncResult; to: SyncResult; imported: number; exported: number; errors: string[]; timestamp: string }> {
     // Primero sincronizar desde externo
     const fromResult = await this.syncFromExternal(hospitalName, patientId, resourceTypes);
 
@@ -257,7 +257,14 @@ export class HospitalSyncService {
 
     const toResult = await this.syncToExternal(hospitalName, patientId, localResources);
 
-    return { from: fromResult, to: toResult };
+    return {
+      from: fromResult,
+      to: toResult,
+      imported: (fromResult as any).imported ?? (fromResult as any).synced ?? 0,
+      exported: (toResult as any).exported ?? (toResult as any).synced ?? 0,
+      errors: [...((fromResult as any).errors ?? []), ...((toResult as any).errors ?? [])],
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**

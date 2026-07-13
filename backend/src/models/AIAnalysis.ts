@@ -363,26 +363,28 @@ AIAnalysisSchema.statics.getAnalysisByPeriod = async function(startDate: Date, e
   return analyses;
 };
 
-// Método estático para obtener recomendaciones más comunes
+// Método estático para obtener recomendaciones más comunes.
+// Note: recommendations are stored encrypted with a random IV, so DB-side aggregation
+// cannot group by plaintext. We load documents (which triggers decryption via post-hooks)
+// and aggregate in memory.
 AIAnalysisSchema.statics.getTopRecommendations = async function(limit: number = 10) {
-  const recommendations = await this.aggregate([
-    { $unwind: '$possibleDiagnoses' },
-    { $unwind: '$possibleDiagnoses.recommendations' },
-    {
-      $group: {
-        _id: '$possibleDiagnoses.recommendations',
-        count: { $sum: 1 }
+  const docs = await this.find({}, { possibleDiagnoses: 1 }).lean(false);
+  const counts = new Map<string, number>();
+  for (const doc of docs) {
+    const diagnoses = (doc as any).possibleDiagnoses || [];
+    for (const diag of diagnoses) {
+      const recs = diag?.recommendations || [];
+      for (const rec of recs) {
+        if (typeof rec === 'string' && rec.length > 0) {
+          counts.set(rec, (counts.get(rec) || 0) + 1);
+        }
       }
-    },
-    {
-      $sort: { count: -1 }
-    },
-    {
-      $limit: limit
     }
-  ]);
-
-  return recommendations;
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id, count]) => ({ _id: id, count }));
 };
 
 export default mongoose.model<AIAnalysisDocument>('AIAnalysis', AIAnalysisSchema);

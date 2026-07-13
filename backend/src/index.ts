@@ -414,8 +414,16 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Some tests use `request(app)` (expects Express app).
-// Others use `const app = appInstance.app` (expects App class with .app property).
-// Adding a self-referencing .app property satisfies both patterns.
-const expressApp = appInstance.app as typeof appInstance.app & { app: typeof appInstance.app };
+// Others use `appModule.app` / `appModule.listen()` / `appModule.initializeDatabase()`
+// (expects the App class). Augment the exported Express app with a self-referencing
+// `.app` property AND with bound App-class methods so both patterns work.
+const expressApp = appInstance.app as typeof appInstance.app & {
+  app: typeof appInstance.app;
+  listen: typeof appInstance.listen;
+  initializeDatabase: () => Promise<void>;
+};
 expressApp.app = expressApp;
+expressApp.listen = appInstance.listen.bind(appInstance);
+// initializeDatabase is a private method on the App class; expose it here for test coverage.
+expressApp.initializeDatabase = (appInstance as any).initializeDatabase.bind(appInstance);
 export default expressApp;

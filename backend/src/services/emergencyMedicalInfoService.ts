@@ -294,7 +294,11 @@ export class EmergencyMedicalInfoService {
         testName: result.testName,
         value: String(result.value),
         date: result.date,
-        status: result.status,
+        // LabResult now supports workflow states too; project them onto the
+        // emergency-info clinical status subset.
+        status: (['critical', 'abnormal'] as const).includes(result.status as any)
+          ? (result.status as 'critical' | 'abnormal')
+          : 'normal',
       }));
     } catch (error: any) {
       logger.warn(`Error al obtener resultados de laboratorio: ${error.message}`);

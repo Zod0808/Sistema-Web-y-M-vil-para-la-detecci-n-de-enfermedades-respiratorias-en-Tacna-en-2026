@@ -53,16 +53,16 @@ class ReferralService {
    * Crear un nuevo referido
    */
   async createReferral(payload: CreateReferralPayload): Promise<ReferralDocument> {
-    // Validar que el doctor que refiere existe
+    // Validar que el doctor que refiere existe (admins pueden actuar como proxy).
     const referringDoctor = await UserModel.findById(payload.referringDoctorId);
-    if (!referringDoctor || referringDoctor.role !== 'doctor') {
+    if (!referringDoctor || (referringDoctor.role !== 'doctor' && referringDoctor.role !== 'admin')) {
       throw new AppError('El doctor que refiere no existe o no es válido', 400);
     }
 
     // Si se especifica un doctor destino, validar que existe
     if (payload.referredToDoctorId) {
       const referredDoctor = await UserModel.findById(payload.referredToDoctorId);
-      if (!referredDoctor || referredDoctor.role !== 'doctor') {
+      if (!referredDoctor || (referredDoctor.role !== 'doctor' && referredDoctor.role !== 'admin')) {
         throw new AppError('El doctor destino no existe o no es válido', 400);
       }
       payload.referredToDoctorName = referredDoctor.name;
@@ -205,13 +205,15 @@ class ReferralService {
       throw new AppError('No se puede actualizar un referido completado o cancelado', 400);
     }
 
-    // Si se actualiza el doctor destino, validar que existe
+    // Si se actualiza el doctor destino, validar que existe (si está en BD)
     if (payload.referredToDoctorId && payload.referredToDoctorId !== referral.referredToDoctorId) {
       const referredDoctor = await UserModel.findById(payload.referredToDoctorId);
-      if (!referredDoctor || referredDoctor.role !== 'doctor') {
+      if (referredDoctor && referredDoctor.role !== 'doctor' && referredDoctor.role !== 'admin') {
         throw new AppError('El doctor destino no existe o no es válido', 400);
       }
-      payload.referredToDoctorName = referredDoctor.name;
+      if (referredDoctor) {
+        payload.referredToDoctorName = referredDoctor.name;
+      }
 
       // Si el referido estaba pendiente y ahora tiene doctor, cambiar a aceptado
       if (referral.status === 'pending') {
@@ -250,14 +252,16 @@ class ReferralService {
       throw new AppError('Referido no encontrado', 404);
     }
 
-    // Validar que el doctor existe
+    // Validar que el doctor existe cuando esté en BD (permitir admin como proxy)
     const doctor = await UserModel.findById(referredToDoctorId);
-    if (!doctor || doctor.role !== 'doctor') {
+    if (doctor && doctor.role !== 'doctor' && doctor.role !== 'admin') {
       throw new AppError('El doctor destino no existe o no es válido', 400);
     }
 
     await referral.accept(referredToDoctorId, notes);
-    referral.referredToDoctorName = doctor.name;
+    if (doctor) {
+      referral.referredToDoctorName = doctor.name;
+    }
     await referral.save();
 
     // Crear alerta para el doctor que refirió
@@ -266,7 +270,7 @@ class ReferralService {
       patientId: referral.patientId,
       doctorId: referral.referringDoctorId,
       title: 'Referido Aceptado',
-      message: `El referido para ${referral.patientName} ha sido aceptado por ${doctor.name}`,
+      message: `El referido para ${referral.patientName} ha sido aceptado por ${doctor?.name ?? 'un especialista'}`,
       category: 'referral',
       priority: referral.priority as any,
       channels: ['push', 'in_app'],

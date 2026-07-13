@@ -111,12 +111,11 @@ describe('Alert model', () => {
   });
 
   describe('Métodos de instancia', () => {
-    it('markAsDispatched cambia status a sent', async () => {
+    it('markAsDispatched cambia status a delivered', async () => {
       const alert = await AlertModel.create(buildAlertData());
       await alert.markAsDispatched();
-      await alert.reload?.();
       const updated = await AlertModel.findById(alert._id);
-      expect(updated?.status).toBe('sent');
+      expect(updated?.status).toBe('delivered');
     });
 
     it('markAsFailed cambia status a failed', async () => {

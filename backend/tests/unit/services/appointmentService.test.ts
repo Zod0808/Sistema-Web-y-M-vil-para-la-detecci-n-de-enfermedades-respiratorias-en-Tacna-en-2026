@@ -116,7 +116,7 @@ describe('appointmentService', () => {
       const appointment = buildAppointment();
       AppointmentModel.isSlotAvailable.mockResolvedValue(true);
       AppointmentModel.create.mockResolvedValue(appointment);
-      alertService.scheduleFollowUpAlert.mockRejectedValue(new Error('Alert error'));
+      alertService.scheduleFollowUpAlert.mockRejectedValueOnce(new Error('Alert error'));
 
       const result = await appointmentService.createAppointment({
         patientId: 'patient-1',

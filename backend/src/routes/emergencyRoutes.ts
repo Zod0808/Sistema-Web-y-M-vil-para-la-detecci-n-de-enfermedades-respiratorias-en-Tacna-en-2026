@@ -77,6 +77,24 @@ router.post(
   createEmergency
 );
 
+// Obtener emergencias activas del usuario
+// IMPORTANTE: debe declararse antes de /:emergencyId para que Express no lo
+// interprete como un parámetro dinámico.
+router.get(
+  '/active',
+  authenticate,
+  getActiveEmergencies
+);
+
+// Detectar emergencia automáticamente
+router.post(
+  '/detect',
+  authenticate,
+  detectEmergencyValidation,
+  validate,
+  detectEmergency
+);
+
 // Obtener estado de emergencia
 router.get(
   '/:emergencyId',
@@ -93,25 +111,15 @@ router.post(
   cancelEmergency
 );
 
-// Obtener emergencias activas del usuario
-router.get(
-  '/active',
-  authenticate,
-  getActiveEmergencies
-);
-
-// Detectar emergencia automáticamente
-router.post(
-  '/detect',
-  authenticate,
-  detectEmergencyValidation,
-  validate,
-  detectEmergency
-);
-
-// Obtener información de ambulancia
+// Obtener información de ambulancia (alias /ambulance-info por retrocompatibilidad)
 router.get(
   '/:emergencyId/ambulance',
+  authenticate,
+  getAmbulanceInfo
+);
+
+router.get(
+  '/:emergencyId/ambulance-info',
   authenticate,
   getAmbulanceInfo
 );

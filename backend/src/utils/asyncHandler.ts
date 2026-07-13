@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Wrapper para manejar errores asíncronos
+// Wrapper para manejar errores asíncronos.
+// Return the promise chain so callers (unit tests) can await completion.
 export const asyncHandler = (fn: Function) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req, res, next)).catch(next);
-  };
 };

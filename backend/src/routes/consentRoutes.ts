@@ -110,6 +110,37 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/v1/consent/:userId
+ * Obtener consentimiento de un usuario específico (usado por paciente o admin)
+ */
+router.get('/:userId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const { userId } = req.params;
+    const latestConsent = await ConsentLog.getLatestConsent(userId);
+
+    return res.json({
+      success: true,
+      data: latestConsent
+        ? {
+            id: latestConsent._id,
+            consents: latestConsent.consents,
+            version: latestConsent.version,
+            timestamp: latestConsent.timestamp,
+            revokedAt: latestConsent.revokedAt,
+          }
+        : null,
+    });
+  } catch (error: any) {
+    logger.error('Error obteniendo consentimiento por userId', { error: error.message });
+    return res.status(500).json({ success: false, message: 'Error al obtener consentimiento' });
+  }
+});
+
+/**
  * POST /api/v1/consent/revoke
  * Revocar consentimiento del usuario
  */

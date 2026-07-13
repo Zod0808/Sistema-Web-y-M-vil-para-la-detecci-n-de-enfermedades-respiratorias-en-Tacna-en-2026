@@ -42,16 +42,21 @@ describe('LabResult model', () => {
       await expect(LabResultModel.create(buildLabData({ testName: undefined }))).rejects.toThrow();
     });
 
-    it('falla sin testCode', async () => {
-      await expect(LabResultModel.create(buildLabData({ testCode: undefined }))).rejects.toThrow();
+    // testCode, value, unit are optional now (bulk import allows lightweight results);
+    // presence checks moved to service-layer validation where needed.
+    it('permite crear sin testCode', async () => {
+      const doc = await LabResultModel.create(buildLabData({ testCode: undefined }));
+      expect(doc.testCode).toBeUndefined();
     });
 
-    it('falla sin value', async () => {
-      await expect(LabResultModel.create(buildLabData({ value: undefined }))).rejects.toThrow();
+    it('permite crear sin value', async () => {
+      const doc = await LabResultModel.create(buildLabData({ value: undefined }));
+      expect(doc.value).toBeUndefined();
     });
 
-    it('falla sin unit', async () => {
-      await expect(LabResultModel.create(buildLabData({ unit: undefined }))).rejects.toThrow();
+    it('permite crear sin unit', async () => {
+      const doc = await LabResultModel.create(buildLabData({ unit: undefined }));
+      expect(doc.unit).toBeUndefined();
     });
 
     it('falla con status inválido', async () => {

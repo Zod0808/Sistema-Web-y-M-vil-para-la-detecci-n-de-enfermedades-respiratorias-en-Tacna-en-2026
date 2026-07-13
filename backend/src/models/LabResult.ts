@@ -9,15 +9,17 @@ import { applyFieldEncryption } from '../utils/encryption';
 export interface ILabResult {
   patientId: string;
   testName: string;
-  testCode: string; // LOINC code
-  value: string | number;
-  unit: string;
+  testCode?: string; // LOINC code (optional for lightweight bulk imports)
+  category?: 'hematology' | 'biochemistry' | 'microbiology' | 'imaging' | 'pulmonary' | 'other';
+  value?: string | number;
+  unit?: string;
   referenceRange?: {
     low?: number;
     high?: number;
     text?: string;
   };
-  status: 'normal' | 'abnormal' | 'critical';
+  // Clinical (normal/abnormal/critical) or workflow (ordered/collected/processing/completed/cancelled) status.
+  status: 'normal' | 'abnormal' | 'critical' | 'ordered' | 'collected' | 'processing' | 'completed' | 'cancelled';
   date: Date;
   laboratoryId?: string;
   laboratoryName?: string;
@@ -39,8 +41,8 @@ export interface LabResultDocument extends Omit<ILabResult, '_id'>, Document {
 
 export interface LabResultModel extends Model<LabResultDocument> {
   findByPatient(patientId: string, startDate?: Date, endDate?: Date): Promise<LabResultDocument[]>;
-  findAbnormal(patientId: string, startDate?: Date, endDate?: Date): Promise<LabResultDocument[]>;
-  findCritical(patientId: string, startDate?: Date, endDate?: Date): Promise<LabResultDocument[]>;
+  findAbnormal(patientId?: string, startDate?: Date, endDate?: Date): Promise<LabResultDocument[]>;
+  findCritical(patientId?: string, startDate?: Date, endDate?: Date): Promise<LabResultDocument[]>;
   findByTestCode(testCode: string, patientId?: string): Promise<LabResultDocument[]>;
   getLatestByTestCode(patientId: string, testCode: string): Promise<LabResultDocument | null>;
 }
@@ -60,17 +62,20 @@ const LabResultSchema = new Schema<LabResultDocument, LabResultModel>(
     },
     testCode: {
       type: String,
-      required: true,
+      index: true,
+      trim: true,
+    },
+    category: {
+      type: String,
+      enum: ['hematology', 'biochemistry', 'microbiology', 'imaging', 'pulmonary', 'other'],
       index: true,
       trim: true,
     },
     value: {
       type: Schema.Types.Mixed, // Puede ser string o number
-      required: true,
     },
     unit: {
       type: String,
-      required: true,
       trim: true,
     },
     referenceRange: {
@@ -80,7 +85,12 @@ const LabResultSchema = new Schema<LabResultDocument, LabResultModel>(
     },
     status: {
       type: String,
-      enum: ['normal', 'abnormal', 'critical'],
+      enum: [
+        // Clinical status
+        'normal', 'abnormal', 'critical',
+        // Workflow status
+        'ordered', 'collected', 'processing', 'completed', 'cancelled',
+      ],
       required: true,
       default: 'normal',
       index: true,
@@ -183,14 +193,14 @@ LabResultSchema.statics.findByPatient = async function (
 };
 
 LabResultSchema.statics.findAbnormal = async function (
-  patientId: string,
+  patientId?: string,
   startDate?: Date,
   endDate?: Date,
 ): Promise<LabResultDocument[]> {
   const query: any = {
-    patientId,
     status: { $in: ['abnormal', 'critical'] },
   };
+  if (patientId) query.patientId = patientId;
 
   if (startDate || endDate) {
     query.date = {};
@@ -202,14 +212,14 @@ LabResultSchema.statics.findAbnormal = async function (
 };
 
 LabResultSchema.statics.findCritical = async function (
-  patientId: string,
+  patientId?: string,
   startDate?: Date,
   endDate?: Date,
 ): Promise<LabResultDocument[]> {
   const query: any = {
-    patientId,
     status: 'critical',
   };
+  if (patientId) query.patientId = patientId;
 
   if (startDate || endDate) {
     query.date = {};

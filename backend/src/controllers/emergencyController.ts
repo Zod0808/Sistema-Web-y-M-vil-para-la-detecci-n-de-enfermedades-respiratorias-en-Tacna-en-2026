@@ -156,8 +156,8 @@ export const getActiveEmergencies = asyncHandler(
 
     res.status(200).json({
       success: true,
-      data: {
-        emergencies: activeEmergencies,
+      data: activeEmergencies,
+      meta: {
         count: activeEmergencies.length,
       },
     });

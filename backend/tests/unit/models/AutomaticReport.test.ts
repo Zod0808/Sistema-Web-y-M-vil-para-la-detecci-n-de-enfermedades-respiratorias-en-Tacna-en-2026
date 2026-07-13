@@ -160,8 +160,8 @@ describe('AutomaticReport model', () => {
       const latest = await AutomaticReport.findLatestByType('daily');
 
       expect(latest).not.toBeNull();
-      expect(latest!.period.startDate.getFullYear()).toBe(2026);
-      expect(latest!.period.startDate.getMonth()).toBe(3); // April (0-indexed)
+      expect(latest!.period.startDate.getUTCFullYear()).toBe(2026);
+      expect(latest!.period.startDate.getUTCMonth()).toBe(3); // April UTC (0-indexed)
     });
 
     it('retorna null cuando no hay reportes del tipo', async () => {

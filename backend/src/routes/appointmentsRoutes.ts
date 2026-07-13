@@ -218,20 +218,31 @@ router.put(
   })
 );
 
+const cancelHandler = asyncHandler(async (req, res) => {
+  const appointment = await appointmentService.cancelAppointment(req.params.appointmentId, req.body.reason);
+  const response: ApiResponse = {
+    success: true,
+    message: 'Cita cancelada correctamente',
+    data: appointment,
+  };
+  res.status(200).json(response);
+});
+
 router.patch(
   '/:appointmentId/cancel',
   authorize('doctor', 'admin'),
   [param('appointmentId').isMongoId(), body('reason').optional().isString()],
   validate,
-  asyncHandler(async (req, res) => {
-    const appointment = await appointmentService.cancelAppointment(req.params.appointmentId, req.body.reason);
-    const response: ApiResponse = {
-      success: true,
-      message: 'Cita cancelada correctamente',
-      data: appointment,
-    };
-    res.status(200).json(response);
-  })
+  cancelHandler
+);
+
+// POST alias for callers that use POST /:id/cancel (matches RFC-style state transitions)
+router.post(
+  '/:appointmentId/cancel',
+  authorize('doctor', 'admin'),
+  [param('appointmentId').isMongoId(), body('reason').optional().isString()],
+  validate,
+  cancelHandler
 );
 
 router.patch(

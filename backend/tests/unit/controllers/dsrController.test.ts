@@ -48,14 +48,19 @@ const AIAnalysis = require('../../../src/models/AIAnalysis').default;
 const { WearableData } = require('../../../src/models/WearableData');
 const User = require('../../../src/models/User').default;
 
+const queryChain = (data: any) => ({
+  lean: jest.fn().mockResolvedValue(data),
+  select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(data) }),
+});
+
 const setupMocks = (userId = 'user-1') => {
-  User.findById.mockResolvedValue({ _id: userId, name: 'Test User' });
-  MedicalHistory.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]), select: jest.fn().mockReturnThis() });
-  AppointmentModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-  PrescriptionModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-  AlertModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-  AIAnalysis.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-  WearableData.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+  User.findById.mockReturnValue(queryChain({ _id: userId, name: 'Test User' }));
+  MedicalHistory.find.mockReturnValue(queryChain([]));
+  AppointmentModel.find.mockReturnValue(queryChain([]));
+  PrescriptionModel.find.mockReturnValue(queryChain([]));
+  AlertModel.find.mockReturnValue(queryChain([]));
+  AIAnalysis.find.mockReturnValue(queryChain([]));
+  WearableData.find.mockReturnValue(queryChain([]));
 };
 
 const buildReq = (overrides: Partial<any> = {}): any => ({
@@ -112,7 +117,9 @@ describe('dsrController', () => {
     });
 
     it('retorna 500 cuando falla la consulta', async () => {
-      User.findById.mockRejectedValue(new Error('DB error'));
+      User.findById.mockReturnValue({
+        lean: jest.fn().mockRejectedValue(new Error('DB error')),
+      });
 
       const req = buildReq();
       const res = buildRes();

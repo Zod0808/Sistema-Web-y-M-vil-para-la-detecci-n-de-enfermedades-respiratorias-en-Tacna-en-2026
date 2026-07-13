@@ -192,7 +192,7 @@ describe('WearableData model', () => {
 
       const results = await WearableData.find({ patientId }).sort({ timestamp: -1 });
 
-      expect(results[0].timestamp.getMonth()).toBe(3); // April
+      expect(results[0].timestamp.getUTCMonth()).toBe(3); // April UTC
     });
   });
 });

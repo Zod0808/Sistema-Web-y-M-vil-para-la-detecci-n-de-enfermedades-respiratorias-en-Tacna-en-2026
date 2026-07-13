@@ -24,7 +24,14 @@ export const authenticate = async (req: AuthenticatedRequest, _res: Response, ne
 
     // In test environment, skip DB lookup and use JWT payload directly.
     // This allows integration tests to use generated tokens without pre-creating users.
-    if (process.env.NODE_ENV === 'test' && decoded.userId && decoded.role) {
+    // Tokens carrying `__requireDb: true` still hit the DB (for tests that assert
+    // 401 when the underlying user was removed mid-session).
+    if (
+      process.env.NODE_ENV === 'test'
+      && decoded.userId
+      && decoded.role
+      && !(decoded as any).__requireDb
+    ) {
       req.user = {
         _id: decoded.userId,
         userId: decoded.userId,

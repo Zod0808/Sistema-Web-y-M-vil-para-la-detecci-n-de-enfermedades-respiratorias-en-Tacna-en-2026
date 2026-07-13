@@ -26,6 +26,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
   'doctor_notification',
   'system',
   'emergency',
+  'consent',
+  'laboratory',
+  'referral',
 ];
 
 const PRIORITY_WEIGHTS: Record<AlertPriority, number> = {
@@ -58,7 +61,7 @@ const AlertTriggerSchema = new Schema(
   {
     source: {
       type: String,
-      enum: ['symptom_analysis', 'medication_schedule', 'follow_up_rule', 'manual', 'system', 'doctor_portal', 'emergency_service'],
+      enum: ['symptom_analysis', 'medication_schedule', 'follow_up_rule', 'manual', 'system', 'doctor_portal', 'emergency_service', 'referral', 'consent', 'laboratory'],
       required: true,
       trim: true,
     },

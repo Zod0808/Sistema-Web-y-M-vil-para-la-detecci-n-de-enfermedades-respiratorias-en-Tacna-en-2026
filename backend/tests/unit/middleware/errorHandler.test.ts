@@ -43,9 +43,11 @@ describe('errorHandler middleware', () => {
       expect.objectContaining({
         success: false,
         message: 'Mensaje de prueba',
-        data: expect.objectContaining({
-          statusCode: 418,
-          isOperational: true
+        error: expect.objectContaining({
+          technicalDetails: expect.objectContaining({
+            statusCode: 418,
+            isOperational: true
+          })
         })
       })
     );
@@ -156,10 +158,11 @@ describe('errorHandler middleware', () => {
       })
     ]);
     expect(res.status).toHaveBeenCalledWith(500);
+    // Production shape sanitizes the message to a generic user-friendly text.
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        message: 'Algo salió mal!'
+        message: expect.stringMatching(/Ocurrió un error en el servidor/i),
       })
     );
   });

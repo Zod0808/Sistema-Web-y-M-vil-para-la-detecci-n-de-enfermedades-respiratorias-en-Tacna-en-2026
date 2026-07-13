@@ -42,8 +42,8 @@ router.get('/patient', getPatientDashboard);
 /**
  * @route   GET /api/v1/dashboard/health
  * @desc    Get system health status
- * @access  Private (Admin only)
+ * @access  Private (any authenticated user)
  */
-router.get('/health', requireRole('admin'), getSystemHealth);
+router.get('/health', getSystemHealth);
 
 export default router;

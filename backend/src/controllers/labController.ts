@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
 import { AuthenticatedRequest } from '../types';
 import { labService } from '../services/labService';
+import { LabResult } from '../models/LabResult';
 import { logger } from '../utils/logger';
 import { requirePermission } from '../middleware/rbac';
 
@@ -210,6 +211,50 @@ export const getCriticalResults = asyncHandler(
 );
 
 /**
+ * GET /api/v1/lab/results/abnormal
+ * Listar resultados anormales (todos los pacientes)
+ */
+export const listAbnormalResults = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { startDate, endDate } = req.query;
+    const results = await labService.getAbnormalResults(
+      undefined,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined,
+    );
+    res.status(200).json({
+      success: true,
+      data: results,
+      meta: {
+        count: results.length,
+        critical: results.filter((r) => r.status === 'critical').length,
+        abnormal: results.filter((r) => r.status === 'abnormal').length,
+      },
+    });
+  },
+);
+
+/**
+ * GET /api/v1/lab/results/critical
+ * Listar resultados críticos (todos los pacientes, solo admin)
+ */
+export const listCriticalResults = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { startDate, endDate } = req.query;
+    const results = await labService.getCriticalResults(
+      undefined,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined,
+    );
+    res.status(200).json({
+      success: true,
+      data: results,
+      meta: { count: results.length },
+    });
+  },
+);
+
+/**
  * GET /api/v1/lab/results/:patientId/latest/:testCode
  * Obtener último resultado de un examen específico
  */
@@ -356,8 +401,9 @@ export const flagForReview = asyncHandler(
 );
 
 /**
- * POST /api/v1/lab/results/import
- * Importar y guardar resultados automáticamente
+ * POST /api/v1/lab/results/import (variante externa)
+ * Importar y guardar resultados desde sistema externo para un paciente.
+ * Body: { patientId, startDate?, endDate? }
  */
 export const importAndSaveResults = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -391,6 +437,47 @@ export const importAndSaveResults = asyncHandler(
       logger.error(`Error en importación automática: ${error.message}`, {
         userId: req.user?._id,
         patientId,
+        error: error.message,
+      });
+      throw error;
+    }
+  },
+);
+
+/**
+ * POST /api/v1/lab/results/import
+ * Importar (bulk insert) resultados de laboratorio ya formateados o disparar
+ * importación externa para un paciente. Discriminates on payload shape.
+ */
+export const bulkImportResults = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { results } = req.body;
+
+    if (!Array.isArray(results) || results.length === 0) {
+      throw new AppError('results debe ser un array con al menos un elemento', 400);
+    }
+
+    try {
+      const saved = await LabResult.insertMany(results, { ordered: false });
+
+      logger.info(`Importación de resultados de laboratorio completada`, {
+        userId: req.user?._id,
+        imported: results.length,
+        saved: saved.length,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Importación completada',
+        data: saved,
+        meta: {
+          imported: results.length,
+          saved: saved.length,
+        },
+      });
+    } catch (error: any) {
+      logger.error(`Error en importación de laboratorio: ${error.message}`, {
+        userId: req.user?._id,
         error: error.message,
       });
       throw error;

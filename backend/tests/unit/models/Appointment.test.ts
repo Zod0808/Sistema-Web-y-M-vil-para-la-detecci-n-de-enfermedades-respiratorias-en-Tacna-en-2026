@@ -52,9 +52,11 @@ describe('Appointment model', () => {
       await expect(AppointmentModel.create(data)).rejects.toThrow();
     });
 
-    it('falla sin createdBy', async () => {
+    // Pre-validate hook backfills createdBy from doctorId (see Appointment.ts:143-145).
+    it('defaults createdBy to doctorId when omitted', async () => {
       const data = buildAppointmentData({ createdBy: undefined });
-      await expect(AppointmentModel.create(data)).rejects.toThrow();
+      const doc = await AppointmentModel.create(data);
+      expect(doc.createdBy).toBe(doc.doctorId);
     });
 
     it('falla con durationMinutes menor a 15', async () => {

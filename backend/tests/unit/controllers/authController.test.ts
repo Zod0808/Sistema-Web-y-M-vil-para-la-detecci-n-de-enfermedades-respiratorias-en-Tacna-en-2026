@@ -437,11 +437,14 @@ describe('Auth Controller', () => {
     });
 
     it('should return 401 when user no longer exists', async () => {
+      // Force the auth middleware to hit the DB (bypass the test-env shortcut)
+      // so we can verify the "user deleted mid-session" behavior.
+      const dbToken = testUtils.generateTestToken({ userId, role: 'patient', __requireDb: true });
       await User.deleteOne({ _id: userId });
 
       const response = await request(app)
         .get('/api/v1/auth/profile')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${dbToken}`)
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -484,11 +487,12 @@ describe('Auth Controller', () => {
     });
 
     it('should return 401 when trying to update a missing user', async () => {
+      const dbToken = testUtils.generateTestToken({ userId, role: 'patient', __requireDb: true });
       await User.deleteOne({ _id: userId });
 
       const response = await request(app)
         .put('/api/v1/auth/profile')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${dbToken}`)
         .send({ name: 'Another Name' })
         .expect(401);
 
@@ -556,11 +560,12 @@ describe('Auth Controller', () => {
     });
 
     it('should return 401 when user does not exist', async () => {
+      const dbToken = testUtils.generateTestToken({ userId, role: 'patient', __requireDb: true });
       await User.deleteOne({ _id: userId });
 
       const response = await request(app)
         .put('/api/v1/auth/change-password')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${dbToken}`)
         .send({
           currentPassword: 'oldpassword123',
           newPassword: 'NewPassword123!'
@@ -609,11 +614,12 @@ describe('Auth Controller', () => {
     });
 
     it('should return 401 if the account was already removed', async () => {
+      const dbToken = testUtils.generateTestToken({ userId, role: 'patient', __requireDb: true });
       await User.deleteOne({ _id: userId });
 
       const response = await request(app)
         .put('/api/v1/auth/deactivate')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${dbToken}`)
         .expect(401);
 
       expect(response.body.success).toBe(false);

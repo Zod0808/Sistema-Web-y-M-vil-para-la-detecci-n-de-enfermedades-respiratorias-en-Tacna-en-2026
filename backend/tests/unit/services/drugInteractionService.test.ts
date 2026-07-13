@@ -29,10 +29,11 @@ describe('drugInteractionService', () => {
   let mockPost: jest.Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Full reset so mockResolvedValue/mockRejectedValue from prior tests don't leak.
+    mockPost = axiosMock._mockPost;
+    mockPost.mockReset();
     // Reset the client so it's recreated with the mock
     (drugInteractionService as any).client = null;
-    mockPost = axiosMock._mockPost;
   });
 
   describe('checkInteractions', () => {
@@ -110,6 +111,7 @@ describe('drugInteractionService', () => {
     it('retorna [] cuando la URL no está configurada', async () => {
       const { config } = require('../../../src/config/config');
       const originalUrl = config.integrations.drugInteractions.url;
+      const originalApiUrl = (drugInteractionService as any).apiUrl;
       config.integrations.drugInteractions.url = '';
       (drugInteractionService as any).client = null;
       (drugInteractionService as any).apiUrl = '';
@@ -120,8 +122,10 @@ describe('drugInteractionService', () => {
 
       expect(result).toEqual([]);
 
-      // Restore
+      // Restore both config AND the readonly-typed field on the singleton
+      // (previous test would leak apiUrl='' into subsequent evaluateDosage tests).
       config.integrations.drugInteractions.url = originalUrl;
+      (drugInteractionService as any).apiUrl = originalApiUrl;
     });
   });
 

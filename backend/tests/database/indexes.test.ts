@@ -15,11 +15,32 @@ import MedicalHistory from '../../src/models/MedicalHistory';
 import Appointment from '../../src/models/Appointment';
 import AIAnalysis from '../../src/models/AIAnalysis';
 
+// MongoDB 6+ driver returns each index as an array of [field, direction] tuples.
+// Older code expected `{ field: direction }`. Normalize to object form for tests.
+const normalizeIndex = (raw: any): Record<string, any> => {
+  if (Array.isArray(raw)) return Object.fromEntries(raw);
+  return raw ?? {};
+};
+const normalizeIndexes = (indexes: Record<string, any>): Record<string, Record<string, any>> => {
+  const out: Record<string, Record<string, any>> = {};
+  for (const [key, value] of Object.entries(indexes)) {
+    out[key] = normalizeIndex(value);
+  }
+  return out;
+};
+
 describe('MongoDB Indexes Tests', () => {
   beforeAll(async () => {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/respicare-test');
     }
+    // Ensure collections and indexes exist before queries
+    await Promise.all([
+      User.init(),
+      MedicalHistory.init(),
+      Appointment.init(),
+      AIAnalysis.init(),
+    ]);
   });
 
   afterAll(async () => {
@@ -35,7 +56,7 @@ describe('MongoDB Indexes Tests', () => {
 
   describe('User Indexes', () => {
     it('should have index on email field', async () => {
-      const indexes = await User.collection.getIndexes();
+      const indexes = normalizeIndexes(await User.collection.getIndexes());
       expect(indexes).toHaveProperty('email_1');
       expect(indexes.email_1).toEqual({ email: 1 });
     });
@@ -81,22 +102,22 @@ describe('MongoDB Indexes Tests', () => {
     });
 
     it('should have index on patientId field', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       expect(indexes).toHaveProperty('patientId_1');
     });
 
     it('should have index on doctorId field', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       expect(indexes).toHaveProperty('doctorId_1');
     });
 
     it('should have index on date field (descending)', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       expect(indexes).toHaveProperty('date_-1');
     });
 
     it('should have compound index on patientId and date', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       
       // Buscar índice compuesto
       const compoundIndex = Object.values(indexes).find(
@@ -108,7 +129,7 @@ describe('MongoDB Indexes Tests', () => {
     });
 
     it('should have compound index on doctorId and date', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       
       const compoundIndex = Object.values(indexes).find(
         (index: any) => 
@@ -160,7 +181,7 @@ describe('MongoDB Indexes Tests', () => {
     });
 
     it('should have text index for search', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       
       // Buscar índice de texto
       const textIndex = Object.values(indexes).find(
@@ -176,7 +197,7 @@ describe('MongoDB Indexes Tests', () => {
     });
 
     it('should have geospatial index on geoLocation', async () => {
-      const indexes = await MedicalHistory.collection.getIndexes();
+      const indexes = normalizeIndexes(await MedicalHistory.collection.getIndexes());
       
       const geoIndex = Object.values(indexes).find(
         (index: any) => index.geoLocation === '2dsphere'
@@ -241,40 +262,45 @@ describe('MongoDB Indexes Tests', () => {
     });
 
     it('should have index on patientId field', async () => {
-      const indexes = await Appointment.collection.getIndexes();
+      const indexes = normalizeIndexes(await Appointment.collection.getIndexes());
       expect(indexes).toHaveProperty('patientId_1');
     });
 
     it('should have index on doctorId field', async () => {
-      const indexes = await Appointment.collection.getIndexes();
+      const indexes = normalizeIndexes(await Appointment.collection.getIndexes());
       expect(indexes).toHaveProperty('doctorId_1');
     });
 
     it('should have index on date field', async () => {
-      const indexes = await Appointment.collection.getIndexes();
-      expect(indexes).toHaveProperty('date_1');
+      // Appointment renamed `date` -> `scheduledAt`; the standalone index is now on `scheduledAt`
+      // via the compound indexes below, and Mongoose creates the compound entries here.
+      const indexes = normalizeIndexes(await Appointment.collection.getIndexes());
+      const hasScheduledIndex = Object.values(indexes).some(
+        (index: any) => index.scheduledAt === 1
+      );
+      expect(hasScheduledIndex).toBe(true);
     });
 
     it('should have compound index on doctorId and date', async () => {
-      const indexes = await Appointment.collection.getIndexes();
-      
+      const indexes = normalizeIndexes(await Appointment.collection.getIndexes());
+
       const compoundIndex = Object.values(indexes).find(
-        (index: any) => 
-          index.doctorId === 1 && index.date === 1
+        (index: any) =>
+          index.doctorId === 1 && index.scheduledAt === 1
       );
-      
+
       expect(compoundIndex).toBeDefined();
     });
   });
 
   describe('AIAnalysis Indexes', () => {
     it('should have index on createdAt field', async () => {
-      const indexes = await AIAnalysis.collection.getIndexes();
+      const indexes = normalizeIndexes(await AIAnalysis.collection.getIndexes());
       expect(indexes).toHaveProperty('createdAt_-1');
     });
 
     it('should have compound index on urgency and confidence', async () => {
-      const indexes = await AIAnalysis.collection.getIndexes();
+      const indexes = normalizeIndexes(await AIAnalysis.collection.getIndexes());
       
       const compoundIndex = Object.values(indexes).find(
         (index: any) => 

@@ -79,6 +79,23 @@ export const createFhirResource = asyncHandler(
       throw new AppError('resourceType es requerido', 400);
     }
 
+    const validResourceTypes = [
+      'Patient',
+      'Observation',
+      'Condition',
+      'Medication',
+      'MedicationStatement',
+      'Procedure',
+      'DiagnosticReport',
+      'Encounter',
+      'AllergyIntolerance',
+      'Immunization',
+    ];
+
+    if (!validResourceTypes.includes(resourceType)) {
+      throw new AppError(`ResourceType ${resourceType} no es válido`, 400);
+    }
+
     // Validar que el resourceType del body coincida con el de la URL
     if (resource.resourceType && resource.resourceType !== resourceType) {
       throw new AppError(

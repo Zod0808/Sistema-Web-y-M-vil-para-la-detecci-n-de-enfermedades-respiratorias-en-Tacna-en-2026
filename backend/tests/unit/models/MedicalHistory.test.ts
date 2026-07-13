@@ -43,16 +43,20 @@ describe('MedicalHistory model', () => {
       await expect(MedicalHistory.create(buildHistoryData({ doctorId: undefined }))).rejects.toThrow();
     });
 
-    it('falla sin patientName', async () => {
-      await expect(MedicalHistory.create(buildHistoryData({ patientName: undefined }))).rejects.toThrow();
+    // patientName is denormalised from User and now optional (schema comment at MedicalHistory.ts:63-66).
+    it('permite crear sin patientName', async () => {
+      const h = await MedicalHistory.create(buildHistoryData({ patientName: undefined }));
+      expect(h.patientName).toBeUndefined();
     });
 
     it('falla sin diagnosis', async () => {
       await expect(MedicalHistory.create(buildHistoryData({ diagnosis: undefined }))).rejects.toThrow();
     });
 
-    it('falla sin age', async () => {
-      await expect(MedicalHistory.create(buildHistoryData({ age: undefined }))).rejects.toThrow();
+    // age is denormalised from User and optional.
+    it('permite crear sin age', async () => {
+      const h = await MedicalHistory.create(buildHistoryData({ age: undefined }));
+      expect(h.age).toBeUndefined();
     });
 
     it('falla con age negativa', async () => {
@@ -128,8 +132,8 @@ describe('MedicalHistory model', () => {
     it('findByDateRange retorna historiales en el rango de fechas', async () => {
       const jan = new Date('2024-01-15');
       const jun = new Date('2024-06-15');
-      await MedicalHistory.create(buildHistoryData({ createdAt: jan }));
-      await MedicalHistory.create(buildHistoryData({ createdAt: jun }));
+      await MedicalHistory.create(buildHistoryData({ date: jan }));
+      await MedicalHistory.create(buildHistoryData({ date: jun }));
 
       const start = new Date('2024-04-01');
       const end = new Date('2024-12-31');

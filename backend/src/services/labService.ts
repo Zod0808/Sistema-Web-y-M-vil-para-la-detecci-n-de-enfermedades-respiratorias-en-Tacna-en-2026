@@ -168,7 +168,7 @@ export class LabService {
    * Obtener resultados anormales de un paciente
    */
   async getAbnormalResults(
-    patientId: string,
+    patientId?: string,
     startDate?: Date,
     endDate?: Date,
   ): Promise<LabResultDocument[]> {
@@ -187,7 +187,7 @@ export class LabService {
    * Obtener resultados críticos de un paciente
    */
   async getCriticalResults(
-    patientId: string,
+    patientId?: string,
     startDate?: Date,
     endDate?: Date,
   ): Promise<LabResultDocument[]> {
@@ -245,7 +245,9 @@ export class LabService {
 
         if (result.flagged) summary.flagged++;
 
-        summary.byTestCode[result.testCode] = (summary.byTestCode[result.testCode] || 0) + 1;
+        if (result.testCode) {
+          summary.byTestCode[result.testCode] = (summary.byTestCode[result.testCode] || 0) + 1;
+        }
 
         if (!summary.latestDate || result.date > summary.latestDate) {
           summary.latestDate = result.date;

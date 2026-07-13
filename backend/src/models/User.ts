@@ -82,7 +82,7 @@ applyFieldEncryption(UserSchema, [
 ]);
 
 // Índices para optimizar consultas
-UserSchema.index({ email: 1 });
+// email index is auto-created by `unique: true` on the field
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });

@@ -156,8 +156,7 @@ MedicalHistorySchema.add({
   geoLocation: {
     type: {
       type: String,
-      enum: ['Point'],
-      default: 'Point'
+      enum: ['Point']
     },
     coordinates: {
       type: [Number],
@@ -205,7 +204,8 @@ MedicalHistorySchema.index({
 MedicalHistorySchema.index({ date: -1, diagnosis: 1 }); // Por fecha y diagnóstico
 MedicalHistorySchema.index({ date: -1, 'symptoms.severity': 1 }); // Por fecha y severidad de síntomas
 MedicalHistorySchema.index({ date: -1, age: 1 }); // Por fecha y edad (para análisis de riesgo)
-MedicalHistorySchema.index({ 'location.address': 'text', diagnosis: 'text' }); // Búsqueda de texto para analytics geográficos
+// NOTE: MongoDB only allows one text index per collection; the one above at line 183
+// (diagnosis + patientName + description) already covers text search including diagnosis.
 
 MedicalHistorySchema.index({
   doctorId: 1,
@@ -254,6 +254,8 @@ MedicalHistorySchema.pre('insertMany', function(next, docs: any[]) {
     const geoPoint = buildGeoPoint(doc);
     if (geoPoint) {
       doc.geoLocation = geoPoint;
+    } else {
+      delete doc.geoLocation;
     }
   });
   next();

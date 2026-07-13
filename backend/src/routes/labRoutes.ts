@@ -10,7 +10,11 @@ import {
   markAsReviewed,
   flagForReview,
   importAndSaveResults,
+  bulkImportResults,
+  listAbnormalResults,
+  listCriticalResults,
 } from '../controllers/labController';
+import { authorize } from '../middleware/auth';
 import { authenticate } from '../middleware/auth';
 import { requirePermission } from '../middleware/rbac';
 import { validate } from '../middleware/validation';
@@ -63,9 +67,35 @@ router.get(
   getLabResults,
 );
 
+// List all abnormal results (any patient)
+router.get(
+  '/results/abnormal',
+  authenticate,
+  requirePermission('fhir:read'),
+  listAbnormalResults,
+);
+
+// List all critical results (admin only)
+router.get(
+  '/results/critical',
+  authenticate,
+  authorize('admin'),
+  listCriticalResults,
+);
+
 // Historial de exámenes de un paciente
 router.get(
   '/results/:patientId/history',
+  authenticate,
+  requirePermission('fhir:read'),
+  patientIdValidation,
+  validate,
+  getPatientHistory,
+);
+
+// Historial de laboratorio (alias con /patients/:patientId/history)
+router.get(
+  '/patients/:patientId/history',
   authenticate,
   requirePermission('fhir:read'),
   patientIdValidation,
@@ -136,13 +166,21 @@ router.post(
   flagForReview,
 );
 
-// Importar y guardar resultados automáticamente
+// Importar (bulk insert) resultados formateados
 router.post(
   '/results/import',
   authenticate,
-  requirePermission('integrations:manage'),
+  requirePermission('fhir:create'),
   importValidation,
   validate,
+  bulkImportResults,
+);
+
+// Importar desde sistema externo (variante que dispara labService.importAndSaveResults)
+router.post(
+  '/results/import/external',
+  authenticate,
+  requirePermission('integrations:manage'),
   importAndSaveResults,
 );
 
