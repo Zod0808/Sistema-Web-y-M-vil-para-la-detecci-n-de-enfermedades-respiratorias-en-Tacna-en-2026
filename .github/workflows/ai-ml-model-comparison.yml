@@ -36,7 +36,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # openai-whisper==20231117 no compila bajo Python 3.11 en CI (fallo
+          # de build del wheel por incompatibilidad con setuptools moderno).
+          # El script `validate_models_comparison_v2.py` no toca audio, así
+          # que se excluye del install de este workflow. El resto de los
+          # entornos (dev, producción, otros workflows) sigue usando el
+          # requirements.txt original sin cambios.
+          grep -vE "^openai-whisper|^librosa|^soundfile|^ffmpeg-python" requirements.txt > requirements-ci.txt
+          pip install -r requirements-ci.txt
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run model comparison (v2)
