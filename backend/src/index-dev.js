@@ -701,11 +701,6 @@ app.use('/api/analytics', analyticsRoutes);
 const simpleAnalyticsRoutes = require('./routes/simpleAnalyticsRoutes');
 app.use('/api/analytics', simpleAnalyticsRoutes);
 
-// Mock Analytics Routes (for demonstration)
-// Rutas mock deshabilitadas - ahora se usan solo datos reales de MongoDB
-// const mockAnalyticsRoutes = require('./routes/mockAnalyticsRoutes');
-// app.use('/api/analytics', mockAnalyticsRoutes);
-
 // ML Analytics Routes (for SHAP and ML monitoring)
 const mlAnalyticsRoutes = require('./routes/mlAnalyticsRoutes');
 app.use('/api/analytics', mlAnalyticsRoutes);
