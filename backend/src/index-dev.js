@@ -677,34 +677,9 @@ app.get('/api/v1/medical-histories/:id', async (req, res) => {
   }
 });
 
-// Symptom Reports Routes
-const symptomReportsRoutes = require('./routes/symptomReportsRoutes');
-app.use('/api/symptom-reports', symptomReportsRoutes);
-
-// Chat Conversations Routes
-const chatConversationsRoutes = require('./routes/chatConversationsRoutes');
-app.use('/api/chat-conversations', chatConversationsRoutes);
-
-// Chat Audio Routes (Transcription & Cough Analysis)
-const chatAudioRoutes = require('./routes/chatAudioRoutes');
-app.use('/api/v1/chat', chatAudioRoutes);
-
-// Chat Image Routes (Image Analysis)
-const chatImageRoutes = require('./routes/chatImageRoutes');
-app.use('/api/v1/chat', chatImageRoutes);
-
-// Analytics Routes
-const analyticsRoutes = require('./routes/analyticsRoutesNew');
-app.use('/api/analytics', analyticsRoutes);
-
-// Simple Analytics Routes (for better performance)
-const simpleAnalyticsRoutes = require('./routes/simpleAnalyticsRoutes');
-app.use('/api/analytics', simpleAnalyticsRoutes);
-
-// ML Analytics Routes (for SHAP and ML monitoring)
-const mlAnalyticsRoutes = require('./routes/mlAnalyticsRoutes');
-app.use('/api/analytics', mlAnalyticsRoutes);
-app.use('/api/v1/analytics', mlAnalyticsRoutes);
+// All former .js routes (symptomReports, chatConversations, chatAudio,
+// chatImage, analyticsRoutesNew→publicAnalytics, simpleAnalytics, mlAnalytics)
+// migrated to TS. They are loaded below inside the ts-node/register block.
 
 // Alert Routes — eliminados los mocks; la implementación real está en alertRoutes.ts (cargado al final)
 
@@ -1711,6 +1686,13 @@ try {
   const medicalHistoryRoutes = require('./routes/medicalHistoryRoutes').default;
   const wearableRoutes      = require('./routes/wearableRoutes').default;
   const symptomAnalyzerRoutes = require('./routes/symptomAnalyzerRoutes').default;
+  const chatConversationsRoutes = require('./routes/chatConversationsRoutes').default;
+  const chatAudioRoutes     = require('./routes/chatAudioRoutes').default;
+  const chatImageRoutes     = require('./routes/chatImageRoutes').default;
+  const symptomReportsRoutes = require('./routes/symptomReportsRoutes').default;
+  const publicAnalyticsRoutes = require('./routes/publicAnalyticsRoutes').default;
+  const simpleAnalyticsRoutes = require('./routes/simpleAnalyticsRoutes').default;
+  const mlAnalyticsRoutes    = require('./routes/mlAnalyticsRoutes').default;
 
   app.use('/api/v1/prescriptions',     prescriptionRoutes);
   app.use('/api/v1/lab',               labRoutes);
@@ -1723,6 +1705,14 @@ try {
   app.use('/api/v1/medical-histories', medicalHistoryRoutes);
   app.use('/api/v1/wearables',         wearableRoutes);
   app.use('/api/v1/symptom-analyzer',  symptomAnalyzerRoutes);
+  app.use('/api/chat-conversations',   chatConversationsRoutes);
+  app.use('/api/v1/chat',              chatAudioRoutes);
+  app.use('/api/v1/chat',              chatImageRoutes);
+  app.use('/api/symptom-reports',      symptomReportsRoutes);
+  app.use('/api/analytics',            publicAnalyticsRoutes);
+  app.use('/api/analytics',            simpleAnalyticsRoutes);
+  app.use('/api/analytics',            mlAnalyticsRoutes);
+  app.use('/api/v1/analytics',         mlAnalyticsRoutes);
 
   // Attach WebSocket handlers to isolated proxy servers so that ws v8 path
   // routing doesn't abort connections meant for the other handler.
