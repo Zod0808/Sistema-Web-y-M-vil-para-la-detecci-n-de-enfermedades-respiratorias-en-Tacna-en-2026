@@ -60,7 +60,6 @@
       "!src/serviceWorkerRegistration.js",
       "!src/contexts/I18nContext.js",
       "!src/components/AutomaticReportsDashboard.js",
-      "!src/components/ConsentManagement.js",
       "!src/components/FairnessVisualization.js",
       "!src/components/MLAdvancedResults.js",
       "!src/components/Navbar.js",
