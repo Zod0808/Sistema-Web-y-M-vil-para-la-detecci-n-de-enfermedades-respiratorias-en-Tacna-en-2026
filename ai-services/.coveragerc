@@ -1,3 +1,22 @@
+# ai-services coverage config
+#
+# Política de exclusiones (2026-07-15, honesta):
+#   1. Externos pesados: torch (medical_bert, image_classifier, lazy_loader),
+#      OpenAI (conversational_ai_service, cough_analysis_service,
+#      patient_friendly_explainer), sentry (utils/sentry_integration).
+#   2. Scripts / no-prod: organize_tests.py, ver_coverage.py, synthetic_*,
+#      train_*, time_series_predictor (dev exploration).
+#   3. Subproyectos con su propio suite: medical-history-processor/,
+#      symptom-analyzer/.
+#
+# Módulos NO excluidos aunque tengan cobertura baja (para dejarlos medibles):
+# routes/, repositories/, factories/, ml_models/{auto_retraining,
+# ensemble_predictor, hybrid_system, medical_feedback_system, xgboost_model,
+# random_forest_model, rl_reminder_optimizer, neural_network_model, nlp_advanced},
+# services/enhanced_chatbot_service, strategies/{analysis_strategy, rule_based_strategy}.
+# La política previa los excluía "porque los tests estaban rotos", inflando el
+# número reportado. Preferimos mostrar la deuda real (63.57% líneas).
+
 [run]
 source = .
 omit =
@@ -8,7 +27,6 @@ omit =
     */env/*
     */migrations/*
     */node_modules/*
-    # Excluir módulos con dependencias pesadas o no críticos
     ml_models/lazy_loader.py
     ml_models/medical_bert.py
     ml_models/image_classifier.py
@@ -24,76 +42,17 @@ omit =
     services/conversational_ai_service.py
     services/patient_friendly_explainer.py
     services/cough_analysis_service.py
-    # Excluir tests de performance y security que requieren dependencias pesadas
     tests/performance/*
     tests/security/*
-    # ── Módulos con drift de test / cobertura < 65 % (medidos jul 2026) ──
-    # Cobertura se mide sobre el núcleo con tests alineados; los siguientes
-    # tienen tests rotos o dependen de servicios externos (torch/sentry/openai)
-    # que no arrancan bajo el runner. Se documentan aquí en lugar de borrarlos.
     organize_tests.py
     ver_coverage.py
-    shap_explainer.py
-    api/routes/advanced_nlp.py
-    api/routes/core_domains_support.py
-    api/routes/health.py
-    api/routes/medical_history.py
-    api/routes/ml_monitoring.py
-    api/routes/model_retraining.py
-    api/routes/symptom_analyzer.py
-    api/routes/symptom_ml_analyzer.py
-    decorators/logging_decorator.py
-    factories/model_factory.py
-    ml_models/auto_retraining.py
-    ml_models/ensemble_predictor.py
-    ml_models/hybrid_system.py
-    ml_models/medical_feedback_system.py
-    ml_models/neural_network_model.py
-    ml_models/nlp_advanced.py
-    ml_models/random_forest_model.py
-    ml_models/rl_reminder_optimizer.py
-    ml_models/xgboost_model.py
-    repositories/medical_history_repository.py
-    services/enhanced_chatbot_service.py
-    strategies/analysis_strategy.py
     utils/sentry_integration.py
+    strategies/local_model_strategy.py
 
 [report]
 precision = 2
 show_missing = True
 skip_covered = False
-omit =
-    */tests/*
-    */test_*.py
-    */__pycache__/*
-    */venv/*
-    */env/*
-    organize_tests.py
-    ver_coverage.py
-    shap_explainer.py
-    api/routes/advanced_nlp.py
-    api/routes/core_domains_support.py
-    api/routes/health.py
-    api/routes/medical_history.py
-    api/routes/ml_monitoring.py
-    api/routes/model_retraining.py
-    api/routes/symptom_analyzer.py
-    api/routes/symptom_ml_analyzer.py
-    decorators/logging_decorator.py
-    factories/model_factory.py
-    ml_models/auto_retraining.py
-    ml_models/ensemble_predictor.py
-    ml_models/hybrid_system.py
-    ml_models/medical_feedback_system.py
-    ml_models/neural_network_model.py
-    ml_models/nlp_advanced.py
-    ml_models/random_forest_model.py
-    ml_models/rl_reminder_optimizer.py
-    ml_models/xgboost_model.py
-    repositories/medical_history_repository.py
-    services/enhanced_chatbot_service.py
-    strategies/analysis_strategy.py
-    utils/sentry_integration.py
 exclude_lines =
     pragma: no cover
     def __repr__
@@ -102,4 +61,3 @@ exclude_lines =
     if __name__ == .__main__.:
     if TYPE_CHECKING:
     @abstractmethod
-
