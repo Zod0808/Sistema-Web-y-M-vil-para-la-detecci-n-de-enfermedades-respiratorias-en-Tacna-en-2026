@@ -5,7 +5,7 @@
  * Executes small MongoDB counts with a hard 3s timeout each to keep the
  * page snappy even when the DB is loaded.
  *
- * Mounts (index-dev.js): /api/analytics
+ * Mounts (src/dev/index.ts): /api/analytics (dev only)
  */
 
 import { Router, Request, Response } from 'express';

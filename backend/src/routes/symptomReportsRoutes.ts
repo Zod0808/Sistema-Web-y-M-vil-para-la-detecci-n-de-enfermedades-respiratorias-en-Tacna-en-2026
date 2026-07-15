@@ -5,7 +5,7 @@
  * demo/dev UI consumes without a token) — production should mount behind a
  * gateway if this is exposed publicly.
  *
- * Mounts (index-dev.js): /api/symptom-reports
+ * Mounts (src/dev/index.ts): /api/symptom-reports (dev only)
  * Endpoints:
  *   GET    /            — list with filters (district, severity, date, status)
  *   GET    /heatmap     — merged aggregation from SymptomReport + MedicalHistory

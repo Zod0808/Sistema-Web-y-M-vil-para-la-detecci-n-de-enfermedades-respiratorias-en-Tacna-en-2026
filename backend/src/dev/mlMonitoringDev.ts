@@ -289,7 +289,7 @@ const experimentsHandler = async (req: Request, res: Response): Promise<void> =>
 
 /**
  * Register all ML-monitoring dev endpoints on the given Express app.
- * Called from index-dev.js.
+ * Called from src/dev/index.ts (applyDevRoutes).
  */
 export const applyMlMonitoringDev = (app: Application): void => {
   const monitoringRoutes = ['/api/analytics/ml/monitoring', '/api/v1/analytics/ml/monitoring'];

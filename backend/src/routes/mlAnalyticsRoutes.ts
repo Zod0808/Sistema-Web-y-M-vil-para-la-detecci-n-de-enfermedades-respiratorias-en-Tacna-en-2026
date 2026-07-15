@@ -6,7 +6,7 @@
  * require auth — this is the dev/dashboard surface. The authenticated
  * equivalents live in analyticsRoutes.ts under /api/v1/analytics/ml/*.
  *
- * Mounts (see index-dev.js): /api/analytics, /api/v1/analytics
+ * Mounts (see src/dev/index.ts): /api/analytics, /api/v1/analytics (dev only)
  */
 
 import { Router, Request, Response } from 'express';

@@ -6,7 +6,7 @@
  * without a user token. The authenticated equivalents (RBAC-guarded) live
  * in analyticsRoutes.ts under /api/v1/analytics/*.
  *
- * Mounts (index-dev.js): /api/analytics
+ * Mounts (src/dev/index.ts): /api/analytics (dev only)
  * Endpoints:
  *   GET /dashboard         — overview + distributions + top districts
  *   GET /temporal-trends   — daily/weekly counts + top symptoms

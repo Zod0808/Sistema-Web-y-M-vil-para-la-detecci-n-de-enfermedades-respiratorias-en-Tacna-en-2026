@@ -4,7 +4,7 @@
  * Scripts: "npm start" (prod) | "npm run dev:original" (dev con nodemon)
  */
 
-import { createServer } from 'http';
+import { createServer, Server as HttpServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -72,26 +72,60 @@ import { initSentry } from './utils/sentry';
 import { attachWearableWebSocket } from './sockets/wearableSocketHandler';
 import { attachDoctorWebSocket } from './sockets/doctorSocketHandler';
 
+// Dev mode: explicitly development, or NODE_ENV unset. Test/CI/staging/prod
+// all skip dev routes so they don't shadow the real prod handlers.
+const isDev = (): boolean => {
+  const env = process.env['NODE_ENV'];
+  return env === undefined || env === '' || env === 'development';
+};
+
 class App {
   public app: express.Application;
   private httpServer: ReturnType<typeof createServer>;
+  // Isolated http.Server instances used so that ws v8 can route upgrades by
+  // path without one WebSocketServer destroying the other's connections.
+  private wearableProxyServer: HttpServer;
+  private doctorProxyServer: HttpServer;
 
   constructor() {
     // Iniciar Sentry (no bloqueante si falla)
     initSentry();
-    
+
     // Iniciar Telemetría (no bloqueante si falla)
     initTelemetry().catch(() => {});
     this.app = express();
     this.httpServer = createServer(this.app);
+    this.wearableProxyServer = createServer();
+    this.doctorProxyServer = createServer();
+    this.setupWebSocketRouting();
     this.initializeMiddlewares();
+    if (isDev()) {
+      // Dev-only routes MUST be registered BEFORE production routes so their
+      // handlers take precedence at overlapping mount points (Express matches
+      // in registration order).
+      const { applyDevRoutes } = require('./dev');
+      applyDevRoutes(this.app);
+    }
     this.initializeRoutes();
     this.initializeErrorHandling();
     this.initializeDatabase();
     this.initializeCache();
     this.initializeJobs();
-    attachWearableWebSocket(this.httpServer);
-    attachDoctorWebSocket(this.httpServer);
+    attachWearableWebSocket(this.wearableProxyServer);
+    attachDoctorWebSocket(this.doctorProxyServer);
+  }
+
+  private setupWebSocketRouting(): void {
+    this.httpServer.on('upgrade', (req, socket, head) => {
+      const url = new URL(req.url ?? '', 'ws://localhost');
+      if (url.pathname === '/ws/wearables') {
+        this.wearableProxyServer.emit('upgrade', req, socket, head);
+      } else if (url.pathname === '/ws/doctor') {
+        this.doctorProxyServer.emit('upgrade', req, socket, head);
+      } else {
+        socket.destroy();
+      }
+    });
   }
 
   private initializeMiddlewares(): void {
