@@ -46,7 +46,6 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/index.ts',
     '!src/index-dev.js',
-    '!src/index-clean.ts',
     '!src/generators/**',
     '!src/scripts/**',
   ],

@@ -5,10 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "start:clean": "node dist/index-clean.js",
     "dev": "node src/index-dev.js",
     "dev:original": "nodemon src/index.ts",
-    "dev:clean": "nodemon src/index-clean.ts",
     "build": "node scripts/build-with-errors.js",
     "test": "jest",
     "test:watch": "jest --watch",
