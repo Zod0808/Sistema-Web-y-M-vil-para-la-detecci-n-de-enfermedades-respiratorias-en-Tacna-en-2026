@@ -30,7 +30,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       
       - name: Verify deployment confirmation
         if: github.event_name == 'workflow_dispatch'
@@ -77,7 +77,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       
       - name: Extract version
         id: version
@@ -181,7 +181,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -309,7 +309,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3

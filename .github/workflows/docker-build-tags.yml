@@ -18,7 +18,7 @@ jobs:
     if: startsWith(github.ref_name, 'backend-') || startsWith(github.ref_name, 'release-')
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,7 +46,7 @@ jobs:
     if: startsWith(github.ref_name, 'web-') || startsWith(github.ref_name, 'release-')
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
