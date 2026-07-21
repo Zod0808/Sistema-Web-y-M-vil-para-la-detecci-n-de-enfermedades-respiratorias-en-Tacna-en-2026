@@ -43,16 +43,14 @@ export const getAllReports = asyncHandler(async (req: AuthenticatedRequest, res:
   const response: ApiResponse = {
     success: true,
     message: 'Reportes automáticos obtenidos exitosamente',
-    data: {
-      reports,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit)),
-      },
+    data: reports,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / Number(limit)),
     },
-  };
+  } as ApiResponse;
 
   res.status(200).json(response);
 });

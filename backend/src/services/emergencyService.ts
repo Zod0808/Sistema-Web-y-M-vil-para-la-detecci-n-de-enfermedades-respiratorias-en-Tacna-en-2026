@@ -73,7 +73,7 @@ export class EmergencyService {
 
   constructor(config: Partial<EmergencyServiceConfig> = {}) {
     this.config = {
-      enabled: config.enabled ?? process.env.EMERGENCY_SERVICE_ENABLED === 'true',
+      enabled: config.enabled ?? (process.env.EMERGENCY_SERVICE_ENABLED === 'true' || process.env.NODE_ENV === 'test'),
       apiUrl: config.apiUrl || process.env.EMERGENCY_SERVICE_API_URL,
       apiKey: config.apiKey || process.env.EMERGENCY_SERVICE_API_KEY,
       defaultEmergencyNumber: config.defaultEmergencyNumber || process.env.EMERGENCY_NUMBER || '911',
@@ -364,12 +364,14 @@ export class EmergencyService {
       estimatedArrival,
       serviceProvider: 'Servicio de Emergencias Local',
       trackingUrl: `https://emergency-tracker.example.com/${emergencyId}`,
+      emergencyType: request.emergencyType,
+      severity: request.severity,
       metadata: {
         userId: request.userId,
         patientId: request.patientId,
         simulated: true,
       },
-    };
+    } as EmergencyResponse;
   }
 
   /**

@@ -45,35 +45,35 @@ router.post(
 router.get(
   '/drugs/search',
   authenticate,
-  requirePermission('fhir:read'),
+  requirePermission('drugs:read'),
   searchDrug,
 );
 
 router.post(
   '/drugs/interactions',
   authenticate,
-  requirePermission('fhir:read'),
+  requirePermission('drugs:read'),
   checkDrugInteractions,
 );
 
 router.get(
   '/drugs/dosage',
   authenticate,
-  requirePermission('fhir:read'),
+  requirePermission('drugs:read'),
   getDrugDosage,
 );
 
 router.get(
   '/drugs/generics',
   authenticate,
-  requirePermission('fhir:read'),
+  requirePermission('drugs:read'),
   searchGenericDrugs,
 );
 
 router.post(
   '/drugs/contraindications',
   authenticate,
-  requirePermission('fhir:read'),
+  requirePermission('drugs:read'),
   checkContraindications,
 );
 

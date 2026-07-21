@@ -97,8 +97,7 @@ const MedicalHistorySchema = new Schema<MedicalHistoryDocument>({
   },
   date: {
     type: Date,
-    required: [true, 'La fecha es obligatoria'],
-    default: Date.now
+    required: [true, 'La fecha es obligatoria']
   },
   location: {
     latitude: {

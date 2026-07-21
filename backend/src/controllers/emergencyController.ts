@@ -81,10 +81,16 @@ export const createEmergency = asyncHandler(
       type: emergencyType,
     });
 
+    const emergencyPayload = emergency as any;
+    const emergencyId = emergencyPayload?.emergencyId;
     res.status(201).json({
       success: true,
       message: 'Emergencia creada exitosamente',
-      data: emergency,
+      data: {
+        ...emergencyPayload,
+        _id: emergencyId,
+        id: emergencyId,
+      },
     });
   }
 );
@@ -209,7 +215,7 @@ export const detectEmergency = asyncHandler(
       return;
     }
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: 'Emergencia detectada y creada automáticamente',
       data: {

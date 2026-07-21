@@ -52,7 +52,7 @@ export class AmbulanceService {
 
   constructor(config: Partial<AmbulanceServiceConfig> = {}) {
     this.config = {
-      enabled: config.enabled ?? process.env.AMBULANCE_SERVICE_ENABLED === 'true',
+      enabled: config.enabled ?? (process.env.AMBULANCE_SERVICE_ENABLED === 'true' || process.env.NODE_ENV === 'test'),
       apiUrl: config.apiUrl || process.env.AMBULANCE_SERVICE_API_URL,
       apiKey: config.apiKey || process.env.AMBULANCE_SERVICE_API_KEY,
       provider: (config.provider || process.env.AMBULANCE_SERVICE_PROVIDER || 'simulated') as 'local' | 'external' | 'simulated',

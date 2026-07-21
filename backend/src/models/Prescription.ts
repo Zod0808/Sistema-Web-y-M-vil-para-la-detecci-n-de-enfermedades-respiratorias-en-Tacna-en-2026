@@ -223,6 +223,20 @@ PrescriptionSchema.methods.addValidation = async function addValidation(
   await this.save();
 };
 
+PrescriptionSchema.pre('validate', function (next) {
+  const self = this as any;
+  if (!self.createdBy && self.doctorId) {
+    self.createdBy = self.doctorId;
+  }
+  if (Array.isArray(self.medications)) {
+    for (const med of self.medications) {
+      if (med.frequencyPerDay == null) med.frequencyPerDay = 1;
+      if (med.durationDays == null) med.durationDays = 7;
+    }
+  }
+  next();
+});
+
 PrescriptionSchema.statics.findByPatient = function findByPatient(
   this: PrescriptionModel,
   patientId: string

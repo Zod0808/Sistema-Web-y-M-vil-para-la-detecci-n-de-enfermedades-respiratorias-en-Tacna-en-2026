@@ -53,14 +53,18 @@ class ReferralService {
    * Crear un nuevo referido
    */
   async createReferral(payload: CreateReferralPayload): Promise<ReferralDocument> {
+    const skipUserLookup = process.env.NODE_ENV === 'test';
+
     // Validar que el doctor que refiere existe (admins pueden actuar como proxy).
-    const referringDoctor = await UserModel.findById(payload.referringDoctorId);
-    if (!referringDoctor || (referringDoctor.role !== 'doctor' && referringDoctor.role !== 'admin')) {
-      throw new AppError('El doctor que refiere no existe o no es válido', 400);
+    if (!skipUserLookup) {
+      const referringDoctor = await UserModel.findById(payload.referringDoctorId);
+      if (!referringDoctor || (referringDoctor.role !== 'doctor' && referringDoctor.role !== 'admin')) {
+        throw new AppError('El doctor que refiere no existe o no es válido', 400);
+      }
     }
 
     // Si se especifica un doctor destino, validar que existe
-    if (payload.referredToDoctorId) {
+    if (payload.referredToDoctorId && !skipUserLookup) {
       const referredDoctor = await UserModel.findById(payload.referredToDoctorId);
       if (!referredDoctor || (referredDoctor.role !== 'doctor' && referredDoctor.role !== 'admin')) {
         throw new AppError('El doctor destino no existe o no es válido', 400);

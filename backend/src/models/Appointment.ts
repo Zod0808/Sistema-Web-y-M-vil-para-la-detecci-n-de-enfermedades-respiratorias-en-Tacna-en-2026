@@ -73,6 +73,11 @@ const AppointmentSchema = new Schema<AppointmentDocument, AppointmentModel>(
       index: true,
       alias: 'date',
     },
+    type: {
+      type: String,
+      enum: ['consultation', 'follow_up', 'emergency', 'diagnostic', 'treatment', 'telemedicine'],
+      default: 'consultation',
+    },
     durationMinutes: {
       type: Number,
       default: 30,

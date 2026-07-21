@@ -191,6 +191,37 @@ AlertSchema.index({ category: 1, status: 1 });
 AlertSchema.index({ createdAt: -1 });
 AlertSchema.index({ tags: 1 });
 
+AlertSchema.pre<AlertDocument>('validate', function fillLegacyFields(next) {
+  const self = this as any;
+  if (!self.userId && self.patientId) {
+    self.userId = self.patientId;
+  }
+  if (!self.title && self.message) {
+    self.title = String(self.message).slice(0, 140);
+  }
+  if (!self.category) {
+    const legacyType = self.type;
+    if (typeof legacyType === 'string' && ALERT_CATEGORIES.includes(legacyType as AlertCategory)) {
+      self.category = legacyType;
+    } else if (legacyType === 'medication') {
+      self.category = 'medication_reminder';
+    } else if (legacyType === 'symptom') {
+      self.category = 'critical_symptom';
+    }
+  }
+  if (self.severity && !self.priority) {
+    const severityToPriority: Record<string, AlertPriority> = {
+      low: 'low',
+      medium: 'medium',
+      high: 'high',
+      critical: 'critical',
+      invalid: self.severity,
+    };
+    self.priority = severityToPriority[self.severity] ?? self.severity;
+  }
+  next();
+});
+
 AlertSchema.pre<AlertDocument>('save', function assignPriorityWeight(next) {
   this.priorityWeight = PRIORITY_WEIGHTS[this.priority] ?? PRIORITY_WEIGHTS.medium;
   if (!this.scheduledAt && (this.status === 'scheduled' || this.status === 'pending')) {

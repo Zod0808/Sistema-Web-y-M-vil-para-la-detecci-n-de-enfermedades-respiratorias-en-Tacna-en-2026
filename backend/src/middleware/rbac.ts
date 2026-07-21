@@ -59,6 +59,7 @@ const permissionsByRole: Record<Role, Set<string>> = {
     'fhir:update',
     'fhir:delete',
     'integrations:manage',
+    'drugs:read',
   ]),
   doctor: new Set([
     'reports:read',
@@ -79,6 +80,7 @@ const permissionsByRole: Record<Role, Set<string>> = {
     'fhir:read',
     'fhir:create',
     'fhir:update',
+    'drugs:read',
   ]),
   patient: new Set([
     'prescriptions:read',
