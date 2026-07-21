@@ -34,7 +34,7 @@ const resolveBackendBase = () => {
   const raw =
     process.env.REACT_APP_BACKEND_URL ||
     process.env.REACT_APP_API_URL ||
-    'https://depending-extremely-styles-material.trycloudflare.com';
+    'https://basis-watts-reflects-jose.trycloudflare.com';
 
   const rewritten = maybeRewriteForBrowser(raw, '3001');
   return normalize(rewritten);
@@ -58,7 +58,7 @@ const resolveApiBase = () => {
 };
 
 const resolveAiBase = () => {
-  const raw = process.env.REACT_APP_AI_URL || 'https://depending-extremely-styles-material.trycloudflare.com/ai';
+  const raw = process.env.REACT_APP_AI_URL || 'https://basis-watts-reflects-jose.trycloudflare.com/ai';
   const rewritten = maybeRewriteForBrowser(raw, '8000');
   const base = normalize(rewritten);
 

@@ -212,3 +212,4 @@ metro.config.js.bak
 # Misc
 .turbo
 *.local
+.vercel
