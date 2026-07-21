@@ -78,7 +78,7 @@ export function percentileMetricsMiddleware(req: any, res: any, next: any) {
   res.on('finish', () => {
     const end = process.hrtime.bigint();
     const durationMs = Number(end - start) / 1_000_000;
-    const route = (req.route?.path || req.path || '').replace(/:[^/]+/g, ':param');
+    const route = String(req.route?.path ?? req.path ?? '').replace(/:[^/]+/g, ':param');
     const labels = {
       method: req.method,
       route: route || 'unknown',
