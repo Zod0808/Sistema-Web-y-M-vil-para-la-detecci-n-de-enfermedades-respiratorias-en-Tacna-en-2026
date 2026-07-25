@@ -463,9 +463,9 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
       </div>
 
       {/* ── Historial de registros en BD ── */}
-      {history.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Historial guardado en BD</p>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Historial guardado en BD</p>
+        {history.length > 0 ? (
           <div className="space-y-1.5">
             {history.map((entry, i) => (
               <div key={i} className="flex items-center justify-between px-3 py-2 rounded-xl bg-muted/30 text-xs">
@@ -481,8 +481,12 @@ export function WearablesView({ t, isLoading, setIsLoading }: WearablesViewProps
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="px-3 py-4 rounded-xl bg-muted/20 text-xs text-center text-muted-foreground">
+            Sin envíos aún. Pulsa "Sincronizar" para guardar tu primera lectura.
+          </div>
+        )}
+      </div>
 
       {/* ── Proveedor activo ── */}
       {metrics.lastSync && (

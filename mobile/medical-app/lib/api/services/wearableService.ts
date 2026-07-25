@@ -62,12 +62,18 @@ export class WearableService {
 
   /**
    * Obtiene el historial de lecturas guardadas en la BD para el usuario autenticado.
+   * El backend responde `{data:[readings], pagination}` y apiClient ya desenvuelve
+   * el primer nivel `data`, así que aquí sólo hay que sacar el array anidado.
    */
   async getHistory(limit = 5): Promise<WearableHistoryEntry[]> {
     try {
       const response = await apiClient.get<any>(`${API_ENDPOINTS.wearables.data}?limit=${limit}`)
-      return response?.data || []
-    } catch {
+      // response puede venir como {data:[...]} (envelope backend) o [...] (ya desenvuelto)
+      const raw = Array.isArray(response) ? response : response?.data ?? []
+      if (!Array.isArray(raw)) return []
+      return raw
+    } catch (err) {
+      console.error('[wearables] getHistory failed:', err)
       return []
     }
   }
