@@ -437,4 +437,4 @@ MIT — ver [LICENSE](./LICENSE)
 
 ---
 
-*RespiCare — Universidad Privada de Tacna · Fabian Choquehuanca · 2026*
+*RespiCare — Universidad Privada de Tacna · Fabian Chavez · 2026*
