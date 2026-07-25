@@ -33,7 +33,7 @@ function AnalyticsDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE}/analytics/executive-dashboard`);
+      const response = await axios.get(`${API_BASE}/analytics/dashboard`);
       
       // El endpoint devuelve los datos directamente o en response.data.data
       if (response.data && (response.data.overview || response.data.data)) {
