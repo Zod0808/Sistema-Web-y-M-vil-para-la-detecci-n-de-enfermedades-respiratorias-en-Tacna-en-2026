@@ -54,6 +54,20 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Interceptor global de REQUEST: adjunta el Bearer token de localStorage a toda
+  // request salvo que el caller ya haya seteado su propio Authorization.
+  useEffect(() => {
+    const reqId = axios.interceptors.request.use((config) => {
+      const t = localStorage.getItem('auth_token');
+      if (t && !config.headers?.Authorization) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${t}`;
+      }
+      return config;
+    });
+    return () => axios.interceptors.request.eject(reqId);
+  }, []);
+
   // Interceptor global: cierra sesión si cualquier request recibe 401 durante la sesión activa
   useEffect(() => {
     if (interceptorRef.current !== null) {
