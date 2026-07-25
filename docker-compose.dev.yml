@@ -128,7 +128,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-dev}
       FROM_EMAIL: ${FROM_EMAIL:-noreply@respicare.local}
       PUSH_PROVIDER: ${PUSH_PROVIDER:-none}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8083,https://sistema-web-y-m-vil-para-la-detecci.vercel.app,https://basis-watts-reflects-jose.trycloudflare.com,capacitor://localhost,https://localhost}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8083,https://sistema-web-y-m-vil-para-la-detecci.vercel.app,https://vhs-significantly-furniture-complicated.trycloudflare.com,capacitor://localhost,https://localhost}
       LOG_LEVEL: ${LOG_LEVEL:-debug}
     volumes:
       - ./backend:/app
