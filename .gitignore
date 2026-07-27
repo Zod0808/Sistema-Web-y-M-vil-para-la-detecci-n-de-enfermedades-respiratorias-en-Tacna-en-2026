@@ -48,6 +48,9 @@ docker-compose.override.yml
 # IDE
 .vscode/
 .idea/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
 .cursor/
 *.swp
 *.swo
