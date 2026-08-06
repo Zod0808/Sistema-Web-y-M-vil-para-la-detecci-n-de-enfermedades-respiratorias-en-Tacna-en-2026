@@ -72,13 +72,22 @@ class TestBaseRepository:
             {"_id": "id2", "name": "test2"}
         ]
         mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = documents
-        base_repository.collection.find.return_value = mock_cursor
-        
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg, so the replacement must accept (and can ignore)
+        # that argument.
+        async def cursor_iter(_mock_self):
+            for doc in documents:
+                yield doc
+        mock_cursor.__aiter__ = cursor_iter
+        # find() is called synchronously (returns a cursor), so it must be
+        # a MagicMock, not the collection's default AsyncMock attribute.
+        base_repository.collection.find = MagicMock(return_value=mock_cursor)
+
         result = await base_repository.find_all()
-        
+
         assert result == documents
-        base_repository.collection.find.assert_called_once_with({})
+        base_repository.collection.find.assert_called_once_with({"deleted_at": {"$exists": False}})
     
     @pytest.mark.asyncio
     async def test_update_document(self, base_repository):
@@ -97,45 +106,56 @@ class TestBaseRepository:
     
     @pytest.mark.asyncio
     async def test_soft_delete(self, base_repository):
-        """Test soft delete functionality"""
+        """Test soft delete functionality via delete() (BaseRepository has no separate soft_delete method)"""
         mock_result = AsyncMock()
         mock_result.modified_count = 1
         base_repository.collection.update_one.return_value = mock_result
-        
-        result = await base_repository.soft_delete("test_id")
-        
+
+        result = await base_repository.delete("test_id")
+
         assert result is True
-        # Verify soft delete sets deleted flag and timestamp
+        # Verify soft delete sets deleted_at/updated_at timestamps
         call_args = base_repository.collection.update_one.call_args
         assert call_args[0][0] == {"_id": "test_id"}
         update_data = call_args[0][1]
         assert "$set" in update_data
-        assert "deleted" in update_data["$set"]
         assert "deleted_at" in update_data["$set"]
-        assert update_data["$set"]["deleted"] is True
-    
+        assert "updated_at" in update_data["$set"]
+
     @pytest.mark.asyncio
     async def test_audit_log_creation(self, base_repository):
-        """Test audit log creation"""
+        """Test that create() adds audit fields (BaseRepository has no separate create_with_audit method)"""
         document = {"name": "test", "value": 123}
-        operation = "create"
-        
-        await base_repository.create_with_audit(document, operation, "user123")
-        
-        # Verify audit log was created
+
+        mock_result = AsyncMock()
+        mock_result.inserted_id = "test_id"
+        base_repository.collection.insert_one.return_value = mock_result
+
+        await base_repository.create(document)
+
+        # Verify audit fields were added
         base_repository.collection.insert_one.assert_called_once()
-    
+        call_args = base_repository.collection.insert_one.call_args
+        inserted_doc = call_args[0][0]
+        assert "created_at" in inserted_doc
+        assert "updated_at" in inserted_doc
+
     @pytest.mark.asyncio
     async def test_versioning_support(self, base_repository):
-        """Test document versioning"""
-        document = {"name": "test", "version": 1}
-        
-        await base_repository.create_with_versioning(document)
-        
+        """Test document versioning via create() (BaseRepository has no separate create_with_versioning method)"""
+        document = {"name": "test"}
+
+        mock_result = AsyncMock()
+        mock_result.inserted_id = "test_id"
+        base_repository.collection.insert_one.return_value = mock_result
+
+        await base_repository.create(document)
+
         # Verify versioning fields were added
         call_args = base_repository.collection.insert_one.call_args
         inserted_doc = call_args[0][0]
         assert "version" in inserted_doc
+        assert inserted_doc["version"] == 1
         assert "created_at" in inserted_doc
         assert "updated_at" in inserted_doc
 
@@ -165,92 +185,112 @@ class TestMedicalHistoryRepository:
         medical_data = {
             "patient_id": "P001",
             "text": "Test medical history",
-            "symptoms": ["tos", "fiebre"],
+            "language": "es",
             "doctor_id": "D001"
         }
-        
+
         mock_result = AsyncMock()
         mock_result.inserted_id = "history_id"
         medical_history_repo.collection.insert_one.return_value = mock_result
-        
+
         result = await medical_history_repo.create_medical_history(medical_data)
-        
-        assert result == "history_id"
+
+        # create_medical_history() returns the full document, not just the id
+        assert result is not None
+        assert result["patient_id"] == "P001"
+        assert result["_id"] == "history_id"
         medical_history_repo.collection.insert_one.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_find_by_patient_id(self, medical_history_repo):
-        """Test finding medical histories by patient ID"""
+        """Test finding medical histories by patient ID via get_by_patient_id"""
         patient_id = "P001"
         histories = [
             {"_id": "h1", "patient_id": patient_id, "text": "History 1"},
             {"_id": "h2", "patient_id": patient_id, "text": "History 2"}
         ]
-        
+
         mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = histories
-        medical_history_repo.collection.find.return_value = mock_cursor
-        
-        result = await medical_history_repo.find_by_patient_id(patient_id)
-        
+        async def cursor_iter(_mock_self):
+            for h in histories:
+                yield h
+        mock_cursor.__aiter__ = cursor_iter
+        medical_history_repo.collection.find = MagicMock(return_value=mock_cursor)
+
+        result = await medical_history_repo.get_by_patient_id(patient_id)
+
         assert result == histories
         medical_history_repo.collection.find.assert_called_once_with(
-            {"patient_id": patient_id, "deleted": {"$ne": True}}
+            {"deleted_at": {"$exists": False}, "patient_id": patient_id}
         )
-    
+
     @pytest.mark.asyncio
     async def test_search_histories(self, medical_history_repo):
-        """Test searching medical histories"""
-        search_criteria = {
-            "patient_id": "P001",
-            "date_from": datetime(2024, 1, 1),
-            "date_to": datetime(2024, 12, 31),
-            "symptoms": ["tos"]
-        }
-        
+        """Test searching medical histories by symptoms"""
         mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = []
-        medical_history_repo.collection.find.return_value = mock_cursor
-        
-        result = await medical_history_repo.search_histories(search_criteria)
-        
+        async def cursor_iter(_mock_self):
+            return
+            yield  # pragma: no cover - makes this an async generator
+        mock_cursor.__aiter__ = cursor_iter
+        medical_history_repo.collection.find = MagicMock(return_value=mock_cursor)
+
+        result = await medical_history_repo.search_by_symptoms(["tos"])
+
         assert result == []
         medical_history_repo.collection.find.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_patient_statistics(self, medical_history_repo):
-        """Test getting patient statistics"""
+        """Test getting statistics for a patient's medical histories via get_statistics"""
         patient_id = "P001"
-        
-        mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = [
-            {"_id": "h1", "symptoms": ["tos", "fiebre"]},
-            {"_id": "h2", "symptoms": ["tos"]}
-        ]
-        medical_history_repo.collection.find.return_value = mock_cursor
-        
-        result = await medical_history_repo.get_patient_statistics(patient_id)
-        
+
+        status_cursor = AsyncMock()
+        async def status_iter(_mock_self):
+            yield {"_id": "pending", "count": 2}
+        status_cursor.__aiter__ = status_iter
+
+        language_cursor = AsyncMock()
+        async def language_iter(_mock_self):
+            yield {"_id": "es", "count": 2}
+        language_cursor.__aiter__ = language_iter
+
+        confidence_cursor = AsyncMock()
+        async def confidence_iter(_mock_self):
+            yield {"_id": None, "avg_confidence": 0.9}
+        confidence_cursor.__aiter__ = confidence_iter
+
+        # aggregate() is called synchronously (returns a cursor), so it
+        # must be a MagicMock, not the collection's default AsyncMock.
+        medical_history_repo.collection.aggregate = MagicMock(
+            side_effect=[status_cursor, language_cursor, confidence_cursor]
+        )
+        medical_history_repo.collection.count_documents = AsyncMock(return_value=2)
+
+        result = await medical_history_repo.get_statistics(patient_id)
+
         assert "total_histories" in result
-        assert "common_symptoms" in result
+        assert "status_breakdown" in result
         assert result["total_histories"] == 2
-    
+
     @pytest.mark.asyncio
     async def test_update_medical_history(self, medical_history_repo):
-        """Test updating medical history"""
-        history_id = "h1"
-        update_data = {
-            "text": "Updated medical history",
-            "updated_at": datetime.utcnow()
-        }
-        
+        """Test updating a medical history's processing status and AI results"""
+        from bson import ObjectId
+        history_id = str(ObjectId())
+
+        medical_history_repo.get_by_id = AsyncMock(
+            return_value={"_id": history_id, "status": "processed"}
+        )
+
         mock_result = AsyncMock()
         mock_result.modified_count = 1
         medical_history_repo.collection.update_one.return_value = mock_result
-        
-        result = await medical_history_repo.update_medical_history(history_id, update_data)
-        
-        assert result is True
+
+        result = await medical_history_repo.update_processing_status(
+            history_id, "processed", ai_result={"confidence_score": 0.9, "symptoms": ["tos"]}
+        )
+
+        assert result is not None
         medical_history_repo.collection.update_one.assert_called_once()
 
 
@@ -277,108 +317,111 @@ class TestAIResultRepository:
         """Test saving AI analysis result"""
         analysis_data = {
             "patient_id": "P001",
-            "analysis_type": "symptom_analysis",
-            "result": {"urgency": "high", "confidence": 0.9},
-            "model_used": "gpt-3.5-turbo",
-            "processing_time": 1.5
+            "type": "symptom_analysis",
+            "data": {"urgency": "high", "confidence": 0.9},
+            "model_version": "gpt-3.5-turbo",
+            "processing_time_ms": 1500
         }
-        
+
         mock_result = AsyncMock()
         mock_result.inserted_id = "result_id"
         ai_result_repo.collection.insert_one.return_value = mock_result
-        
+
         # Use create_ai_result instead of save_analysis_result
         result = await ai_result_repo.create_ai_result(analysis_data)
-        
+
         # create_ai_result returns the full document, not just the id
         assert result is not None
-        assert "_id" in result or result.get("_id") == "result_id"
+        assert result["patient_id"] == "P001"
+        assert result["_id"] == "result_id"
         ai_result_repo.collection.insert_one.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_find_results_by_patient(self, ai_result_repo):
         """Test finding AI results by patient"""
         patient_id = "P001"
         result_type = "symptom_analysis"
-        
+
         results = [
             {"_id": "r1", "patient_id": patient_id, "type": result_type},
             {"_id": "r2", "patient_id": patient_id, "type": result_type}
         ]
-        
-        # Use get_patient_results_by_type which exists
+
+        # Use get_patient_results_by_type which exists. find() is called
+        # synchronously and chained with .sort(), so both must be
+        # MagicMocks rather than the collection's default AsyncMock.
         mock_cursor = AsyncMock()
-        async def async_iter():
+        async def cursor_iter(_mock_self):
             for r in results:
                 yield r
-        mock_cursor.__aiter__ = lambda self: async_iter()
-        ai_result_repo.collection.find.return_value.sort.return_value = mock_cursor
-        
+        mock_cursor.__aiter__ = cursor_iter
+
+        mock_find_result = MagicMock()
+        mock_find_result.sort = MagicMock(return_value=mock_cursor)
+        ai_result_repo.collection.find = MagicMock(return_value=mock_find_result)
+
         result = await ai_result_repo.get_patient_results_by_type(patient_id, result_type)
-        
-        assert isinstance(result, list)
-        # Result may be empty if mocks don't work perfectly, that's OK for tests
-    
+
+        assert result == results
+
     @pytest.mark.asyncio
     async def test_get_analysis_trends(self, ai_result_repo):
         """Test getting analysis trends"""
         patient_id = "P001"
         period_days = 30
-        
-        # Use get_patient_analysis_trend which exists
+
+        # Use get_patient_analysis_trend which exists. aggregate() is
+        # called synchronously (returns a cursor), so it must be a
+        # MagicMock, not the collection's default AsyncMock.
         mock_cursor = AsyncMock()
-        async def async_iter():
-            yield {"_id": {"date": "2024-01-01", "type": "symptom"}, "count": 1, "avg_confidence": 0.9}
-            yield {"_id": {"date": "2024-01-02", "type": "symptom"}, "count": 1, "avg_confidence": 0.8}
-        mock_cursor.__aiter__ = lambda self: async_iter()
-        ai_result_repo.collection.aggregate.return_value = mock_cursor
-        
+        async def cursor_iter(_mock_self):
+            yield {"_id": {"date": "2024-01-01", "type": "symptom"}, "count": 1, "avg_confidence": 0.9, "avg_processing_time": 100}
+            yield {"_id": {"date": "2024-01-02", "type": "symptom"}, "count": 1, "avg_confidence": 0.8, "avg_processing_time": 120}
+        mock_cursor.__aiter__ = cursor_iter
+        ai_result_repo.collection.aggregate = MagicMock(return_value=mock_cursor)
+
         result = await ai_result_repo.get_patient_analysis_trend(patient_id, period_days)
-        
-        assert isinstance(result, list)
-        # Result may be empty if mocks don't work perfectly, that's OK for tests
-    
+
+        assert len(result) == 2
+        assert result[0]["date"] == "2024-01-01"
+
     @pytest.mark.asyncio
     async def test_get_model_performance_metrics(self, ai_result_repo):
         """Test getting model performance metrics"""
-        model_name = "gpt-3.5-turbo"
         period_days = 7
-        
-        mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = [
-            {"processing_time": 1.5, "confidence": 0.9},
-            {"processing_time": 1.2, "confidence": 0.8}
-        ]
-        ai_result_repo.collection.find.return_value = mock_cursor
-        
+
         # Use get_performance_metrics which exists (takes start_date, end_date, not model_name, period_days)
         from datetime import datetime, timedelta
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=period_days)
-        
-        # Mock aggregate and count_documents
-        mock_cursor1 = AsyncMock()
-        async def async_iter1():
+
+        confidence_cursor = AsyncMock()
+        async def confidence_iter(_mock_self):
             yield {"_id": "symptom", "avg_confidence": 0.85, "count": 100}
-        mock_cursor1.__aiter__ = lambda self: async_iter1()
-        
-        mock_cursor2 = AsyncMock()
-        async def async_iter2():
+        confidence_cursor.__aiter__ = confidence_iter
+
+        processing_cursor = AsyncMock()
+        async def processing_iter(_mock_self):
             yield {"_id": "openai", "avg_processing_time": 1500, "count": 100}
-        mock_cursor2.__aiter__ = lambda self: async_iter2()
-        
-        mock_cursor3 = AsyncMock()
-        async def async_iter3():
+        processing_cursor.__aiter__ = processing_iter
+
+        type_cursor = AsyncMock()
+        async def type_iter(_mock_self):
             yield {"_id": "symptom", "count": 100}
-        mock_cursor3.__aiter__ = lambda self: async_iter3()
-        
-        ai_result_repo.collection.aggregate.side_effect = [mock_cursor1, mock_cursor2, mock_cursor3]
-        ai_result_repo.collection.count_documents.return_value = 100
-        
+        type_cursor.__aiter__ = type_iter
+
+        # aggregate() is called synchronously (returns a cursor), so it
+        # must be a MagicMock, not the collection's default AsyncMock.
+        ai_result_repo.collection.aggregate = MagicMock(
+            side_effect=[confidence_cursor, processing_cursor, type_cursor]
+        )
+        ai_result_repo.collection.count_documents = AsyncMock(return_value=100)
+
         result = await ai_result_repo.get_performance_metrics(start_date, end_date)
-        
-        assert isinstance(result, dict)
-        assert "total_results" in result or "confidence_by_type" in result
+
+        assert "confidence_by_type" in result
+        assert "total_results" in result
+        assert result["total_results"] == 100
 
 
 class TestPatientRepository:
@@ -404,21 +447,23 @@ class TestPatientRepository:
         """Test creating a patient"""
         patient_data = {
             "patient_id": "P001",
-            "name": "Juan Pérez",
+            "first_name": "Juan",
+            "last_name": "Pérez",
             "age": 45,
             "gender": "M",
             "contact_info": {"email": "juan@example.com"}
         }
-        
+
         mock_result = AsyncMock()
         mock_result.inserted_id = "patient_id"
         patient_repo.collection.insert_one.return_value = mock_result
-        
+
         result = await patient_repo.create_patient(patient_data)
-        
+
         # create_patient returns the full document, not just the id
         assert result is not None
-        assert "_id" in result or result.get("_id") == "patient_id"
+        assert result["patient_id"] == "P001"
+        assert result["_id"] == "patient_id"
         patient_repo.collection.insert_one.assert_called_once()
     
     @pytest.mark.asyncio
@@ -443,26 +488,29 @@ class TestPatientRepository:
     @pytest.mark.asyncio
     async def test_search_patients(self, patient_repo):
         """Test searching patients"""
-        search_criteria = {
-            "age_range": {"min": 30, "max": 50},
-            "gender": "M"
-        }
-        
         patients = [
-            {"_id": "P001", "name": "Juan Pérez", "age": 45, "gender": "M"},
-            {"_id": "P002", "name": "Carlos López", "age": 35, "gender": "M"}
+            {"_id": "P001", "patient_id": "P001", "first_name": "Juan", "last_name": "Pérez"},
+            {"_id": "P002", "patient_id": "P002", "first_name": "Juanita", "last_name": "López"}
         ]
-        
+
+        # find() is called synchronously and chained with .limit(), so
+        # both must be MagicMocks rather than the collection's default
+        # AsyncMock.
         mock_cursor = AsyncMock()
-        mock_cursor.to_list.return_value = patients
-        patient_repo.collection.find.return_value = mock_cursor
-        
+        async def cursor_iter(_mock_self):
+            for p in patients:
+                yield p
+        mock_cursor.__aiter__ = cursor_iter
+
+        mock_find_result = MagicMock()
+        mock_find_result.limit = MagicMock(return_value=mock_cursor)
+        patient_repo.collection.find = MagicMock(return_value=mock_find_result)
+
         # search_patients takes query_text (string), not search_criteria (dict)
-        # For this test, we'll use a simple query string
         result = await patient_repo.search_patients("Juan", limit=50)
-        
-        assert isinstance(result, list)
-        # Result may be empty if mocks don't work perfectly
+
+        assert len(result) == 2
+        assert result[0]["patient_id"] == "P001"
     
     @pytest.mark.asyncio
     async def test_update_patient_info(self, patient_repo):
@@ -569,10 +617,11 @@ class TestRepositoryIntegration:
         mock_collection.update_one.return_value = mock_result
         
         result = await repo.delete("test_id")
-        
+
         assert result is True
-        
+
         # Verify soft delete was called
         # delete() uses deleted_at timestamp, not deleted flag
-        assert result is True
+        call_args = mock_collection.update_one.call_args
+        update_data = call_args[0][1]
         assert "deleted_at" in update_data["$set"]

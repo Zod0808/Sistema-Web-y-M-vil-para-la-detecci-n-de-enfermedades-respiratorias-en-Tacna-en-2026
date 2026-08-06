@@ -26,7 +26,14 @@ class ModelManager:
     def __init__(self) -> None:
         self.models: Dict[str, Any] = {}
         self.model_path = Path(settings.MODEL_PATH)
-        self.model_path.mkdir(parents=True, exist_ok=True)
+        try:
+            self.model_path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logger.warning(
+                "No se pudo crear el directorio de modelos",
+                path=str(self.model_path),
+                error=str(exc),
+            )
         self._loading_lock = asyncio.Lock()
         self._load_task: Optional[asyncio.Task] = None
 

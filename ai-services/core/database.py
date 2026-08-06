@@ -90,3 +90,16 @@ async def close_database():
     if client:
         client.close()
         logger.info("Database connection closed")
+
+
+class DatabaseService:
+    """Object-oriented wrapper around the module-level MongoDB utilities"""
+
+    async def init(self):
+        return await init_database()
+
+    async def get(self):
+        return await get_database()
+
+    async def close(self):
+        return await close_database()

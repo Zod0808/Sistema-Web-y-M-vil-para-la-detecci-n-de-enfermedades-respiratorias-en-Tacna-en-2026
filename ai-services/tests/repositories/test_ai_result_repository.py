@@ -131,7 +131,7 @@ class TestAIResultRepository:
             "created_at": datetime.utcnow() - timedelta(days=1)
         }
         
-        async def cursor_iter():
+        async def cursor_iter(_mock_self):
             yield mock_doc1
             yield mock_doc2
         
@@ -160,7 +160,7 @@ class TestAIResultRepository:
             "created_at": datetime.utcnow()
         }
         
-        async def cursor_iter():
+        async def cursor_iter(_mock_self):
             yield mock_doc
         
         mock_cursor.__aiter__ = cursor_iter
@@ -181,8 +181,9 @@ class TestAIResultRepository:
         mock_collection = mock_db_client["ai_results"]
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
-            pass
+        async def cursor_iter(_mock_self):
+            return
+            yield  # pragma: no cover - makes this an async generator
         
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.sort = MagicMock(return_value=mock_cursor)
@@ -205,7 +206,7 @@ class TestAIResultRepository:
         mock_doc1 = {"_id": ObjectId(), "confidence_score": 0.9, "patient_id": "P001"}
         mock_doc2 = {"_id": ObjectId(), "confidence_score": 0.85, "patient_id": "P002"}
         
-        async def cursor_iter():
+        async def cursor_iter(_mock_self):
             yield mock_doc1
             yield mock_doc2
         
@@ -228,7 +229,7 @@ class TestAIResultRepository:
         mock_collection = mock_db_client["ai_results"]
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
+        async def cursor_iter(_mock_self):
             yield {"_id": ObjectId(), "confidence_score": 0.95}
         
         mock_cursor.__aiter__ = cursor_iter
@@ -278,7 +279,7 @@ class TestAIResultRepository:
             yield {"_id": "symptom_analysis", "count": 60}
             yield {"_id": "medical_history", "count": 40}
         
-        mock_collection.aggregate = AsyncMock(side_effect=[
+        mock_collection.aggregate = MagicMock(side_effect=[
             confidence_aggregate(),
             processing_aggregate(),
             type_aggregate()
@@ -308,7 +309,7 @@ class TestAIResultRepository:
             return
             yield  # Make it a generator
         
-        mock_collection.aggregate = AsyncMock(side_effect=[
+        mock_collection.aggregate = MagicMock(side_effect=[
             empty_aggregate(),
             empty_aggregate(),
             empty_aggregate()
@@ -340,7 +341,7 @@ class TestAIResultRepository:
             "patient_id": "P002"
         }
         
-        async def cursor_iter():
+        async def cursor_iter(_mock_self):
             yield mock_doc1
             yield mock_doc2
         
@@ -370,8 +371,8 @@ class TestAIResultRepository:
         mock_collection.update_many.assert_called_once()
         call_args = mock_collection.update_many.call_args
         # Verify soft delete was applied
-        assert "$set" in call_args[1]
-        assert "deleted_at" in call_args[1]["$set"]
+        assert "$set" in call_args[0][1]
+        assert "deleted_at" in call_args[0][1]["$set"]
     
     @pytest.mark.asyncio
     async def test_cleanup_old_results_custom_days(self, ai_result_repository, mock_db_client):
@@ -410,7 +411,7 @@ class TestAIResultRepository:
                 "avg_processing_time": 1100.2
             }
         
-        mock_collection.aggregate = AsyncMock(return_value=trend_aggregate())
+        mock_collection.aggregate = MagicMock(return_value=trend_aggregate())
         
         result = await ai_result_repository.get_patient_analysis_trend("P001", days=30)
         
@@ -430,7 +431,7 @@ class TestAIResultRepository:
             return
             yield
         
-        mock_collection.aggregate = AsyncMock(return_value=empty_aggregate())
+        mock_collection.aggregate = MagicMock(return_value=empty_aggregate())
         
         result = await ai_result_repository.get_patient_analysis_trend("P001", days=7)
         

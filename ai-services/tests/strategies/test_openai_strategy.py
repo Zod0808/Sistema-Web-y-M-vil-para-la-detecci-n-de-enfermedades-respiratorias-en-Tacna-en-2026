@@ -118,7 +118,7 @@ class TestOpenAIStrategy:
         import openai
         
         openai_strategy.client.chat.completions.create = AsyncMock(
-            side_effect=openai.APIError("API error", request=MagicMock(), response=MagicMock())
+            side_effect=openai.APIError("API error")
         )
         
         with pytest.raises(openai.APIError):
@@ -130,7 +130,7 @@ class TestOpenAIStrategy:
         import openai
         
         openai_strategy.client.chat.completions.create = AsyncMock(
-            side_effect=openai.RateLimitError("Rate limit", request=MagicMock(), response=MagicMock())
+            side_effect=openai.RateLimitError("Rate limit")
         )
         
         with pytest.raises(openai.RateLimitError):
@@ -142,7 +142,7 @@ class TestOpenAIStrategy:
         import openai
         
         openai_strategy.client.chat.completions.create = AsyncMock(
-            side_effect=openai.APITimeoutError("Timeout", request=MagicMock())
+            side_effect=openai.APITimeoutError(MagicMock())
         )
         
         with pytest.raises(openai.APITimeoutError):
@@ -198,7 +198,7 @@ class TestOpenAIStrategy:
         import openai
         
         openai_strategy.client.chat.completions.create = AsyncMock(
-            side_effect=openai.APIError("API error", request=MagicMock(), response=MagicMock())
+            side_effect=openai.APIError("API error")
         )
         
         with pytest.raises(openai.APIError):

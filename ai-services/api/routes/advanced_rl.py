@@ -6,6 +6,17 @@ from ml_models.reinforcement_learning import ReinforcementLearningAgent
 
 router = APIRouter(prefix="/v1/rl", tags=["Reinforcement Learning"])
 
+# Cache de agentes por entorno (singleton pattern) para persistir la configuración
+# entre llamadas a /configure y las llamadas posteriores a /train y /act
+_agents: Dict[str, ReinforcementLearningAgent] = {}
+
+
+def get_rl_agent(env_name: str) -> ReinforcementLearningAgent:
+    """Get or create RL agent instance for the given environment"""
+    if env_name not in _agents:
+        _agents[env_name] = ReinforcementLearningAgent(env_name=env_name)
+    return _agents[env_name]
+
 
 class RLConfigureRequest(BaseModel):
     env_name: Optional[str] = Field("clinical-optimizer")
@@ -15,7 +26,7 @@ class RLConfigureRequest(BaseModel):
 @router.post("/configure", summary="RL - Configurar agente")
 async def rl_configure(req: RLConfigureRequest) -> Dict[str, Any]:
     try:
-        agent = ReinforcementLearningAgent(env_name=req.env_name or "clinical-optimizer")
+        agent = get_rl_agent(req.env_name or "clinical-optimizer")
         return agent.configure(req.config or {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -29,7 +40,7 @@ class RLTrainRequest(BaseModel):
 @router.post("/train", summary="RL - Entrenar agente")
 async def rl_train(req: RLTrainRequest) -> Dict[str, Any]:
     try:
-        agent = ReinforcementLearningAgent(env_name=req.env_name or "clinical-optimizer")
+        agent = get_rl_agent(req.env_name or "clinical-optimizer")
         return agent.train(episodes=req.episodes or 10)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -43,7 +54,7 @@ class RLActRequest(BaseModel):
 @router.post("/act", summary="RL - Acción del agente")
 async def rl_act(req: RLActRequest) -> Dict[str, Any]:
     try:
-        agent = ReinforcementLearningAgent(env_name=req.env_name or "clinical-optimizer")
+        agent = get_rl_agent(req.env_name or "clinical-optimizer")
         return agent.act(req.state or {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

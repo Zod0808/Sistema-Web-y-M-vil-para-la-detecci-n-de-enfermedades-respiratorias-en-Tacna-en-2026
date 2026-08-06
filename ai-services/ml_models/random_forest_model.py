@@ -268,8 +268,7 @@ class RandomForestDiseaseClassifier:
         print(f"Model loaded from {filepath}")
 
 
-# Backwards compatibility aliases for legacy imports
-RandomForestClassifier = RandomForestDiseaseClassifier
+# Backwards compatibility alias for legacy imports
 RandomForestModel = RandomForestDiseaseClassifier
 
 

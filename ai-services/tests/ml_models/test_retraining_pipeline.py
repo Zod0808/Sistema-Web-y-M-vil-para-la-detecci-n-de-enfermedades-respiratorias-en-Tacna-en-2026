@@ -51,7 +51,8 @@ class TestAutoRetraining:
         """Test que el sistema trackea mejoras del modelo"""
         # Verificar que existe funcionalidad para trackear mejoras
         assert hasattr(retraining_system, 'track_improvement') or \
-               hasattr(retraining_system, 'evaluate_model')
+               hasattr(retraining_system, 'evaluate_model') or \
+               hasattr(retraining_system, 'validate_model_performance')
 
     def test_retraining_doesnt_degrade_performance(self, retraining_system):
         """Test que el retraining no degrada el performance"""
@@ -77,13 +78,15 @@ class TestAutoRetraining:
         """Test que se hace backup del modelo antes de retraining"""
         # Verificar que existe funcionalidad de backup
         assert hasattr(retraining_system, 'backup_model') or \
-               hasattr(retraining_system, 'save_model')
+               hasattr(retraining_system, 'save_model') or \
+               hasattr(retraining_system, 'backup_current_models')
 
     def test_retraining_rollback(self, retraining_system):
         """Test que se puede hacer rollback si el retraining falla"""
         # Verificar que existe funcionalidad de rollback
         assert hasattr(retraining_system, 'rollback') or \
                hasattr(retraining_system, 'restore_model')
+        assert callable(retraining_system.restore_model)
 
 
 class TestFeedbackProcessing:

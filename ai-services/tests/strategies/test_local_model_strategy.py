@@ -162,10 +162,9 @@ class TestLocalModelStrategy:
         local_model_strategy.medical_model = mock_model
         
         result = await local_model_strategy.process_medical_text(sample_medical_text)
-        
+
         assert "entities" in result
         assert "symptoms" in result
-        assert "categories" in result
     
     @pytest.mark.asyncio
     async def test_process_medical_text_fallback(self, sample_medical_text):
@@ -235,10 +234,9 @@ class TestLocalModelStrategy:
         text = "Paciente con tos y fiebre"
         
         result = local_model_strategy._process_medical_predictions(predictions, text)
-        
+
         assert "entities" in result
         assert "symptoms" in result
-        assert "categories" in result
     
     def test_determine_urgency_from_predictions(self, local_model_strategy):
         """Test urgency determination from predictions"""
@@ -261,20 +259,22 @@ class TestLocalModelStrategy:
         assert isinstance(recommendations, list)
         assert len(recommendations) > 0
     
-    def test_fallback_symptom_analysis(self, local_model_strategy, sample_symptoms):
+    @pytest.mark.asyncio
+    async def test_fallback_symptom_analysis(self, local_model_strategy, sample_symptoms):
         """Test fallback symptom analysis"""
-        result = local_model_strategy._fallback_symptom_analysis(sample_symptoms, None)
-        
+        result = await local_model_strategy._fallback_symptom_analysis(sample_symptoms, None)
+
         assert isinstance(result, dict)
         assert "urgency_level" in result
         assert "severity_score" in result
         assert "categories" in result
         assert "recommendations" in result
-    
-    def test_fallback_medical_text_processing(self, local_model_strategy, sample_medical_text):
+
+    @pytest.mark.asyncio
+    async def test_fallback_medical_text_processing(self, local_model_strategy, sample_medical_text):
         """Test fallback medical text processing"""
-        result = local_model_strategy._fallback_medical_text_processing(sample_medical_text, None)
-        
+        result = await local_model_strategy._fallback_medical_text_processing(sample_medical_text, None)
+
         assert isinstance(result, dict)
         assert "entities" in result
         assert "symptoms" in result

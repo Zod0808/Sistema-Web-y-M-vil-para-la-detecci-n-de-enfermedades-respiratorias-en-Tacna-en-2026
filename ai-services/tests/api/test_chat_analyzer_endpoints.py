@@ -340,16 +340,7 @@ class TestChatAnalyzerEndpoints:
             data = response.json()
             assert "message" in data
             assert len(data["message"]) > 0
-        
-        response = client.post("/api/v1/analyze", json=request_data)
-        
-        # Route may not be registered, so accept 404 or 422
-        if response.status_code == 404:
-            pytest.skip("Chat analyzer routes not registered, skipping test")
-        
-        # Should return validation error
-        assert response.status_code == 422
-    
+
     def test_analyze_message_empty_message(self, client):
         """Test message analysis with empty message"""
         request_data = {

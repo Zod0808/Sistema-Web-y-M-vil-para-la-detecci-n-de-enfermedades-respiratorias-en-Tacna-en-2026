@@ -31,7 +31,7 @@ class TestServiceFactory:
         """Test factory initialization"""
         assert ServiceFactory._instances == {}
     
-    @patch('factories.service_factory.SymptomAnalyzer')
+    @patch('symptom_analyzer.analyzer.SymptomAnalyzer')
     def test_create_service_symptom_analyzer(self, mock_analyzer_class):
         """Test creating symptom analyzer service"""
         mock_instance = MagicMock()
@@ -43,7 +43,7 @@ class TestServiceFactory:
         mock_analyzer_class.assert_called_once()
         assert ServiceType.SYMPTOM_ANALYZER in ServiceFactory._instances
     
-    @patch('factories.service_factory.MedicalHistoryProcessor')
+    @patch('medical_history_processor.processor.MedicalHistoryProcessor')
     def test_create_service_medical_history_processor(self, mock_processor_class):
         """Test creating medical history processor service"""
         mock_instance = MagicMock()
@@ -54,7 +54,7 @@ class TestServiceFactory:
         assert service == mock_instance
         mock_processor_class.assert_called_once()
     
-    @patch('factories.service_factory.ModelManager')
+    @patch('models.model_manager.ModelManager')
     def test_create_service_ai_model_manager(self, mock_manager_class):
         """Test creating AI model manager service"""
         mock_instance = MagicMock()
@@ -65,7 +65,7 @@ class TestServiceFactory:
         assert service == mock_instance
         mock_manager_class.assert_called_once()
     
-    @patch('factories.service_factory.CacheService')
+    @patch('core.cache.CacheService')
     def test_create_service_cache_service(self, mock_cache_class):
         """Test creating cache service"""
         mock_instance = MagicMock()
@@ -76,7 +76,7 @@ class TestServiceFactory:
         assert service == mock_instance
         mock_cache_class.assert_called_once()
     
-    @patch('factories.service_factory.DatabaseService')
+    @patch('core.database.DatabaseService')
     def test_create_service_database_service(self, mock_db_class):
         """Test creating database service"""
         mock_instance = MagicMock()
@@ -87,7 +87,7 @@ class TestServiceFactory:
         assert service == mock_instance
         mock_db_class.assert_called_once()
     
-    @patch('factories.service_factory.NotificationService')
+    @patch('services.notification_service.NotificationService')
     def test_create_service_notification_service(self, mock_notification_class):
         """Test creating notification service"""
         mock_instance = MagicMock()
@@ -107,7 +107,7 @@ class TestServiceFactory:
         with pytest.raises(ValueError, match="Unknown service type"):
             ServiceFactory.create_service(unknown_type)
     
-    @patch('factories.service_factory.SymptomAnalyzer')
+    @patch('symptom_analyzer.analyzer.SymptomAnalyzer')
     def test_create_service_singleton_behavior(self, mock_analyzer_class):
         """Test that factory returns same instance (singleton)"""
         mock_instance = MagicMock()
@@ -121,7 +121,7 @@ class TestServiceFactory:
         # Should only create once
         assert mock_analyzer_class.call_count == 1
     
-    @patch('factories.service_factory.SymptomAnalyzer')
+    @patch('symptom_analyzer.analyzer.SymptomAnalyzer')
     def test_create_service_with_kwargs(self, mock_analyzer_class):
         """Test creating service with keyword arguments"""
         mock_instance = MagicMock()
@@ -135,7 +135,7 @@ class TestServiceFactory:
         mock_analyzer_class.assert_called_once_with(config_key="config_value")
         assert service == mock_instance
     
-    @patch('factories.service_factory.SymptomAnalyzer')
+    @patch('symptom_analyzer.analyzer.SymptomAnalyzer')
     def test_get_service_existing(self, mock_analyzer_class):
         """Test getting existing service"""
         mock_instance = MagicMock()
@@ -154,7 +154,7 @@ class TestServiceFactory:
     
     def test_clear_instances(self):
         """Test clearing all instances"""
-        with patch('factories.service_factory.SymptomAnalyzer') as mock_analyzer:
+        with patch('symptom_analyzer.analyzer.SymptomAnalyzer') as mock_analyzer:
             mock_instance = MagicMock()
             mock_analyzer.return_value = mock_instance
             
@@ -165,8 +165,8 @@ class TestServiceFactory:
             
             assert len(ServiceFactory._instances) == 0
     
-    @patch('factories.service_factory.StrategyFactory')
-    @patch('factories.service_factory.AnalysisContext')
+    @patch('factories.strategy_factory.StrategyFactory')
+    @patch('strategies.analysis_strategy.AnalysisContext')
     @patch('factories.service_factory.settings')
     def test_create_analysis_context_with_openai_key(self, mock_settings, mock_context_class, mock_strategy_factory):
         """Test creating analysis context with OpenAI API key"""
@@ -183,8 +183,8 @@ class TestServiceFactory:
         mock_context_class.assert_called_once_with(mock_strategy)
         assert context == mock_context_instance
     
-    @patch('factories.service_factory.StrategyFactory')
-    @patch('factories.service_factory.AnalysisContext')
+    @patch('factories.strategy_factory.StrategyFactory')
+    @patch('strategies.analysis_strategy.AnalysisContext')
     @patch('factories.service_factory.settings')
     def test_create_analysis_context_without_openai_key(self, mock_settings, mock_context_class, mock_strategy_factory):
         """Test creating analysis context without OpenAI API key"""
@@ -201,8 +201,8 @@ class TestServiceFactory:
         mock_strategy_factory.create_strategy.assert_called_once()
         assert context == mock_context_instance
     
-    @patch('factories.service_factory.StrategyFactory')
-    @patch('factories.service_factory.AnalysisContext')
+    @patch('factories.strategy_factory.StrategyFactory')
+    @patch('strategies.analysis_strategy.AnalysisContext')
     def test_create_analysis_context_with_strategy_type(self, mock_context_class, mock_strategy_factory):
         """Test creating analysis context with specific strategy type"""
         from factories.strategy_factory import StrategyType
@@ -300,7 +300,7 @@ class TestServiceFactory:
         # Should use local model strategy
         mock_create_context.assert_called_once_with(StrategyType.LOCAL_MODEL)
     
-    @patch('factories.service_factory.SymptomAnalyzer')
+    @patch('symptom_analyzer.analyzer.SymptomAnalyzer')
     def test_create_service_error_handling(self, mock_analyzer_class):
         """Test error handling when creating service"""
         mock_analyzer_class.side_effect = Exception("Import error")
@@ -308,7 +308,7 @@ class TestServiceFactory:
         with pytest.raises(Exception, match="Import error"):
             ServiceFactory.create_service(ServiceType.SYMPTOM_ANALYZER)
     
-    @patch('factories.service_factory.StrategyFactory')
+    @patch('factories.strategy_factory.StrategyFactory')
     def test_create_analysis_context_error_handling(self, mock_strategy_factory):
         """Test error handling when creating analysis context"""
         mock_strategy_factory.create_strategy.side_effect = Exception("Strategy creation failed")

@@ -15,6 +15,7 @@ import argparse
 import sys
 import os
 import json
+import pytest
 from pathlib import Path
 from datetime import datetime
 
@@ -212,6 +213,13 @@ def test_prediction_monitor():
     print(f"  [OK] Exportado a: {export_path}")
     
     return prediction_ids, monitor
+
+
+@pytest.fixture
+def prediction_ids():
+    """Provide prediction_ids by running the prediction monitor test first"""
+    ids, _monitor = test_prediction_monitor()
+    return ids
 
 
 def test_feedback_system(prediction_ids):

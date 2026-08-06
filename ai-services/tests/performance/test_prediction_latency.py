@@ -20,6 +20,8 @@ P50_THRESHOLD_MS = 200  # p50 debe ser < 200ms
 P95_THRESHOLD_MS = 500  # p95 debe ser < 500ms
 P99_THRESHOLD_MS = 1000  # p99 debe ser < 1000ms
 MAX_LATENCY_MS = 2000  # Latencia máxima permitida
+IMAGE_CLASSIFICATION_THRESHOLD_MS = P95_THRESHOLD_MS * 2  # Clasificación de imágenes puede ser más lenta
+TIME_SERIES_PREDICTION_THRESHOLD_MS = P50_THRESHOLD_MS  # Time series debe ser muy rápido
 
 
 def calculate_percentile(values: List[float], percentile: float) -> float:

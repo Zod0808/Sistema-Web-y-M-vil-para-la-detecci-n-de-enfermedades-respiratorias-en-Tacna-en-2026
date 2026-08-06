@@ -16,6 +16,8 @@ from api.routes.symptom_analyzer import (
     SymptomInput,
     SymptomAnalysisOutput
 )
+from core.database import get_database
+from core.cache import get_cache
 
 
 class TestSymptomAnalyzerEndpoints:
@@ -66,21 +68,24 @@ class TestSymptomAnalyzerEndpoints:
             "confidence_score": 0.85
         })
         
-        with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db), \
-             patch('api.routes.symptom_analyzer.get_cache', return_value=mock_cache), \
-             patch('api.routes.symptom_analyzer.ai_service_manager') as mock_manager, \
-             patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
-            mock_manager._initialized = True
-            
-            response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["patient_id"] == "test_patient_123"
-            assert data["urgency_level"] == "medium"
-            assert "analyzed_at" in data
-            assert "recommendations" in data
-            assert isinstance(data["recommendations"], list)
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: mock_cache
+        try:
+            with patch('api.routes.symptom_analyzer.ai_service_manager') as mock_manager, \
+                 patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
+                mock_manager._initialized = True
+
+                response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["patient_id"] == "test_patient_123"
+                assert data["urgency_level"] == "medium"
+                assert "analyzed_at" in data
+                assert "recommendations" in data
+                assert isinstance(data["recommendations"], list)
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_analyze_symptoms_initialization(self, client, sample_symptom_input):
@@ -105,15 +110,18 @@ class TestSymptomAnalyzerEndpoints:
         mock_manager._initialized = False
         mock_manager.initialize = AsyncMock()
         
-        with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db), \
-             patch('api.routes.symptom_analyzer.get_cache', return_value=None), \
-             patch('api.routes.symptom_analyzer.ai_service_manager', mock_manager), \
-             patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
-            
-            response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
-            
-            assert response.status_code == 200
-            mock_manager.initialize.assert_called_once()
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: None
+        try:
+            with patch('api.routes.symptom_analyzer.ai_service_manager', mock_manager), \
+                 patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
+
+                response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
+
+                assert response.status_code == 200
+                mock_manager.initialize.assert_called_once()
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_analyze_symptoms_error_handling(self, client, sample_symptom_input):
@@ -125,15 +133,18 @@ class TestSymptomAnalyzerEndpoints:
         mock_manager = MagicMock()
         mock_manager._initialized = True
         
-        with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db), \
-             patch('api.routes.symptom_analyzer.get_cache', return_value=None), \
-             patch('api.routes.symptom_analyzer.ai_service_manager', mock_manager), \
-             patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
-            
-            response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
-            
-            assert response.status_code == 500
-            assert "Internal server error" in response.json()["detail"]
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: None
+        try:
+            with patch('api.routes.symptom_analyzer.ai_service_manager', mock_manager), \
+                 patch('api.routes.symptom_analyzer.SymptomAnalysisService', return_value=mock_service):
+
+                response = client.post("/symptom-analyzer/analyze", json=sample_symptom_input)
+
+                assert response.status_code == 500
+                assert "Internal server error" in response.json()["detail"]
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_analyze_symptoms_validation_error(self, client):
@@ -142,18 +153,23 @@ class TestSymptomAnalyzerEndpoints:
             "patient_id": "",  # Invalid: empty
             "symptoms": []  # Invalid: empty list
         }
-        
-        response = client.post("/symptom-analyzer/analyze", json=invalid_input)
-        
-        # Should return validation error
-        assert response.status_code in [400, 422]
+
+        client.app.dependency_overrides[get_database] = lambda: MagicMock()
+        client.app.dependency_overrides[get_cache] = lambda: None
+        try:
+            response = client.post("/symptom-analyzer/analyze", json=invalid_input)
+
+            # Should return validation error
+            assert response.status_code in [400, 422]
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_get_symptom_trends_success(self, client):
         """Test getting symptom trends"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
-        
+        mock_collection = MagicMock()
+
         # Mock trend data
         trend_docs = [
             {
@@ -180,18 +196,19 @@ class TestSymptomAnalyzerEndpoints:
             }
         ]
         
-        mock_cursor = AsyncMock()
-        async def async_iter():
+        mock_cursor = MagicMock()
+        async def async_iter(self):
             for doc in trend_docs:
                 yield doc
         mock_cursor.__aiter__ = async_iter
-        
+
         mock_collection.find.return_value.sort.return_value = mock_cursor
         mock_db.ai_results = mock_collection
-        
-        with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.get("/symptom-analyzer/trends/test_patient_123?period=30d")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["patient_id"] == "test_patient_123"
@@ -199,39 +216,47 @@ class TestSymptomAnalyzerEndpoints:
             assert "trend_data" in data
             assert "overall_trend" in data
             assert "recommendations" in data
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_get_symptom_trends_different_periods(self, client):
         """Test getting symptom trends with different periods"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
-        mock_cursor = AsyncMock()
-        async def async_iter():
+        mock_collection = MagicMock()
+        mock_cursor = MagicMock()
+        async def async_iter(self):
             return
             yield
         mock_cursor.__aiter__ = async_iter
         mock_collection.find.return_value.sort.return_value = mock_cursor
         mock_db.ai_results = mock_collection
-        
+
         periods = ["7d", "30d", "90d"]
-        for period in periods:
-            with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db):
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
+            for period in periods:
                 response = client.get(f"/symptom-analyzer/trends/test_patient_123?period={period}")
                 assert response.status_code == 200
                 assert response.json()["period"] == period
-    
+        finally:
+            client.app.dependency_overrides.clear()
+
     @pytest.mark.asyncio
     async def test_get_symptom_trends_error_handling(self, client):
         """Test getting symptom trends error handling"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         mock_collection.find.side_effect = Exception("Database error")
         mock_db.ai_results = mock_collection
-        
-        with patch('api.routes.symptom_analyzer.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.get("/symptom-analyzer/trends/test_patient_123")
-            
+
             assert response.status_code == 500
+        finally:
+            client.app.dependency_overrides.clear()
     
     def test_get_general_recommendations(self, client):
         """Test getting general recommendations"""

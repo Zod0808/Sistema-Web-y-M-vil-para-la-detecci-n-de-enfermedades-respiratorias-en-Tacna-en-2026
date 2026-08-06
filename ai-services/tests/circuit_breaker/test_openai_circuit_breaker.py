@@ -83,8 +83,9 @@ class TestOpenAICircuitBreaker:
     async def test_call_openai_timeout_error(self, openai_circuit_breaker):
         """Test handling OpenAI timeout error"""
         with patch('circuit_breaker.openai_circuit_breaker.openai') as mock_openai:
+            mock_openai.RateLimitError = type('RateLimitError', (Exception,), {})
             mock_openai.APITimeoutError = type('APITimeoutError', (Exception,), {})
-            
+
             timeout_error = mock_openai.APITimeoutError("Request timeout")
             
             async def mock_openai_func(*args, **kwargs):
@@ -103,8 +104,10 @@ class TestOpenAICircuitBreaker:
     async def test_call_openai_api_error(self, openai_circuit_breaker):
         """Test handling OpenAI API error"""
         with patch('circuit_breaker.openai_circuit_breaker.openai') as mock_openai:
+            mock_openai.RateLimitError = type('RateLimitError', (Exception,), {})
+            mock_openai.APITimeoutError = type('APITimeoutError', (Exception,), {})
             mock_openai.APIError = type('APIError', (Exception,), {})
-            
+
             api_error = mock_openai.APIError("API error")
             api_error.code = "server_error"
             
@@ -129,11 +132,15 @@ class TestOpenAICircuitBreaker:
         with patch.object(openai_circuit_breaker, 'call', new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = ValueError("Generic error")
             with patch.object(openai_circuit_breaker, '_on_failure', new_callable=AsyncMock) as mock_failure:
-                
+
                 with pytest.raises(ValueError):
                     await openai_circuit_breaker.call_openai(mock_openai_func)
-                
-                mock_failure.assert_called_once()
+
+                # call_openai no llama a _on_failure directamente para excepciones
+                # genéricas: self.call() ya lo hace internamente (ver
+                # expected_exception en CircuitBreaker.call), así que aquí solo
+                # se verifica que no se duplique el conteo de fallos.
+                mock_failure.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_handle_rate_limit_error_below_threshold(self, openai_circuit_breaker):

@@ -71,14 +71,16 @@ class TestAdvancedNLPEndpoints:
     
     def test_nlp_process_error(self, client, sample_text_payload):
         """Test NLP processing with error"""
-        response = client.post("/api/v1/nlp/advanced/process", json=sample_text_payload)
-        
-        # Route may not be registered, so accept 404 or 500
-        if response.status_code == 404:
-            pytest.skip("NLP advanced routes not registered, skipping test")
-        
-        assert response.status_code == 500
-        assert "error" in response.json()["detail"].lower()
+        with patch('api.routes.advanced_nlp.MedicalNLPProcessor') as mock_nlp_class:
+            mock_nlp_class.return_value.process_text.side_effect = Exception("NLP processing error")
+            response = client.post("/api/v1/nlp/advanced/process", json=sample_text_payload)
+
+            # Route may not be registered, so accept 404 or 500
+            if response.status_code == 404:
+                pytest.skip("NLP advanced routes not registered, skipping test")
+
+            assert response.status_code == 500
+            assert "error" in response.json()["detail"].lower()
     
     def test_nlp_ner_success(self, client, sample_text_payload):
         """Test successful NER extraction"""
@@ -95,13 +97,15 @@ class TestAdvancedNLPEndpoints:
     
     def test_nlp_ner_error(self, client, sample_text_payload):
         """Test NER extraction with error"""
-        response = client.post("/api/v1/nlp/advanced/ner", json=sample_text_payload)
-        
-        # Route may not be registered, so accept 404 or 500
-        if response.status_code == 404:
-            pytest.skip("NLP advanced routes not registered, skipping test")
-        
-        assert response.status_code == 500
+        with patch('api.routes.advanced_nlp.MedicalNLPProcessor') as mock_nlp_class:
+            mock_nlp_class.return_value.extract_entities.side_effect = Exception("NER extraction error")
+            response = client.post("/api/v1/nlp/advanced/ner", json=sample_text_payload)
+
+            # Route may not be registered, so accept 404 or 500
+            if response.status_code == 404:
+                pytest.skip("NLP advanced routes not registered, skipping test")
+
+            assert response.status_code == 500
     
     def test_nlp_summarize_success(self, client, sample_summarize_payload):
         """Test successful text summarization"""
@@ -128,13 +132,15 @@ class TestAdvancedNLPEndpoints:
     
     def test_nlp_summarize_error(self, client, sample_summarize_payload):
         """Test summarization with error"""
-        response = client.post("/api/v1/nlp/advanced/summarize", json=sample_summarize_payload)
-        
-        # Route may not be registered, so accept 404 or 500
-        if response.status_code == 404:
-            pytest.skip("NLP advanced routes not registered, skipping test")
-        
-        assert response.status_code == 500
+        with patch('api.routes.advanced_nlp.MedicalNLPProcessor') as mock_nlp_class:
+            mock_nlp_class.return_value.summarize.side_effect = Exception("Summarization error")
+            response = client.post("/api/v1/nlp/advanced/summarize", json=sample_summarize_payload)
+
+            # Route may not be registered, so accept 404 or 500
+            if response.status_code == 404:
+                pytest.skip("NLP advanced routes not registered, skipping test")
+
+            assert response.status_code == 500
     
     def test_nlp_translate_success(self, client, sample_translate_payload):
         """Test successful term translation"""
@@ -164,13 +170,15 @@ class TestAdvancedNLPEndpoints:
     
     def test_nlp_translate_error(self, client, sample_translate_payload):
         """Test translation with error"""
-        response = client.post("/api/v1/nlp/advanced/translate", json=sample_translate_payload)
-        
-        # Route may not be registered, so accept 404 or 500
-        if response.status_code == 404:
-            pytest.skip("NLP advanced routes not registered, skipping test")
-        
-        assert response.status_code == 500
+        with patch('api.routes.advanced_nlp.MedicalNLPProcessor') as mock_nlp_class:
+            mock_nlp_class.return_value.translate_terms.side_effect = Exception("Translation error")
+            response = client.post("/api/v1/nlp/advanced/translate", json=sample_translate_payload)
+
+            # Route may not be registered, so accept 404 or 500
+            if response.status_code == 404:
+                pytest.skip("NLP advanced routes not registered, skipping test")
+
+            assert response.status_code == 500
     
     def test_nlp_sentiment_success(self, client, sample_text_payload):
         """Test successful sentiment analysis"""
@@ -197,13 +205,15 @@ class TestAdvancedNLPEndpoints:
     
     def test_nlp_sentiment_error(self, client, sample_text_payload):
         """Test sentiment analysis with error"""
-        response = client.post("/api/v1/nlp/advanced/sentiment", json=sample_text_payload)
-        
-        # Route may not be registered, so accept 404 or 500
-        if response.status_code == 404:
-            pytest.skip("NLP advanced routes not registered, skipping test")
-        
-        assert response.status_code == 500
+        with patch('api.routes.advanced_nlp.MedicalNLPProcessor') as mock_nlp_class:
+            mock_nlp_class.return_value.sentiment.side_effect = Exception("Sentiment analysis error")
+            response = client.post("/api/v1/nlp/advanced/sentiment", json=sample_text_payload)
+
+            # Route may not be registered, so accept 404 or 500
+            if response.status_code == 404:
+                pytest.skip("NLP advanced routes not registered, skipping test")
+
+            assert response.status_code == 500
     
     def test_nlp_process_missing_text(self, client):
         """Test NLP processing with missing text"""

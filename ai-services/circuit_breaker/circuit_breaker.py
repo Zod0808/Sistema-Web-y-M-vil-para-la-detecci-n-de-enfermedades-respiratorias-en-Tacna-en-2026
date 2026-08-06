@@ -48,7 +48,7 @@ class CircuitBreaker:
                     self.state = CircuitState.HALF_OPEN
                     logger.info("Circuit breaker transitioning to HALF_OPEN")
                 else:
-                    raise Exception("Circuit breaker is OPEN")
+                    raise Exception("Circuit breaker is open")
         
         try:
             # Execute the function

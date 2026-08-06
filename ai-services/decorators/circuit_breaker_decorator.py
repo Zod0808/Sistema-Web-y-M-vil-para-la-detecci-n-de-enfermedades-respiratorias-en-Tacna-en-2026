@@ -4,8 +4,11 @@ Circuit Breaker Decorator Implementation
 
 from functools import wraps
 from typing import Any, Optional, Callable
+import asyncio
 import structlog
-from circuit_breaker.circuit_breaker import circuit_breaker_manager
+from circuit_breaker.circuit_breaker import circuit_breaker_manager, CircuitBreaker
+from circuit_breaker.openai_circuit_breaker import OpenAICircuitBreaker
+from circuit_breaker.external_service_circuit_breaker import service_manager
 
 logger = structlog.get_logger()
 
@@ -122,8 +125,6 @@ class OpenAICircuitBreakerDecorator:
     
     async def _execute_with_openai_circuit_breaker(self, func: Callable, args: tuple, kwargs: dict):
         """Execute OpenAI function with specialized circuit breaker"""
-        from circuit_breaker.openai_circuit_breaker import OpenAICircuitBreaker
-        
         # Create OpenAI-specific circuit breaker
         circuit_breaker = OpenAICircuitBreaker(**self.kwargs)
         
@@ -177,8 +178,6 @@ class ExternalServiceCircuitBreakerDecorator:
     
     async def _execute_with_external_circuit_breaker(self, func: Callable, args: tuple, kwargs: dict):
         """Execute external service function with circuit breaker"""
-        from circuit_breaker.external_service_circuit_breaker import service_manager
-        
         try:
             # Register service if not already registered
             service = service_manager.get_service(self.service_name)
@@ -222,6 +221,35 @@ def with_external_service_circuit_breaker(service_name: str, base_url: str, **kw
     return decorator
 
 
-# Backward-compatible alias for tests importing `circuit_breaker_decorator` at
-# module level (they expect the factory to be exposed with the module name).
-circuit_breaker_decorator = with_circuit_breaker
+# Backward-compatible helper for tests importing `circuit_breaker_decorator` at
+# module level. Unlike `with_circuit_breaker`, this doesn't require a
+# `service_name` and doesn't share state via `circuit_breaker_manager` - each
+# decoration gets its own dedicated CircuitBreaker instance.
+def circuit_breaker_decorator(
+    failure_threshold: int = 5,
+    recovery_timeout: int = 60,
+    expected_exception: type = Exception,
+    success_threshold: int = 2
+):
+    """Decorator function for adding circuit breaker functionality to a function"""
+    breaker = CircuitBreaker(
+        failure_threshold=failure_threshold,
+        recovery_timeout=recovery_timeout,
+        expected_exception=expected_exception,
+        success_threshold=success_threshold
+    )
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            return await breaker.call(func, *args, **kwargs)
+
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            async def run():
+                return await breaker.call(func, *args, **kwargs)
+            return asyncio.run(run())
+
+        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
+    return decorator

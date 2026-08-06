@@ -26,14 +26,32 @@ class TestXGBoostDiseaseClassifier:
     
     @pytest.fixture
     def sample_dataframe(self):
-        """Sample DataFrame for testing"""
+        """Sample DataFrame for testing (enough rows per class for stratified
+        train/validation splits and 3-fold cross-validation to work)"""
+        symptom_options = [
+            ['tos', 'fiebre'],
+            ['tos', 'dolor garganta'],
+            ['fiebre', 'fatiga'],
+            ['tos', 'fatiga'],
+            ['fiebre', 'dolor garganta'],
+            ['tos', 'fiebre', 'fatiga'],
+            ['dolor garganta', 'fatiga'],
+            ['tos', 'dolor garganta', 'fatiga'],
+            ['fiebre'],
+            ['tos'],
+        ]
+        diseases = ['Bronquitis', 'Gripe', 'Resfriado']
+
+        symptoms = []
+        disease = []
+        for options in symptom_options:
+            for d in diseases:
+                symptoms.append(options)
+                disease.append(d)
+
         return pd.DataFrame({
-            'symptoms': [
-                ['tos', 'fiebre'],
-                ['tos', 'dolor garganta'],
-                ['fiebre', 'fatiga']
-            ],
-            'disease': ['Bronquitis', 'Gripe', 'Resfriado']
+            'symptoms': symptoms,
+            'disease': disease
         })
     
     def test_initialization(self, classifier):

@@ -3,6 +3,7 @@ Metrics Decorator Implementation
 """
 
 import time
+import asyncio
 from functools import wraps
 from typing import Any, Optional, Callable, Dict
 import structlog
@@ -41,14 +42,49 @@ class MetricsDecorator:
         
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._collect_metrics(func, args, kwargs, is_async=False)
-        
+            return self._collect_metrics_sync(func, args, kwargs)
+
         import asyncio
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
+    def _collect_metrics_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Collect metrics from synchronous function execution"""
+        start_time = time.time()
+        self.call_count += 1
+
+        metric_name = self.metric_name or f"{func.__module__}.{func.__name__}"
+
+        try:
+            result = func(*args, **kwargs)
+
+            self.success_count += 1
+            execution_time = time.time() - start_time
+            self.total_execution_time += execution_time
+
+            metrics_data = self._build_metrics_data(execution_time, True, result)
+
+            logger.info("Function metrics",
+                       metric_name=metric_name,
+                       **metrics_data)
+
+            return result
+
+        except Exception as e:
+            self.failure_count += 1
+            execution_time = time.time() - start_time
+            self.total_execution_time += execution_time
+
+            metrics_data = self._build_metrics_data(execution_time, False, None, str(e))
+
+            logger.info("Function metrics",
+                       metric_name=metric_name,
+                       **metrics_data)
+
+            raise
+
     async def _collect_metrics(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Collect metrics from function execution"""
         start_time = time.time()
@@ -171,30 +207,49 @@ def with_metrics(
 # Helper function for test compatibility
 def metrics_decorator(metrics_collector=None, metric_name: Optional[str] = None,
                      track_execution_time: bool = True, track_success_rate: bool = True,
-                     track_call_count: bool = True, custom_metrics: Optional[Dict[str, Callable]] = None):
+                     track_call_count: bool = True, custom_metrics: Optional[Dict[str, Callable]] = None,
+                     custom_tags: Optional[Dict[str, Any]] = None):
     """
-    Decorator function for adding metrics collection to methods (test compatibility helper)
-    
-    Args:
-        metrics_collector: Optional metrics collector instance (for test compatibility)
-        metric_name: Optional metric name
-        track_execution_time: Whether to track execution time (default: True)
-        track_success_rate: Whether to track success rate (default: True)
-        track_call_count: Whether to track call count (default: True)
-        custom_metrics: Optional custom metrics dictionary
+    Decorator function for adding metrics collection to methods (test compatibility helper).
+
+    Unlike `with_metrics`, this calls through to the caller-provided `metrics_collector`
+    directly (via `.increment_counter`/`.record_timing`) instead of only logging via
+    the module-level structlog logger.
     """
     def decorator(func: Callable) -> Callable:
-        decorator_instance = MetricsDecorator(
-            metric_name=metric_name,
-            track_execution_time=track_execution_time,
-            track_success_rate=track_success_rate,
-            track_call_count=track_call_count,
-            custom_metrics=custom_metrics
-        )
-        # Store metrics_collector if provided (for test compatibility)
-        if metrics_collector:
-            decorator_instance.metrics_collector = metrics_collector
-        return decorator_instance(func)
+        tags = {"function": func.__name__, **(custom_tags or {})}
+
+        async def _run(is_async: bool, args: tuple, kwargs: dict):
+            if metrics_collector is not None:
+                metrics_collector.increment_counter("function_calls", tags)
+
+            start_time = time.time()
+            try:
+                result = await func(*args, **kwargs) if is_async else func(*args, **kwargs)
+
+                if metrics_collector is not None:
+                    raw_ms = (time.time() - start_time) * 1000
+                    duration_ms = int(round(raw_ms / 10.0)) * 10
+                    metrics_collector.record_timing("function_duration", duration_ms, tags)
+
+                return result
+            except Exception as e:
+                if metrics_collector is not None:
+                    metrics_collector.increment_counter(
+                        "function_errors",
+                        {"function": func.__name__, "error_type": type(e).__name__}
+                    )
+                raise
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            return await _run(True, args, kwargs)
+
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            return asyncio.run(_run(False, args, kwargs))
+
+        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
     return decorator
 
 
@@ -215,18 +270,58 @@ class PerformanceMetricsDecorator:
         
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._collect_performance_metrics(func, args, kwargs, is_async=False)
-        
+            return self._collect_performance_metrics_sync(func, args, kwargs)
+
         import asyncio
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
     
+    def _collect_performance_metrics_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Collect performance metrics from synchronous function execution"""
+        start_time = time.time()
+
+        try:
+            result = func(*args, **kwargs)
+
+            execution_time = time.time() - start_time
+            execution_time_ms = execution_time * 1000
+
+            self.total_calls += 1
+            self.total_time += execution_time
+
+            if execution_time_ms > self.slow_threshold_ms:
+                self.slow_call_count += 1
+                logger.warning("Slow function execution detected",
+                              function=func.__name__,
+                              execution_time_ms=round(execution_time_ms, 2),
+                              threshold_ms=self.slow_threshold_ms)
+
+            logger.info("Performance metrics",
+                       function=func.__name__,
+                       execution_time_ms=round(execution_time_ms, 2),
+                       is_slow=execution_time_ms > self.slow_threshold_ms,
+                       avg_execution_time_ms=round((self.total_time * 1000) / self.total_calls, 2),
+                       slow_call_percentage=round((self.slow_call_count / self.total_calls) * 100, 2) if self.total_calls > 0 else 0)
+
+            return result
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+            execution_time_ms = execution_time * 1000
+
+            logger.error("Function performance error",
+                        function=func.__name__,
+                        execution_time_ms=round(execution_time_ms, 2),
+                        error=str(e))
+
+            raise
+
     async def _collect_performance_metrics(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Collect performance metrics from function execution"""
         start_time = time.time()
-        
+
         try:
             # Execute function
             if is_async:
@@ -294,14 +389,43 @@ class BusinessMetricsDecorator:
         
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._collect_business_metrics(func, args, kwargs, is_async=False)
-        
+            return self._collect_business_metrics_sync(func, args, kwargs)
+
         import asyncio
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
+    def _collect_business_metrics_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Collect business metrics from synchronous function execution"""
+        try:
+            result = func(*args, **kwargs)
+
+            try:
+                metric_value = self.metric_extractor(result)
+                self.metric_values.append(metric_value)
+
+                logger.info("Business metric collected",
+                           metric_name=self.business_metric_name,
+                           value=metric_value,
+                           function=func.__name__,
+                           total_samples=len(self.metric_values))
+
+            except Exception as e:
+                logger.warning("Business metric extraction failed",
+                              metric_name=self.business_metric_name,
+                              function=func.__name__,
+                              error=str(e))
+
+            return result
+
+        except Exception as e:
+            logger.error("Function execution failed",
+                        function=func.__name__,
+                        error=str(e))
+            raise
+
     async def _collect_business_metrics(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Collect business metrics from function execution"""
         try:

@@ -15,9 +15,13 @@ class TestEnhancedChatbotService:
     @pytest.fixture
     def chatbot_service(self):
         """Create enhanced chatbot service instance"""
-        with patch('services.enhanced_chatbot_service.SHAPDiseaseExplainer'):
-            with patch('services.enhanced_chatbot_service.parse_diseases_markdown'):
-                with patch('services.enhanced_chatbot_service.build_disease_database'):
+        # SHAPDiseaseExplainer/parse_diseases_markdown/build_disease_database are
+        # imported lazily inside EnhancedChatbotService methods (not at module
+        # level), so they must be patched where they're actually defined for the
+        # mock to be picked up by the local `from X import Y` statements.
+        with patch('shap_explainer.SHAPDiseaseExplainer'):
+            with patch('data.disease_parser.parse_diseases_markdown'):
+                with patch('data.disease_parser.build_disease_database'):
                     return EnhancedChatbotService()
     
     @pytest.fixture
@@ -431,11 +435,15 @@ class TestEnhancedChatbotService:
         chatbot_service._use_ml = False
         chatbot_service._shap_explainer = None
         
+        # use_ensemble=False forces the single-model (SHAP) path so this test
+        # exercises _shap_explainer instead of the real ensemble_predictor
+        # singleton, which would otherwise load the actual model files on disk.
         result = chatbot_service._predict_with_ml(
             user_message="Tengo fiebre",
-            symptoms=[{'symptom': 'fiebre'}]
+            symptoms=[{'symptom': 'fiebre'}],
+            use_ensemble=False
         )
-        
+
         # Should return None when ML is not available
         assert result is None
     
@@ -455,7 +463,8 @@ class TestEnhancedChatbotService:
         
         result = chatbot_service._predict_with_ml(
             user_message="Tengo fiebre y tos",
-            symptoms=[{'symptom': 'fiebre'}, {'symptom': 'tos'}]
+            symptoms=[{'symptom': 'fiebre'}, {'symptom': 'tos'}],
+            use_ensemble=False
         )
         
         assert result is not None
@@ -597,21 +606,18 @@ class TestEnhancedChatbotService:
     @pytest.mark.asyncio
     async def test_get_openai_response_error_handling(self, chatbot_service):
         """Test OpenAI response error handling"""
-        with patch('services.enhanced_chatbot_service.openai') as mock_openai:
-            mock_openai.AsyncOpenAI.return_value.chat.completions.create = AsyncMock(
-                side_effect=Exception("OpenAI error")
-            )
-            
-            # Should handle error gracefully
-            response = await chatbot_service.get_openai_response(
-                user_message="Test",
-                classified_disease={},
-                symptoms=[]
-            )
-            
-            # Should return a fallback response
-            assert isinstance(response, str)
-            assert len(response) > 0
+        # get_openai_response no longer calls the OpenAI API (it builds the
+        # response from local templates), so there's no `openai` module attribute
+        # left to mock/fail. Kept as a regression check that the method still
+        # always returns a valid string response.
+        response = await chatbot_service.get_openai_response(
+            user_message="Test",
+            classified_disease={},
+            symptoms=[]
+        )
+
+        assert isinstance(response, str)
+        assert len(response) > 0
     
     def test_get_disease_ids_for_symptom(self, chatbot_service):
         """Test getting disease IDs for a symptom"""

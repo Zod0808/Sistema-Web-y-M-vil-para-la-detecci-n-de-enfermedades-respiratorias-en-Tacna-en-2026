@@ -145,3 +145,25 @@ async def close_cache():
         logger.error("Failed to close Redis cache", error=str(e))
     finally:
         cache_client = None
+
+
+class CacheService:
+    """Object-oriented wrapper around the module-level Redis cache utilities"""
+
+    async def init(self):
+        return await init_cache()
+
+    async def get(self, key: str) -> Optional[Any]:
+        return await get_cache(key)
+
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        return await set_cache(key, value, ttl)
+
+    async def delete(self, key: str) -> bool:
+        return await delete_cache(key)
+
+    async def clear_pattern(self, pattern: str) -> int:
+        return await clear_cache_pattern(pattern)
+
+    async def close(self):
+        return await close_cache()

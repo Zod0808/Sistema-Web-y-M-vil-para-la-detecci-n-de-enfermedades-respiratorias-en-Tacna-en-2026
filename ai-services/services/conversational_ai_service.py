@@ -38,7 +38,7 @@ class ConversationalAIService:
                 'tos', 'toser', 'cough', 'flema', 'expectoración', 'dificultad respiratoria',
                 'dificultad para respirar', 'falta de aire', 'ahogo', 'resollar', 'sibilancia',
                 'respiro', 'respiracion', 'respirar', 'pecho', 'seno', 'nariz',
-                'congestion nasal', 'congestionado', 'mocos', 'secrecion nasal', 'rinorrea'
+                'congestion nasal', 'congestión nasal', 'congestionado', 'mocos', 'secrecion nasal', 'rinorrea'
             ],
             'fever': [
                 'fiebre', 'calor', 'temperatura', 'escalofrios', 'escalofríos', 'sudoracion',
@@ -67,10 +67,11 @@ class ConversationalAIService:
             'critical': [
                 'dificultad extrema para respirar', 'no puedo respirar', 'ahogo total',
                 'asfixia', 'no respiro', 'ahogo extremo', 'chequeo vital',
-                'emergencia medica', 'emergencia médica', 'dolor de pecho', 'dolor en el pecho'
+                'emergencia medica', 'emergencia médica', 'dolor de pecho', 'dolor en el pecho',
+                'sangro', 'sangrado', 'hemorragia'
             ],
             'high': [
-                'dificultad moderada para respirar', 'tos intensa', 'tos severa',
+                'dificultad moderada para respirar', 'dificultad para respirar', 'tos intensa', 'tos severa',
                 'fiebre alta', 'mucha fiebre', 'temperatura alta', 'muy enfermo',
                 'necesito ayuda urgente', 'mal muy grave', 'sintomas graves'
             ],
@@ -82,7 +83,7 @@ class ConversationalAIService:
         
         # Severity descriptors
         self.severity_keywords = {
-            'extreme': ['extremadamente', 'muy grave', 'mucho', 'muchísimo', 'insoportable', 'intolerable'],
+            'extreme': ['extremadamente', 'muy grave', 'muchísimo', 'insoportable', 'intolerable'],
             'high': ['grave', 'severo', 'intenso', 'fuerte', 'considerable', 'significativo'],
             'moderate': ['moderado', 'mediano', 'medio', 'regular', 'algo', 'bastante'],
             'mild': ['leve', 'ligero', 'poco', 'ligero', 'suave', 'menor']
@@ -147,7 +148,7 @@ class ConversationalAIService:
                 'urgency_score': urgency_assessment['score'],
                 'severity': severity,
                 'keywords_detected': extracted_data['keywords'],
-                'needs_medical_attention': urgency_assessment['level'] in ['critical', 'high', 'medium'],
+                'needs_medical_attention': urgency_assessment['level'] in ['critical', 'high'],
                 'recommendations': urgency_assessment.get('immediate_actions', []),
                 'follow_up_required': urgency_assessment['level'] != 'low'
             }
@@ -280,10 +281,14 @@ class ConversationalAIService:
         else:
             final_urgency = 'low'
         
+        # The raw additive score above can exceed the bucket thresholds (e.g. multiple
+        # matched indicators), so normalize it to [0.0, 1.0] for external consumers.
+        normalized_score = min(urgency_score / 10.0, 1.0)
+
         return {
             'level': final_urgency,
-            'score': urgency_score,
-            'detected_indicators': [ind for ind in self.urgency_indicators.get(final_urgency, []) 
+            'score': normalized_score,
+            'detected_indicators': [ind for ind in self.urgency_indicators.get(final_urgency, [])
                                    if ind in message_lower],
             'immediate_actions': immediate_actions,
             'recommendation': self._get_urgency_recommendation(final_urgency)

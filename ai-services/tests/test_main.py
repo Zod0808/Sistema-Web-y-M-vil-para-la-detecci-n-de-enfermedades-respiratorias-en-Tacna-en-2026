@@ -460,7 +460,7 @@ class TestRequestResponseModels:
             request = AnalysisRequest(
                 query="Test query",
                 patient_id="P001",
-                context={"age": 45}
+                context="respiratory_diseases"
             )
             
             assert hasattr(request, 'query') or isinstance(request, dict)
@@ -479,12 +479,14 @@ class TestRequestResponseModels:
         """Test AnalysisResponse model creation"""
         try:
             response = AnalysisResponse(
-                response="Test response",
+                status="success",
+                message="Test response",
                 analysis={"question_type": "general"},
-                confidence=0.85
+                confidence=0.85,
+                timestamp="2026-01-01T00:00:00Z"
             )
-            
-            assert hasattr(response, 'response') or isinstance(response, dict)
+
+            assert hasattr(response, 'message') or isinstance(response, dict)
         except (OSError, ImportError, TypeError):
             pytest.skip("Torch DLL error or model not available, skipping test")
 

@@ -217,11 +217,12 @@ class TestMetricsDecorator:
             return 42
         
         await test_func(False)
-        await test_func(True)
+        with pytest.raises(ValueError):
+            await test_func(True)
         await test_func(False)
-        
+
         summary = metrics_decorator.get_metrics_summary()
-        
+
         assert summary["call_count"] == 3
         assert summary["success_count"] == 2
         assert summary["failure_count"] == 1

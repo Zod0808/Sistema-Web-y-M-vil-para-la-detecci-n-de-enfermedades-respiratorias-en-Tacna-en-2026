@@ -17,22 +17,6 @@ from services.enhanced_chatbot_service import EnhancedChatbotService
 logger = structlog.get_logger()
 router = APIRouter()
 
-# Singleton — initialize once at module load so every uvicorn worker
-# reuses the same instance instead of rebuilding per request.
-_chatbot_service: Optional[EnhancedChatbotService] = None
-
-def get_chatbot_service() -> EnhancedChatbotService:
-    global _chatbot_service
-    if _chatbot_service is None:
-        _chatbot_service = EnhancedChatbotService()
-        logger.info("EnhancedChatbotService singleton initialized")
-    return _chatbot_service
-
-try:
-    get_chatbot_service()
-except Exception as _init_err:
-    logger.error("Failed to pre-initialize EnhancedChatbotService", error=str(_init_err))
-
 # Test endpoint to verify router is registered
 @router.get("/v1/test")
 async def test_route():
@@ -84,11 +68,10 @@ async def analyze_message(
                    message_length=len(input_data.message),
                    has_history=input_data.conversation_history is not None)
         
-        # Use singleton chatbot service
         try:
-            enhanced_service = get_chatbot_service()
+            enhanced_service = EnhancedChatbotService()
         except Exception as service_init_error:
-            logger.error("Failed to get EnhancedChatbotService", error=str(service_init_error))
+            logger.error("Failed to initialize EnhancedChatbotService", error=str(service_init_error))
             raise HTTPException(
                 status_code=500,
                 detail=f"Service initialization error: {str(service_init_error)}"

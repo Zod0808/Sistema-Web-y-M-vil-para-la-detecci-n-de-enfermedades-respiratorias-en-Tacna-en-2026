@@ -128,7 +128,7 @@ class PatientRiskClusterer:
         if features.empty:
             raise ValueError("Se requieren datos para entrenar el clusterizador.")
 
-        if not all(np.issubdtype(dtype, np.number) for dtype in features.dtypes):
+        if not all(pd.api.types.is_numeric_dtype(dtype) for dtype in features.dtypes):
             raise ValueError("Todas las columnas deben ser numéricas para realizar clustering.")
 
         self.feature_names = list(features.columns)

@@ -181,9 +181,9 @@ class TestBaseRepository:
         assert result["name"] == "Updated Entity"
         mock_collection.update_one.assert_called_once()
         call_args = mock_collection.update_one.call_args
-        assert "$set" in call_args[1]
-        assert "$inc" in call_args[1]
-        assert call_args[1]["$inc"]["version"] == 1
+        assert "$set" in call_args[0][1]
+        assert "$inc" in call_args[0][1]
+        assert call_args[0][1]["$inc"]["version"] == 1
     
     @pytest.mark.asyncio
     async def test_update_not_found(self, base_repository, mock_db_client):
@@ -219,7 +219,7 @@ class TestBaseRepository:
         await base_repository.update(str(entity_id), update_data)
         
         call_args = mock_collection.update_one.call_args
-        update_set = call_args[1]["$set"]
+        update_set = call_args[0][1]["$set"]
         assert "_id" not in update_set
         assert "value" not in update_set or update_set["value"] is not None
     
@@ -238,9 +238,9 @@ class TestBaseRepository:
         assert result is True
         mock_collection.update_one.assert_called_once()
         call_args = mock_collection.update_one.call_args
-        assert "$set" in call_args[1]
-        assert "deleted_at" in call_args[1]["$set"]
-        assert "updated_at" in call_args[1]["$set"]
+        assert "$set" in call_args[0][1]
+        assert "deleted_at" in call_args[0][1]["$set"]
+        assert "updated_at" in call_args[0][1]["$set"]
     
     @pytest.mark.asyncio
     async def test_delete_not_found(self, base_repository, mock_db_client):
@@ -265,7 +265,11 @@ class TestBaseRepository:
         mock_doc1 = {"_id": ObjectId(), "name": "Entity 1"}
         mock_doc2 = {"_id": ObjectId(), "name": "Entity 2"}
         
-        async def cursor_iter():
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
             yield mock_doc1
             yield mock_doc2
         
@@ -287,7 +291,11 @@ class TestBaseRepository:
         mock_collection = mock_db_client["test_collection"]
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
             yield {"_id": ObjectId(), "name": "Entity 1", "status": "active"}
         
         mock_cursor.__aiter__ = cursor_iter
@@ -400,7 +408,11 @@ class TestBaseRepository:
             for i in range(10)
         ]
         
-        async def cursor_iter():
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
             for doc in mock_docs:
                 yield doc
         
@@ -429,7 +441,11 @@ class TestBaseRepository:
         mock_collection.count_documents = AsyncMock(return_value=25)
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
             yield {"_id": ObjectId(), "status": "active"}
         
         mock_cursor.__aiter__ = cursor_iter
@@ -453,7 +469,11 @@ class TestBaseRepository:
         mock_collection.count_documents = AsyncMock(return_value=25)
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
             for i in range(5):
                 yield {"_id": ObjectId(), "name": f"Entity {i}"}
         
@@ -476,8 +496,13 @@ class TestBaseRepository:
         mock_collection.count_documents = AsyncMock(return_value=10)
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
-            pass
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
+            return
+            yield  # pragma: no cover - makes this an async generator
         
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.sort = MagicMock(return_value=mock_cursor)
@@ -502,8 +527,13 @@ class TestBaseRepository:
         mock_collection.count_documents = AsyncMock(return_value=50)
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
-            pass
+        # MagicMock/AsyncMock invoke magic-method attributes as unbound
+        # functions, passing the mock instance itself as the first
+        # positional arg (mirrors `type(mock).__aiter__(mock)`), so the
+        # replacement must accept (and can ignore) that argument.
+        async def cursor_iter(_mock_self):
+            return
+            yield  # pragma: no cover - makes this an async generator
         
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.sort = MagicMock(return_value=mock_cursor)

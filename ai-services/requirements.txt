@@ -13,6 +13,7 @@ xgboost==2.0.3
 joblib==1.4.2
 shap==0.44.0
 transformers==4.44.2
+Pillow==10.4.0
 
 # Medical text processing - SIN scispacy (problemas de compatibilidad con Python 3.11)
 spacy==3.6.1

@@ -16,8 +16,10 @@ class TestPatternConfig:
         assert config.STRATEGY_DEFAULT == "auto"
         assert config.STRATEGY_FALLBACK_ENABLED is True
         assert config.STRATEGY_CONFIDENCE_THRESHOLD == 0.7
-        assert config.CIRCUIT_BREAKER_ENABLED is True
-        assert config.CACHE_ENABLED is True
+        # CIRCUIT_BREAKER_ENABLED y CACHE_ENABLED se fuerzan a False en
+        # tests/conftest.py para todo el suite de tests
+        assert config.CIRCUIT_BREAKER_ENABLED is False
+        assert config.CACHE_ENABLED is False
         assert config.RETRY_ENABLED is True
     
     def test_pattern_config_custom_values(self):
@@ -77,7 +79,8 @@ class TestPatternManager:
         assert "recovery_timeout" in config
         assert "success_threshold" in config
         assert "openai_enabled" in config
-        assert config["enabled"] is True
+        # CIRCUIT_BREAKER_ENABLED se fuerza a False en tests/conftest.py
+        assert config["enabled"] is False
     
     def test_get_cache_config(self):
         """Test get_cache_config"""
@@ -88,7 +91,8 @@ class TestPatternManager:
         assert "default_ttl" in config
         assert "symptom_analysis_ttl" in config
         assert "medical_history_ttl" in config
-        assert config["enabled"] is True
+        # CACHE_ENABLED se fuerza a False en tests/conftest.py
+        assert config["enabled"] is False
         assert config["default_ttl"] == 3600
     
     def test_get_retry_config(self):

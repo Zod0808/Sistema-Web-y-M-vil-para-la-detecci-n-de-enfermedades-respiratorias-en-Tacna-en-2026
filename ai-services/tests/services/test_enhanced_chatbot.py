@@ -4,8 +4,10 @@ Test script for enhanced chatbot service
 
 import asyncio
 import sys
+import pytest
 from services.enhanced_chatbot_service import EnhancedChatbotService
 
+@pytest.mark.asyncio
 async def test_symptoms():
     """Test with multiple symptoms"""
     

@@ -2,7 +2,7 @@
 Rule-Based Strategy for AI Analysis
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import structlog
 from .analysis_strategy import AnalysisStrategy
 from data.medical_data import MedicalDataProcessor
@@ -162,24 +162,27 @@ class RuleBasedStrategy(AnalysisStrategy):
             })
         
         # Category-based severity
-        category_severities = {}
+        category_scores = {}
         for category, cat_symptoms in categories.items():
             if cat_symptoms:
-                cat_scores = [s["score"] for s in symptom_severities 
+                cat_scores = [s["score"] for s in symptom_severities
                              if s["symptom"] in [s["symptom"] for s in cat_symptoms]]
-                category_severities[category] = {
+                category_scores[category] = {
                     "score": sum(cat_scores) / len(cat_scores) if cat_scores else 0,
                     "count": len(cat_symptoms),
                     "symptoms": [s["symptom"] for s in cat_symptoms]
                 }
-        
-        # Overall severity
-        overall_score = self.data_processor.calculate_severity_score(symptoms)
-        
+
+        # Overall severity - average of the individually weighted symptom scores
+        overall_score = (
+            sum(s["score"] for s in symptom_severities) / len(symptom_severities)
+            if symptom_severities else 0.0
+        )
+
         return {
             "overall_score": overall_score,
-            "symptom_severities": symptom_severities,
-            "category_severities": category_severities,
+            "symptom_scores": symptom_severities,
+            "category_scores": category_scores,
             "severity_level": self._get_severity_level(overall_score)
         }
     
@@ -230,7 +233,7 @@ class RuleBasedStrategy(AnalysisStrategy):
             return "low"
     
     def _generate_recommendations(self, symptoms: List[Dict[str, Any]], categories: Dict[str, List[Dict]], 
-                                 urgency: str, context: Optional[str]) -> List[str]:
+                                 urgency: str, context: Optional[Union[str, Dict]]) -> List[str]:
         """Generate medical recommendations based on analysis"""
         recommendations = []
         
@@ -284,11 +287,13 @@ class RuleBasedStrategy(AnalysisStrategy):
         
         # Context-specific recommendations
         if context:
-            if "diabetes" in context.lower():
+            # context may be a free-text description (str) or structured metadata (dict)
+            context_str = str(context).lower()
+            if "diabetes" in context_str:
                 recommendations.append("Monitorear glucosa en sangre")
-            if "hipertensión" in context.lower():
+            if "hipertensión" in context_str:
                 recommendations.append("Controlar presión arterial")
-            if "asma" in context.lower():
+            if "asma" in context_str:
                 recommendations.append("Tener inhalador de rescate disponible")
         
         return recommendations[:10]  # Limit to 10 recommendations
@@ -377,7 +382,37 @@ class RuleBasedStrategy(AnalysisStrategy):
                         "end": match.end(),
                         "confidence": 0.8
                     })
-        
+
+        # Extract age
+        age_match = re.search(r"\b(\d{1,3})\s+años\b", text, re.IGNORECASE)
+        if age_match:
+            entities.append({
+                "text": age_match.group(0),
+                "type": "age",
+                "value": int(age_match.group(1)),
+                "start": age_match.start(),
+                "end": age_match.end(),
+                "confidence": 0.9
+            })
+
+        # Extract gender
+        gender_patterns = [
+            (r"\b(?:masculino|hombre)\b", "M"),
+            (r"\b(?:femenino|mujer)\b", "F"),
+        ]
+        for pattern, value in gender_patterns:
+            gender_match = re.search(pattern, text, re.IGNORECASE)
+            if gender_match:
+                entities.append({
+                    "text": gender_match.group(0),
+                    "type": "gender",
+                    "value": value,
+                    "start": gender_match.start(),
+                    "end": gender_match.end(),
+                    "confidence": 0.9
+                })
+                break
+
         return entities
     
     def _extract_symptoms_from_text(self, text: str) -> List[Dict[str, Any]]:

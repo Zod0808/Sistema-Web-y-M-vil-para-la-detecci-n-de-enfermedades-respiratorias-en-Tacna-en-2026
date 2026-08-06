@@ -18,8 +18,8 @@ router = APIRouter()
 
 class MedicalHistoryInput(BaseModel):
     """Input model for medical history processing"""
-    patient_id: str = Field(..., description="Patient identifier")
-    text: str = Field(..., description="Medical history text to process", max_length=10000)
+    patient_id: str = Field(..., description="Patient identifier", min_length=1)
+    text: str = Field(..., description="Medical history text to process", min_length=1, max_length=10000)
     language: str = Field(default="es", description="Text language")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
 

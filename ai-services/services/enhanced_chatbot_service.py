@@ -21,6 +21,55 @@ class EnhancedChatbotService:
     4. Provide actionable recommendations
     """
     
+    # Pattern-based disease identification, used as a fallback when no
+    # disease database is loaded. Shared by _classify_by_patterns() and the
+    # _get_disease_patterns()/_classify_disease() helper family so there's a
+    # single source of truth for the symptom pattern table.
+    _DISEASE_PATTERNS = {
+        'rinitis_alergica': {
+            'name': 'Rinitis alérgica',
+            'symptoms': ['estornudos', 'frecuentes', 'picazon', 'nasal', 'congestion', 'nasal', 'secrecion', 'acuosa', 'lagrimeo', 'picazon', 'ojos'],
+            'urgency': 'baja',
+            'severity': 'leve',
+            'weight': 1
+        },
+        'resfriado_comun': {
+            'name': 'Resfriado común',
+            'symptoms': ['congestion', 'nasal', 'estornudos', 'secrecion', 'nasal', 'malestar', 'general', 'dolor', 'garganta', 'leve', 'fiebre', 'leve'],
+            'urgency': 'baja',
+            'severity': 'leve',
+            'weight': 1
+        },
+        'influenza_b': {
+            'name': 'Influenza B',
+            'symptoms': ['fiebre', 'dolores', 'musculares', 'tos', 'garganta', 'fatiga', 'gastrointestinales', 'cansancio', 'dolores', 'corporales'],
+            'urgency': 'media',
+            'severity': 'moderada',
+            'weight': 3
+        },
+        'influenza_h1n1': {
+            'name': 'Influenza A (H1N1)',
+            'symptoms': ['fiebre', 'alto', 'dolores', 'musculares', 'intensos', 'tos', 'seca', 'escalofrios', 'fatiga', 'extrema'],
+            'urgency': 'media',
+            'severity': 'alta',
+            'weight': 3
+        },
+        'neumonia': {
+            'name': 'Neumonía',
+            'symptoms': ['fiebre', 'alto', 'dificultad', 'respirar', 'respiratoria', 'tos', 'torácico', 'pecho', 'escalofrios', 'confusion'],
+            'urgency': 'alta',
+            'severity': 'alta',
+            'weight': 4
+        },
+        'bronquitis': {
+            'name': 'Bronquitis aguda',
+            'symptoms': ['tos', 'persistente', 'productiva', 'torácico', 'pecho', 'fiebre', 'leve', 'sibilancias'],
+            'urgency': 'baja',
+            'severity': 'moderada',
+            'weight': 2
+        }
+    }
+
     def __init__(self):
         self._disease_db = None
         self._openai_api_key = None
@@ -263,55 +312,9 @@ class EnhancedChatbotService:
         
         message_lower = user_message.lower()
         detected_symptoms = [s.get('symptom', '') for s in symptoms]
-        
-        # Pattern-based disease identification
-        disease_patterns = {
-            'rinitis_alergica': {
-                'name': 'Rinitis alérgica',
-                'symptoms': ['estornudos', 'frecuentes', 'picazon', 'nasal', 'congestion', 'nasal', 'secrecion', 'acuosa', 'lagrimeo', 'picazon', 'ojos'],
-                'urgency': 'baja',
-                'severity': 'leve',
-                'weight': 1
-            },
-            'resfriado_comun': {
-                'name': 'Resfriado común',
-                'symptoms': ['congestion', 'nasal', 'estornudos', 'secrecion', 'nasal', 'malestar', 'general', 'dolor', 'garganta', 'leve', 'fiebre', 'leve'],
-                'urgency': 'baja',
-                'severity': 'leve',
-                'weight': 1
-            },
-            'influenza_b': {
-                'name': 'Influenza B',
-                'symptoms': ['fiebre', 'dolores', 'musculares', 'tos', 'garganta', 'fatiga', 'gastrointestinales', 'cansancio', 'dolores', 'corporales'],
-                'urgency': 'media',
-                'severity': 'moderada',
-                'weight': 3
-            },
-            'influenza_h1n1': {
-                'name': 'Influenza A (H1N1)',
-                'symptoms': ['fiebre', 'alto', 'dolores', 'musculares', 'intensos', 'tos', 'seca', 'escalofrios', 'fatiga', 'extrema'],
-                'urgency': 'media',
-                'severity': 'alta',
-                'weight': 3
-            },
-            'neumonia': {
-                'name': 'Neumonía',
-                'symptoms': ['fiebre', 'alto', 'dificultad', 'respirar', 'respiratoria', 'tos', 'torácico', 'pecho', 'escalofrios', 'confusion'],
-                'urgency': 'alta',
-                'severity': 'alta',
-                'weight': 4
-            },
-            'bronquitis': {
-                'name': 'Bronquitis aguda',
-                'symptoms': ['tos', 'persistente', 'productiva', 'torácico', 'pecho', 'fiebre', 'leve', 'sibilancias'],
-                'urgency': 'baja',
-                'severity': 'moderada',
-                'weight': 2
-            }
-        }
-        
+
         scores = {}
-        for disease_key, disease_info in disease_patterns.items():
+        for disease_key, disease_info in self._DISEASE_PATTERNS.items():
             score = 0
             matched = []
             weight = disease_info.get('weight', 2)
@@ -493,7 +496,110 @@ class EnhancedChatbotService:
             'reasoning': 'No disease matched',
             'matched_symptoms': []
         }
-    
+
+    def _get_disease_patterns(self, disease_name: str) -> Dict[str, Any]:
+        """Look up a single disease's pattern definition by name from _DISEASE_PATTERNS"""
+        if not disease_name:
+            return {}
+
+        disease_name_lower = disease_name.lower()
+        for patterns in self._DISEASE_PATTERNS.values():
+            if patterns['name'].lower() == disease_name_lower:
+                return patterns
+
+        return {}
+
+    def _match_symptoms_to_disease(self, symptoms: List[Dict[str, Any]], disease_patterns: Dict[str, Any]) -> List[str]:
+        """Return the names of detected symptoms that match a disease's pattern symptoms"""
+        pattern_symptoms = disease_patterns.get('symptoms', [])
+        if not pattern_symptoms:
+            return []
+
+        matched = []
+        for symptom in symptoms:
+            name = symptom.get('symptom', '')
+            if not name:
+                continue
+            name_lower = name.lower()
+            if any(name_lower in p.lower() or p.lower() in name_lower for p in pattern_symptoms):
+                matched.append(name)
+
+        return matched
+
+    def _calculate_disease_confidence(
+        self,
+        symptoms: List[Dict[str, Any]],
+        matched_symptoms: List[str],
+        total_patterns: int
+    ) -> float:
+        """Combine match coverage with the average symptom-extraction confidence"""
+        if not symptoms or total_patterns <= 0:
+            return 0.0
+
+        match_ratio = min(len(matched_symptoms) / total_patterns, 1.0)
+        avg_symptom_confidence = sum(s.get('confidence', 0.5) for s in symptoms) / len(symptoms)
+
+        return round(min(match_ratio * avg_symptom_confidence * 2, 1.0), 4)
+
+    def _classify_disease(self, symptoms: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Classify disease from a symptom list alone (no raw message/tokens needed),
+        using the shared _DISEASE_PATTERNS table via _get_disease_patterns()/
+        _match_symptoms_to_disease()/_calculate_disease_confidence().
+        """
+        detected_symptom_names = [s.get('symptom', '') for s in symptoms]
+
+        if not symptoms:
+            return {
+                'disease_id': None,
+                'disease_name': None,
+                'confidence': 0.0,
+                'reasoning': 'No symptoms detected',
+                'matched_symptoms': [],
+                'detected_symptoms': detected_symptom_names,
+                'urgency': 'baja',
+                'severity': 'leve'
+            }
+
+        best_match = None
+        best_confidence = 0.0
+
+        for patterns in self._DISEASE_PATTERNS.values():
+            matched = self._match_symptoms_to_disease(symptoms, patterns)
+            if not matched:
+                continue
+
+            confidence = self._calculate_disease_confidence(
+                symptoms, matched, len(patterns.get('symptoms', [])) or 1
+            )
+            if confidence > best_confidence:
+                best_confidence = confidence
+                best_match = (patterns, matched)
+
+        if not best_match:
+            return {
+                'disease_id': None,
+                'disease_name': 'Enfermedad respiratoria (no especificada)',
+                'confidence': 0.0,
+                'reasoning': 'No matching pattern found',
+                'matched_symptoms': [],
+                'detected_symptoms': detected_symptom_names,
+                'urgency': 'media',
+                'severity': 'moderada'
+            }
+
+        patterns, matched = best_match
+        return {
+            'disease_id': hash(patterns['name']) % 1000,
+            'disease_name': patterns['name'],
+            'confidence': best_confidence,
+            'matched_symptoms': matched,
+            'detected_symptoms': detected_symptom_names,
+            'urgency': patterns.get('urgency', 'baja'),
+            'severity': patterns.get('severity', 'leve'),
+            'reasoning': f"Matched {len(matched)} symptoms: {', '.join(matched[:3])}"
+        }
+
     def _is_greeting(self, message: str) -> bool:
         """Detect if message is a greeting"""
         greetings = ['hola', 'hi', 'buenos días', 'buenas tardes', 'buenas noches', 
@@ -505,11 +611,7 @@ class EnhancedChatbotService:
         for greeting in greetings:
             if greeting in message_lower:
                 return True
-        
-        # Check for very short messages (likely greeting)
-        if len(message.strip()) < 10 and any(char.isalpha() for char in message):
-            return True
-        
+
         return False
     
     def _is_question(self, message: str) -> bool:
@@ -589,15 +691,22 @@ class EnhancedChatbotService:
                 f"📋 **Posible condición**: {disease_name} (Confianza: {confidence_pct:.0f}%)\n\n"
             )
             
-            # Show decision factors
-            decision_factors = ml_explanation.get('decision_factors', [])[:3]
-            if decision_factors:
-                response_parts.append("🎯 **Factores clave en mi análisis:**\n")
-                for factor in decision_factors[:3]:
-                    feature_name = factor.get('feature', 'Síntoma').replace('_', ' ').title()
-                    contribution = factor.get('contribution', 0)
-                    response_parts.append(f"   • {feature_name}: contribuyó significativamente al diagnóstico")
-                response_parts.append("\n")
+            # Show decision factors. ml_explanation is a dict with a
+            # 'decision_factors' list when it comes from the single-model SHAP
+            # path, but a plain summary string when it comes from the ensemble
+            # predictor path (ensemble votes don't have per-feature SHAP
+            # contributions) — handle both shapes.
+            if isinstance(ml_explanation, dict):
+                decision_factors = ml_explanation.get('decision_factors', [])[:3]
+                if decision_factors:
+                    response_parts.append("🎯 **Factores clave en mi análisis:**\n")
+                    for factor in decision_factors[:3]:
+                        feature_name = factor.get('feature', 'Síntoma').replace('_', ' ').title()
+                        contribution = factor.get('contribution', 0)
+                        response_parts.append(f"   • {feature_name}: contribuyó significativamente al diagnóstico")
+                    response_parts.append("\n")
+            elif isinstance(ml_explanation, str) and ml_explanation:
+                response_parts.append(f"🎯 **Análisis del modelo:** {ml_explanation}\n")
             
             # Show top 3 alternatives
             if ml_top3 and len(ml_top3) > 1:

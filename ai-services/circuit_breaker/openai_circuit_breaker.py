@@ -45,8 +45,8 @@ class OpenAICircuitBreaker(CircuitBreaker):
             await self._handle_api_error(e)
             raise e
         except Exception as e:
-            # For other exceptions, use standard circuit breaker logic
-            await self._on_failure()
+            # For other exceptions, self.call() already invoked _on_failure()
+            # via its own expected_exception handling; just propagate
             raise e
     
     async def _handle_rate_limit_error(self, error: openai.RateLimitError):

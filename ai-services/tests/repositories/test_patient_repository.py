@@ -128,8 +128,8 @@ class TestPatientRepository:
         assert result is True
         mock_collection.update_one.assert_called_once()
         call_args = mock_collection.update_one.call_args
-        assert "$set" in call_args[1]
-        assert "last_activity" in call_args[1]["$set"]
+        assert "$set" in call_args[0][1]
+        assert "last_activity" in call_args[0][1]["$set"]
     
     @pytest.mark.asyncio
     async def test_update_last_activity_patient_not_found(self, patient_repository):
@@ -159,8 +159,8 @@ class TestPatientRepository:
         assert result is True
         mock_collection.update_one.assert_called_once()
         call_args = mock_collection.update_one.call_args
-        assert "$inc" in call_args[1]
-        assert call_args[1]["$inc"]["total_histories"] == 1
+        assert "$inc" in call_args[0][1]
+        assert call_args[0][1]["$inc"]["total_histories"] == 1
     
     @pytest.mark.asyncio
     async def test_increment_activity_counters_ai_analysis(self, patient_repository, mock_db_client):
@@ -180,8 +180,8 @@ class TestPatientRepository:
         
         assert result is True
         call_args = mock_collection.update_one.call_args
-        assert "$inc" in call_args[1]
-        assert call_args[1]["$inc"]["total_ai_analyses"] == 1
+        assert "$inc" in call_args[0][1]
+        assert call_args[0][1]["$inc"]["total_ai_analyses"] == 1
     
     @pytest.mark.asyncio
     async def test_increment_activity_counters_both(self, patient_repository, mock_db_client):
@@ -205,9 +205,9 @@ class TestPatientRepository:
         
         assert result is True
         call_args = mock_collection.update_one.call_args
-        assert "$inc" in call_args[1]
-        assert call_args[1]["$inc"]["total_histories"] == 1
-        assert call_args[1]["$inc"]["total_ai_analyses"] == 2
+        assert "$inc" in call_args[0][1]
+        assert call_args[0][1]["$inc"]["total_histories"] == 1
+        assert call_args[0][1]["$inc"]["total_ai_analyses"] == 2
     
     @pytest.mark.asyncio
     async def test_increment_activity_counters_no_increments(self, patient_repository, mock_db_client):
@@ -228,8 +228,8 @@ class TestPatientRepository:
         assert result is True
         call_args = mock_collection.update_one.call_args
         # Should only have $set, no $inc
-        assert "$set" in call_args[1]
-        assert "$inc" not in call_args[1]
+        assert "$set" in call_args[0][1]
+        assert "$inc" not in call_args[0][1]
     
     @pytest.mark.asyncio
     async def test_increment_activity_counters_patient_not_found(self, patient_repository):
@@ -265,7 +265,7 @@ class TestPatientRepository:
         assert result is True
         mock_collection.update_one.assert_called_once()
         call_args = mock_collection.update_one.call_args
-        assert call_args[1]["$set"]["medical_summary"] == summary_data
+        assert call_args[0][1]["$set"]["medical_summary"] == summary_data
     
     @pytest.mark.asyncio
     async def test_update_medical_summary_patient_not_found(self, patient_repository):
@@ -286,10 +286,10 @@ class TestPatientRepository:
         mock_doc1 = {"_id": ObjectId(), "patient_id": "P001", "last_activity": datetime.utcnow()}
         mock_doc2 = {"_id": ObjectId(), "patient_id": "P002", "last_activity": datetime.utcnow()}
         
-        async def cursor_iter():
+        async def cursor_iter(self):
             yield mock_doc1
             yield mock_doc2
-        
+
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.sort = MagicMock(return_value=mock_cursor)
         mock_collection.find = MagicMock(return_value=mock_cursor)
@@ -305,9 +305,9 @@ class TestPatientRepository:
         mock_collection = mock_db_client["patients"]
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
+        async def cursor_iter(self):
             yield {"_id": ObjectId(), "patient_id": "P001"}
-        
+
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.sort = MagicMock(return_value=mock_cursor)
         mock_collection.find = MagicMock(return_value=mock_cursor)
@@ -341,7 +341,7 @@ class TestPatientRepository:
         async def active_aggregate():
             yield {"_id": ObjectId(), "patient_id": "P001", "total_histories": 10}
         
-        mock_collection.aggregate = AsyncMock(side_effect=[
+        mock_collection.aggregate = MagicMock(side_effect=[
             age_aggregate(),
             gender_aggregate(),
             active_aggregate()
@@ -370,13 +370,13 @@ class TestPatientRepository:
             "email": "juan@example.com"
         }
         
-        async def cursor_iter():
+        async def cursor_iter(self):
             yield mock_doc
-        
+
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.limit = MagicMock(return_value=mock_cursor)
         mock_collection.find = MagicMock(return_value=mock_cursor)
-        
+
         result = await patient_repository.search_patients("Juan", limit=10)
         
         assert len(result) == 1
@@ -393,9 +393,10 @@ class TestPatientRepository:
         mock_collection = mock_db_client["patients"]
         
         mock_cursor = AsyncMock()
-        async def cursor_iter():
-            pass
-        
+        async def cursor_iter(self):
+            return
+            yield
+
         mock_cursor.__aiter__ = cursor_iter
         mock_cursor.limit = MagicMock(return_value=mock_cursor)
         mock_collection.find = MagicMock(return_value=mock_cursor)

@@ -50,8 +50,9 @@ class TestAudioTranscriptionService:
             ]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -76,8 +77,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Hello, I have a cough"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -101,8 +103,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Test"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             for audio_format in ["wav", "mp3", "m4a", "ogg"]:
                 result = await transcription_service.transcribe(
@@ -129,8 +132,9 @@ class TestAudioTranscriptionService:
             ]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -153,8 +157,9 @@ class TestAudioTranscriptionService:
             "segments": []
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -176,8 +181,9 @@ class TestAudioTranscriptionService:
             "segments": []
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -198,8 +204,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Transcripción"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe_base64(
                 audio_base64=sample_base64_audio,
@@ -232,43 +239,45 @@ class TestAudioTranscriptionService:
         
         temp_file_path = None
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper, \
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}), \
              patch('services.audio_transcription_service.tempfile.NamedTemporaryFile') as mock_temp:
-            mock_whisper.load_model.return_value = mock_whisper_model
-            
+
             # Track temp file creation
             mock_file = MagicMock()
             mock_file.name = "/tmp/test_audio.wav"
             mock_file.__enter__ = MagicMock(return_value=mock_file)
             mock_file.__exit__ = MagicMock(return_value=None)
             mock_temp.return_value = mock_file
-            
+
             with patch('services.audio_transcription_service.os.path.exists', return_value=True), \
                  patch('services.audio_transcription_service.os.unlink') as mock_unlink:
-                
+
                 await transcription_service.transcribe(
                     audio_data=sample_audio_data,
                     audio_format="wav"
                 )
-                
+
                 # Verify cleanup was attempted
                 mock_unlink.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_transcribe_whisper_not_installed(self, transcription_service, sample_audio_data):
         """Test transcription when Whisper is not installed"""
-        with patch('services.audio_transcription_service.whisper', side_effect=ImportError("No module named 'whisper'")):
+        with patch.dict('sys.modules', {'whisper': None}):
             with pytest.raises(ImportError):
                 await transcription_service.transcribe(
                     audio_data=sample_audio_data,
                     audio_format="wav"
                 )
-    
+
     @pytest.mark.asyncio
     async def test_transcribe_model_load_error(self, transcription_service, sample_audio_data):
         """Test transcription when model loading fails"""
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.side_effect = Exception("Model load error")
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.side_effect = Exception("Model load error")
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             with pytest.raises(Exception, match="Model load error"):
                 await transcription_service.transcribe(
@@ -282,8 +291,9 @@ class TestAudioTranscriptionService:
         mock_whisper_model = MagicMock()
         mock_whisper_model.transcribe.side_effect = Exception("Transcription error")
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             with pytest.raises(Exception, match="Transcription error"):
                 await transcription_service.transcribe(
@@ -304,8 +314,9 @@ class TestAudioTranscriptionService:
             "segments": []
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             # First call should load model
             await transcription_service.transcribe(
@@ -340,9 +351,10 @@ class TestAudioTranscriptionService:
                 "segments": [{"no_speech_prob": 0.1, "text": "Test"}]
             }
             
-            with patch('services.audio_transcription_service.whisper') as mock_whisper:
-                mock_whisper.load_model.return_value = mock_whisper_model
-                
+            mock_whisper = MagicMock()
+            mock_whisper.load_model.return_value = mock_whisper_model
+            with patch.dict('sys.modules', {'whisper': mock_whisper}):
+
                 result = await transcription_service.transcribe(
                     audio_data=sample_audio_data,
                     audio_format="wav",
@@ -366,8 +378,9 @@ class TestAudioTranscriptionService:
             ]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -386,8 +399,9 @@ class TestAudioTranscriptionService:
             ]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -409,8 +423,9 @@ class TestAudioTranscriptionService:
             ]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=sample_audio_data,
@@ -432,8 +447,9 @@ class TestAudioTranscriptionService:
             "segments": []
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe(
                 audio_data=b"",
@@ -447,19 +463,20 @@ class TestAudioTranscriptionService:
     @pytest.mark.asyncio
     async def test_transcribe_whisper_not_installed(self, transcription_service, sample_audio_data):
         """Test error handling when whisper is not installed"""
-        with patch('services.audio_transcription_service.whisper', side_effect=ImportError("No module named 'whisper'")):
+        with patch.dict('sys.modules', {'whisper': None}):
             with pytest.raises(ImportError):
                 await transcription_service.transcribe(
                     audio_data=sample_audio_data,
                     audio_format="wav",
                     language="es"
                 )
-    
+
     @pytest.mark.asyncio
     async def test_transcribe_model_load_error(self, transcription_service, sample_audio_data):
         """Test error handling when model loading fails"""
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.side_effect = Exception("Model load error")
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.side_effect = Exception("Model load error")
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             with pytest.raises(Exception, match="Model load error"):
                 await transcription_service.transcribe(
@@ -474,8 +491,9 @@ class TestAudioTranscriptionService:
         mock_whisper_model = MagicMock()
         mock_whisper_model.transcribe.side_effect = Exception("Transcription error")
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             with pytest.raises(Exception, match="Transcription error"):
                 await transcription_service.transcribe(
@@ -503,8 +521,9 @@ class TestAudioTranscriptionService:
             temp_files_created.append(f.name)
             return f
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             with patch('tempfile.NamedTemporaryFile', side_effect=track_tempfile):
                 await transcription_service.transcribe(
                     audio_data=sample_audio_data,
@@ -529,8 +548,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Test"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             result = await transcription_service.transcribe_base64(
                 audio_base64=sample_base64_audio,
@@ -561,8 +581,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Test"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             # Model should not be loaded initially
             assert transcription_service._model_loaded is False
@@ -600,8 +621,9 @@ class TestAudioTranscriptionService:
             "segments": [{"no_speech_prob": 0.1, "text": "Test"}]
         }
         
-        with patch('services.audio_transcription_service.whisper') as mock_whisper:
-            mock_whisper.load_model.return_value = mock_whisper_model
+        mock_whisper = MagicMock()
+        mock_whisper.load_model.return_value = mock_whisper_model
+        with patch.dict('sys.modules', {'whisper': mock_whisper}):
             
             await transcription_service.transcribe(
                 audio_data=sample_audio_data,

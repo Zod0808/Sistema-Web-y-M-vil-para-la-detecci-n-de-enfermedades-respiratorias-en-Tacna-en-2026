@@ -16,6 +16,8 @@ class OpenAIStrategy(AnalysisStrategy):
     """Strategy that uses OpenAI API for analysis"""
     
     def __init__(self):
+        if not settings.OPENAI_API_KEY:
+            raise ValueError("OpenAI API key not configured")
         self.client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = "gpt-3.5-turbo"
         
@@ -163,6 +165,15 @@ Responde en formato JSON con las siguientes claves:
 """
         return prompt
     
+    VALID_URGENCY_LEVELS = {"low", "medium", "high", "critical"}
+
+    def _sanitize_urgency_level(self, parsed: Dict[str, Any]) -> Dict[str, Any]:
+        """Ensure urgency_level is one of the known values, since the LLM cannot be trusted verbatim"""
+        urgency = parsed.get("urgency_level")
+        if urgency is not None and (not isinstance(urgency, str) or urgency.lower() not in self.VALID_URGENCY_LEVELS):
+            parsed["urgency_level"] = "medium"
+        return parsed
+
     def _parse_ai_response(self, response: str) -> Dict[str, Any]:
         """Parse AI response for symptom analysis"""
         try:
@@ -172,12 +183,12 @@ Responde en formato JSON con las siguientes claves:
             end = response.rfind('}') + 1
             if start != -1 and end != 0:
                 json_str = response[start:end]
-                return json.loads(json_str)
+                return self._sanitize_urgency_level(json.loads(json_str))
             else:
                 # Fallback parsing if JSON not found
-                return self._fallback_parse_symptoms(response)
+                return self._sanitize_urgency_level(self._fallback_parse_symptoms(response))
         except json.JSONDecodeError:
-            return self._fallback_parse_symptoms(response)
+            return self._sanitize_urgency_level(self._fallback_parse_symptoms(response))
     
     def _parse_medical_text_response(self, response: str) -> Dict[str, Any]:
         """Parse AI response for medical text processing"""

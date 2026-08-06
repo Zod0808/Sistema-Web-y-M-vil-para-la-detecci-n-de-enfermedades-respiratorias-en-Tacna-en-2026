@@ -115,10 +115,10 @@ class LazyModelLoader:
     def __init__(
         self,
         downloader: Optional[ModelDownloader] = None,
-        preload_models: Optional[List[str]] = None
+        preload_model_names: Optional[List[str]] = None
     ):
         self.downloader = downloader or ModelDownloader()
-        self.preload_models = preload_models or []
+        self.preload_model_names = preload_model_names or []
         self._loaded_models: Dict[str, Any] = {}
         self._loading_tasks: Dict[str, asyncio.Task] = {}
     

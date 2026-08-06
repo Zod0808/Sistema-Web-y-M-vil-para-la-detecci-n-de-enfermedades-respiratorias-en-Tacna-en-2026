@@ -20,8 +20,8 @@ router = APIRouter()
 
 class SymptomInput(BaseModel):
     """Input model for symptom analysis"""
-    patient_id: str = Field(..., description="Patient identifier")
-    symptoms: List[Dict[str, Any]] = Field(..., description="List of symptoms")
+    patient_id: str = Field(..., description="Patient identifier", min_length=1)
+    symptoms: List[Dict[str, Any]] = Field(..., description="List of symptoms", min_length=1)
     severity: Optional[str] = Field(default="medium", description="Overall severity level")
     duration: Optional[str] = Field(description="Duration of symptoms")
     context: Optional[str] = Field(description="Additional context about symptoms")

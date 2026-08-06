@@ -758,8 +758,8 @@ class TestMixedLanguageInputs:
     def test_strategy_prompt_handles_mixed_language_symptoms(self, strategy):
         """El prompt formatea correctamente síntomas en inglés/español."""
         symptoms = [
-            {"name": "tos", "severity": "moderate", "duration": "3 días"},
-            {"name": "chest pain", "severity": "severe", "duration": "1 hour"},
+            {"symptom": "tos", "severity": "moderate", "duration": "3 días"},
+            {"symptom": "chest pain", "severity": "severe", "duration": "1 hour"},
         ]
         formatted = strategy._format_symptoms_for_ai(symptoms)
         assert isinstance(formatted, str)

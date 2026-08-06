@@ -65,7 +65,9 @@ class TestMainApp:
         """Test CORS middleware is configured"""
         # Check that CORS middleware is added
         try:
-            middleware_types = [type(middleware) for middleware in app.user_middleware]
+            # Starlette wraps each entry in a `Middleware` holder; the actual
+            # middleware class lives in `.cls`, not `type(middleware)`.
+            middleware_types = [middleware.cls for middleware in app.user_middleware]
             from fastapi.middleware.cors import CORSMiddleware
             assert any(issubclass(mw, CORSMiddleware) for mw in middleware_types)
         except (AttributeError, IndexError):
@@ -74,16 +76,19 @@ class TestMainApp:
     
     def test_app_routes_registered(self):
         """Test that routes are registered"""
-        # Check that routes are registered
+        # Newer FastAPI versions wrap sub-router entries in an internal
+        # `_IncludedRouter` object in `app.routes` that has no `.path`
+        # attribute, so route paths are read from the OpenAPI schema
+        # instead - a stable, version-independent source of truth.
         try:
-            route_paths = [route.path for route in app.routes]
-            # At minimum, root route should exist
-            assert len(route_paths) > 0
-            # Check for common routes (may not all be present)
-            common_routes = ["/", "/openapi.json", "/docs"]
-            assert any(route in route_paths for route in common_routes)
+            route_paths = list(app.openapi()["paths"].keys())
         except AttributeError:
             pytest.skip("Routes not available in mock app")
+            return
+
+        # At minimum, root route should exist
+        assert len(route_paths) > 0
+        assert "/" in route_paths
 
 
 class TestRootEndpoint:

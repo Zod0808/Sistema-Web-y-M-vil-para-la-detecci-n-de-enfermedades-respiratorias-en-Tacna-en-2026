@@ -193,9 +193,12 @@ class TestModelComparisonBenchmarks:
                 apply_personalization=True
             )
         
-        result_without = benchmark(predict_without_personalization)
+        # The benchmark fixture can only run one function per test, so only
+        # the personalization path is benchmarked; the other is called
+        # directly to still verify both produce a result.
+        result_without = predict_without_personalization()
         result_with = benchmark(predict_with_personalization)
-        
+
         assert result_without is not None
         assert result_with is not None
 

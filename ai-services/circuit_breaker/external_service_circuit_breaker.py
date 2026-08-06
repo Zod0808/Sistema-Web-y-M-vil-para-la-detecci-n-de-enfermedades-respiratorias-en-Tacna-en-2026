@@ -32,7 +32,18 @@ class ExternalServiceCircuitBreaker(CircuitBreaker):
         self.base_url = base_url
         self.timeout = timeout
         self.client = httpx.AsyncClient(timeout=timeout)
-    
+
+    async def call(self, func: Callable, *args, **kwargs) -> Any:
+        """Execute function with circuit breaker protection and a call timeout"""
+        try:
+            return await asyncio.wait_for(
+                super().call(func, *args, **kwargs),
+                timeout=self.timeout
+            )
+        except asyncio.TimeoutError:
+            await self._on_failure()
+            raise
+
     async def call_http_service(
         self, 
         method: str, 

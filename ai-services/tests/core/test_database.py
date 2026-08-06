@@ -62,10 +62,10 @@ class TestDatabase:
         with patch('core.database.database', mock_database):
             await create_indexes()
             
-            # Verificar que se crearon los índices
-            assert mock_collection1.create_index.call_count == 3
-            assert mock_collection2.create_index.call_count == 3
-            assert mock_collection3.create_index.call_count == 3
+            # Verificar que se crearon los índices (simples + compuestos)
+            assert mock_collection1.create_index.call_count == 4
+            assert mock_collection2.create_index.call_count == 5
+            assert mock_collection3.create_index.call_count == 4
     
     @pytest.mark.asyncio
     async def test_create_indexes_with_exception(self):
@@ -143,20 +143,20 @@ class TestDatabase:
         with patch('core.database.database', mock_database):
             await create_indexes()
             
-            # Verificar índices en medical_histories
-            assert mock_medical.create_index.call_count == 3
+            # Verificar índices en medical_histories (simples + compuesto)
+            assert mock_medical.create_index.call_count == 4
             mock_medical.create_index.assert_any_call("patient_id")
             mock_medical.create_index.assert_any_call("date")
             mock_medical.create_index.assert_any_call("diagnosis")
-            
-            # Verificar índices en symptoms
-            assert mock_symptoms.create_index.call_count == 3
+
+            # Verificar índices en symptoms (simples + compuestos)
+            assert mock_symptoms.create_index.call_count == 5
             mock_symptoms.create_index.assert_any_call("patient_id")
             mock_symptoms.create_index.assert_any_call("timestamp")
             mock_symptoms.create_index.assert_any_call("severity")
-            
-            # Verificar índices en ai_results
-            assert mock_ai_results.create_index.call_count == 3
+
+            # Verificar índices en ai_results (simples + compuesto)
+            assert mock_ai_results.create_index.call_count == 4
             mock_ai_results.create_index.assert_any_call("patient_id")
             mock_ai_results.create_index.assert_any_call("type")
             mock_ai_results.create_index.assert_any_call("created_at")

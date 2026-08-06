@@ -38,20 +38,17 @@ class TestOpenAIStrategy:
     @pytest.mark.asyncio
     async def test_analyze_symptoms_success(self, openai_strategy, mock_openai_response):
         """Test successful symptom analysis with OpenAI"""
-        with patch('openai.OpenAI') as mock_openai:
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            mock_client.chat.completions.create.return_value = mock_openai_response
-            
-            # analyze_symptoms expects List[Dict[str, Any]], not List[str]
-            result = await openai_strategy.analyze_symptoms(
-                symptoms=[{"symptom": "tos", "severity": "moderate"}, {"symptom": "fiebre", "severity": "mild"}],
-                context={"age": 45, "gender": "M"}
-            )
-            
-            assert result is not None
-            # Result may contain different keys depending on implementation
-            assert isinstance(result, dict)
+        openai_strategy.client.chat.completions.create = AsyncMock(return_value=mock_openai_response)
+
+        # analyze_symptoms expects List[Dict[str, Any]], not List[str]
+        result = await openai_strategy.analyze_symptoms(
+            symptoms=[{"symptom": "tos", "severity": "moderate"}, {"symptom": "fiebre", "severity": "mild"}],
+            context={"age": 45, "gender": "M"}
+        )
+
+        assert result is not None
+        # Result may contain different keys depending on implementation
+        assert isinstance(result, dict)
     
     @pytest.mark.asyncio
     async def test_analyze_symptoms_api_error(self, openai_strategy):
@@ -70,34 +67,27 @@ class TestOpenAIStrategy:
     @pytest.mark.asyncio
     async def test_process_medical_history_success(self, openai_strategy, sample_medical_history):
         """Test successful medical history processing"""
-        mock_response = {
-            "choices": [{
-                "message": {
-                    "content": json.dumps({
-                        "symptoms": ["tos seca", "fiebre"],
-                        "age": 45,
-                        "gender": "M",
-                        "risk_factors": ["tabaquismo"],
-                        "diagnosis_suggestions": ["Bronquitis aguda"]
-                    })
-                }
-            }]
-        }
-        
-        with patch('openai.OpenAI') as mock_openai:
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            mock_client.chat.completions.create.return_value = mock_response
-            
-            # Use process_medical_text instead of process_medical_history
-            result = await openai_strategy.process_medical_text(
-                text=sample_medical_history["text"],
-                context=sample_medical_history.get("metadata", {})
-            )
-            
-            assert result is not None
-            assert isinstance(result, dict)
-            # Result may contain different keys depending on implementation
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = json.dumps({
+            "symptoms": ["tos seca", "fiebre"],
+            "age": 45,
+            "gender": "M",
+            "risk_factors": ["tabaquismo"],
+            "diagnosis_suggestions": ["Bronquitis aguda"]
+        })
+
+        openai_strategy.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        # Use process_medical_text instead of process_medical_history
+        result = await openai_strategy.process_medical_text(
+            text=sample_medical_history["text"],
+            context=sample_medical_history.get("metadata", {})
+        )
+
+        assert result is not None
+        assert isinstance(result, dict)
+        # Result may contain different keys depending on implementation
 
 
 class TestLocalModelStrategy:
@@ -136,21 +126,14 @@ class TestLocalModelStrategy:
     @pytest.mark.asyncio
     async def test_process_medical_history_local_models(self, local_strategy, sample_medical_history):
         """Test medical history processing with local models"""
-        with patch('models.model_manager.ModelManager') as mock_model_manager:
-            mock_model_manager.return_value.process_medical_history.return_value = {
-                "symptoms": ["tos seca", "fiebre"],
-                "age": 45,
-                "gender": "M"
-            }
-            
-            result = await local_strategy.process_medical_text(
-                text=sample_medical_history["text"],
-                context={"language": "es"}
-            )
-            
-            assert result is not None
-            assert "symptoms" in result
-            assert "age" in result
+        result = await local_strategy.process_medical_text(
+            text=sample_medical_history["text"],
+            context={"language": "es"}
+        )
+
+        assert result is not None
+        assert "symptoms" in result
+        assert "entities" in result or "risk_factors" in result
 
 
 class TestRuleBasedStrategy:
@@ -165,28 +148,32 @@ class TestRuleBasedStrategy:
         """Test rule-based strategy initialization"""
         assert rule_strategy is not None
         assert hasattr(rule_strategy, 'analyze_symptoms')
-        assert hasattr(rule_strategy, 'process_medical_history')
-    
+        assert hasattr(rule_strategy, 'process_medical_text')
+
     @pytest.mark.asyncio
     async def test_analyze_symptoms_rule_based(self, rule_strategy):
         """Test symptom analysis with rule-based approach"""
         result = await rule_strategy.analyze_symptoms(
-            symptoms=["tos seca", "fiebre", "dificultad respiratoria"],
+            symptoms=[{"symptom": "tos seca"}, {"symptom": "fiebre"}, {"symptom": "dificultad respiratoria"}],
             context="Síntomas respiratorios"
         )
-        
+
         assert result is not None
         assert "urgency_level" in result
         assert "severity_score" in result
-        assert "classification" in result
+        assert "categories" in result
         assert isinstance(result["severity_score"], float)
         assert 0.0 <= result["severity_score"] <= 1.0
-    
+
     @pytest.mark.asyncio
     async def test_analyze_symptoms_high_urgency(self, rule_strategy):
         """Test high urgency symptom detection"""
         result = await rule_strategy.analyze_symptoms(
-            symptoms=["dificultad respiratoria severa", "cianosis", "dolor torácico"],
+            symptoms=[
+                {"symptom": "dificultad respiratoria severa", "severity": "severe"},
+                {"symptom": "cianosis", "severity": "severe"},
+                {"symptom": "dolor torácico", "severity": "severe"}
+            ],
             context="Emergencia respiratoria"
         )
         
@@ -197,7 +184,10 @@ class TestRuleBasedStrategy:
     async def test_analyze_symptoms_low_urgency(self, rule_strategy):
         """Test low urgency symptom detection"""
         result = await rule_strategy.analyze_symptoms(
-            symptoms=["tos leve", "congestión nasal"],
+            symptoms=[
+                {"symptom": "tos leve", "severity": "mild"},
+                {"symptom": "congestión nasal", "severity": "mild"}
+            ],
             context="Resfriado común"
         )
         

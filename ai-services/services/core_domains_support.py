@@ -427,8 +427,8 @@ class CoreDomainsSupportService:
         alert_data: Dict[str, Any]
     ) -> float:
         """Calcula score de prioridad (0-100)"""
-        score = 50.0  # Base
-        
+        score = 20.0  # Base
+
         urgency_map = {"critical": 40, "high": 30, "medium": 15, "low": 5}
         score += urgency_map.get(symptom_analysis.get("assessed_urgency", "low"), 5)
         

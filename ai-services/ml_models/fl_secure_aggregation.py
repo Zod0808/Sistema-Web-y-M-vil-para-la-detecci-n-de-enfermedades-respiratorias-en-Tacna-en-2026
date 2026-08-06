@@ -58,26 +58,28 @@ class SecureAggregator:
         # Agregar cada parámetro
         for key in all_keys:
             weighted_sum = None
+            is_scalar = True
             for client_id, update_data in self.client_updates.items():
                 update = update_data['update']
                 weight = update_data['sample_count'] / total_samples
-                
+
                 if key in update:
                     value = update[key]
                     if isinstance(value, (list, np.ndarray)):
                         value = np.array(value)
+                        is_scalar = False
                     elif isinstance(value, (int, float)):
                         value = np.array([value])
                     else:
                         continue
-                    
+
                     if weighted_sum is None:
                         weighted_sum = value * weight
                     else:
                         weighted_sum += value * weight
-            
+
             if weighted_sum is not None:
-                aggregated[key] = weighted_sum.tolist() if isinstance(weighted_sum, np.ndarray) else float(weighted_sum)
+                aggregated[key] = float(weighted_sum[0]) if is_scalar else weighted_sum.tolist()
         
         return aggregated
     
@@ -178,12 +180,24 @@ class SecureAggregator:
                     client_ids.append(client_id)
             
             if len(values) >= 3:
-                mean = np.mean(values)
-                std = np.std(values)
-                
-                # Detectar outliers (más de threshold desviaciones estándar)
+                values_arr = np.array(values)
+
+                # Detectar outliers usando estadísticas "leave-one-out": si el
+                # propio valor se incluye en el cálculo de media/desviación,
+                # un outlier extremo infla su propia desviación estándar y
+                # puede evadir la detección.
                 for i, value in enumerate(values):
-                    z_score = abs((value - mean) / std) if std > 0 else 0
+                    other_values = np.delete(values_arr, i)
+                    other_mean = np.mean(other_values)
+                    other_std = np.std(other_values)
+
+                    if other_std > 0:
+                        # Redondear para evitar falsos positivos por ruido de
+                        # punto flotante justo en el límite del threshold
+                        z_score = round(abs((value - other_mean) / other_std), 6)
+                    else:
+                        z_score = float('inf') if value != other_mean else 0
+
                     if z_score > threshold:
                         if client_ids[i] not in malicious:
                             malicious.append(client_ids[i])

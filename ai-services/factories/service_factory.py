@@ -90,7 +90,7 @@ class ServiceFactory:
     def create_analysis_context(cls, strategy_type: str = None, **kwargs) -> Any:
         """Create analysis context with specified strategy"""
         try:
-            from strategies.strategy_factory import StrategyFactory, StrategyType
+            from factories.strategy_factory import StrategyFactory, StrategyType
             
             # Determine strategy type
             if strategy_type is None:
@@ -144,6 +144,7 @@ class ServiceFactory:
         
         try:
             # Use rule-based strategy for development (no external dependencies)
+            from factories.strategy_factory import StrategyType
             services['analysis_context'] = cls.create_analysis_context(StrategyType.RULE_BASED)
             services['symptom_analyzer'] = cls.create_service(ServiceType.SYMPTOM_ANALYZER)
             services['history_processor'] = cls.create_service(ServiceType.MEDICAL_HISTORY_PROCESSOR)
@@ -163,11 +164,12 @@ class ServiceFactory:
         try:
             # Create full service suite with all dependencies
             services = cls.create_medical_service_suite()
-            
+
             # Add production-specific services
             services['notification_service'] = cls.create_service(ServiceType.NOTIFICATION_SERVICE)
-            
+
             # Use best available strategy
+            from factories.strategy_factory import StrategyType
             if settings.OPENAI_API_KEY:
                 services['analysis_context'] = cls.create_analysis_context(StrategyType.OPENAI)
             else:

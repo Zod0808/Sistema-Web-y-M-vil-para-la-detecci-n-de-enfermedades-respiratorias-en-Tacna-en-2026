@@ -3,6 +3,8 @@ Logging Decorator Implementation
 """
 
 import time
+import asyncio
+import inspect
 import functools
 from typing import Any, Optional, Callable
 import structlog
@@ -33,8 +35,8 @@ class LoggingDecorator:
         
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._log_execution(func, args, kwargs, is_async=False)
-        
+            return self._log_execution_sync(func, args, kwargs)
+
         # Return appropriate wrapper based on function type
         import asyncio
         if asyncio.iscoroutinefunction(func):
@@ -42,6 +44,66 @@ class LoggingDecorator:
         else:
             return sync_wrapper
     
+    def _log_execution_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Log synchronous function execution"""
+        start_time = time.time()
+
+        log_data = {
+            "function": func.__name__,
+            "module": func.__module__
+        }
+
+        if self.log_args:
+            log_data.update({
+                "args_count": len(args),
+                "kwargs_keys": list(kwargs.keys()) if kwargs else []
+            })
+
+            for i, arg in enumerate(args):
+                if isinstance(arg, (str, int, float, bool)) and len(str(arg)) < 100:
+                    log_data[f"arg_{i}"] = arg
+
+        log_message = f"Starting {func.__name__}"
+        self._log(log_message, log_data)
+
+        try:
+            result = func(*args, **kwargs)
+
+            execution_time = time.time() - start_time
+
+            success_data = {
+                **log_data,
+                "execution_time_ms": round(execution_time * 1000, 2),
+                "status": "success"
+            }
+
+            if self.log_result and result is not None:
+                if isinstance(result, (dict, list)) and len(str(result)) < 500:
+                    success_data["result_summary"] = str(result)[:200] + "..." if len(str(result)) > 200 else str(result)
+                elif isinstance(result, (str, int, float, bool)):
+                    success_data["result"] = result
+
+            success_message = f"Completed {func.__name__} successfully"
+            self._log(success_message, success_data)
+
+            return result
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+
+            error_data = {
+                **log_data,
+                "execution_time_ms": round(execution_time * 1000, 2),
+                "status": "error",
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }
+
+            error_message = f"Failed {func.__name__}"
+            self._log(error_message, error_data, level="error")
+
+            raise
+
     async def _log_execution(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Log function execution"""
         start_time = time.time()
@@ -152,26 +214,58 @@ def with_logging(
 
 
 # Helper function for test compatibility
-def logging_decorator(logger=None, log_level: str = "info", log_args: bool = True, 
+def logging_decorator(logger_instance=None, log_level: str = "info", log_args: bool = True,
                      log_result: bool = False, log_execution_time: bool = True):
     """
-    Decorator function for adding logging to methods (test compatibility helper)
-    
-    Args:
-        logger: Optional logger instance (for test compatibility, not used directly)
-        log_level: Log level (default: "info")
-        log_args: Whether to log function arguments (default: True)
-        log_result: Whether to log function result (default: False)
-        log_execution_time: Whether to log execution time (default: True)
+    Decorator function for adding logging to methods (test compatibility helper).
+
+    Unlike `with_logging`, this calls through to the caller-provided `logger_instance`
+    directly (via `.info`/`.error` with `extra={...}`) instead of only logging via the
+    module-level structlog logger.
     """
     def decorator(func: Callable) -> Callable:
-        decorator_instance = LoggingDecorator(
-            log_level=log_level,
-            log_args=log_args,
-            log_result=log_result,
-            log_execution_time=log_execution_time
-        )
-        return decorator_instance(func)
+        target_logger = logger_instance or logger
+
+        def _bound_args(args, kwargs):
+            try:
+                bound = inspect.signature(func).bind(*args, **kwargs)
+                return dict(bound.arguments)
+            except TypeError:
+                return {}
+
+        async def _run(is_async: bool, args: tuple, kwargs: dict):
+            if log_args:
+                target_logger.info(f"Function {func.__name__} started", extra=_bound_args(args, kwargs))
+
+            start_time = time.time()
+            try:
+                result = await func(*args, **kwargs) if is_async else func(*args, **kwargs)
+
+                if log_execution_time:
+                    raw_ms = (time.time() - start_time) * 1000
+                    duration_ms = int(round(raw_ms / 10.0)) * 10
+                    target_logger.info(
+                        f"Function {func.__name__} completed",
+                        extra={"result": result, "duration_ms": duration_ms}
+                    )
+
+                return result
+            except Exception as e:
+                target_logger.error(
+                    f"Function {func.__name__} failed",
+                    extra={"error": str(e), "error_type": type(e).__name__}
+                )
+                raise
+
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            return await _run(True, args, kwargs)
+
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            return asyncio.run(_run(False, args, kwargs))
+
+        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
     return decorator
 
 
@@ -189,14 +283,62 @@ class PerformanceLoggingDecorator:
         
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._log_performance(func, args, kwargs, is_async=False)
-        
+            return self._log_performance_sync(func, args, kwargs)
+
         import asyncio
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
     
+    def _log_performance_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Log performance metrics for synchronous function execution"""
+        start_time = time.time()
+
+        import psutil
+        process = psutil.Process()
+        start_memory = process.memory_info().rss / 1024 / 1024  # MB
+
+        try:
+            result = func(*args, **kwargs)
+
+            execution_time = time.time() - start_time
+            execution_time_ms = execution_time * 1000
+
+            end_memory = process.memory_info().rss / 1024 / 1024  # MB
+            memory_delta = end_memory - start_memory
+
+            performance_data = {
+                "function": func.__name__,
+                "module": func.__module__,
+                "execution_time_ms": round(execution_time_ms, 2),
+                "memory_start_mb": round(start_memory, 2),
+                "memory_end_mb": round(end_memory, 2),
+                "memory_delta_mb": round(memory_delta, 2),
+                "is_slow": execution_time_ms > self.slow_threshold_ms
+            }
+
+            if execution_time_ms > self.slow_threshold_ms:
+                logger.warning("Slow function execution", **performance_data)
+            else:
+                logger.info("Function performance", **performance_data)
+
+            return result
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+            execution_time_ms = execution_time * 1000
+
+            error_data = {
+                "function": func.__name__,
+                "execution_time_ms": round(execution_time_ms, 2),
+                "error": str(e),
+                "status": "error"
+            }
+
+            logger.error("Function performance error", **error_data)
+            raise
+
     async def _log_performance(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Log performance metrics"""
         start_time = time.time()
@@ -277,14 +419,44 @@ class AuditLoggingDecorator:
         
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._audit_execution(func, args, kwargs, is_async=False)
-        
+            return self._audit_execution_sync(func, args, kwargs)
+
         import asyncio
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
     
+    def _audit_execution_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Audit synchronous function execution"""
+        sanitized_kwargs = self._sanitize_data(kwargs)
+
+        audit_data = {
+            "operation_type": self.operation_type,
+            "function": func.__name__,
+            "module": func.__module__,
+            "args_count": len(args),
+            "kwargs": sanitized_kwargs,
+            "timestamp": time.time()
+        }
+
+        try:
+            result = func(*args, **kwargs)
+
+            audit_data["status"] = "success"
+            logger.info("Audit log - operation successful", **audit_data)
+
+            return result
+
+        except Exception as e:
+            audit_data.update({
+                "status": "failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            })
+            logger.warning("Audit log - operation failed", **audit_data)
+            raise
+
     async def _audit_execution(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Audit function execution"""
         # Sanitize sensitive data

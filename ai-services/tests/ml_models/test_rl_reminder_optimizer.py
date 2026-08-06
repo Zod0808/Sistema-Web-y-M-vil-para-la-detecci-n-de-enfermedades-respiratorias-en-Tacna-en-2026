@@ -156,9 +156,13 @@ class TestReminderEnvironment:
         # Add many recent reminders
         for _ in range(6):
             env.reminder_history.append(env.current_time - timedelta(hours=1))
-        
-        state, reward, _ = env.step('send_reminder')
-        
+
+        # step() simulates adherence via np.random.random(), which can add
+        # an unrelated +0.3 bonus; force it deterministically so this test
+        # only exercises the fatigue penalty.
+        with patch('numpy.random.random', return_value=0.99):
+            state, reward, _ = env.step('send_reminder')
+
         # Should get penalty for excessive reminders
         assert reward < 0.3  # Reduced reward due to fatigue
     
@@ -480,14 +484,24 @@ class TestReinforcementLearningAgent:
     
     def test_get_recommendation(self, agent):
         """Test recommendation generation"""
+        agent.configure({
+            'patient_profile': {
+                'medication_schedule': ['08:00', '20:00']
+            }
+        })
+
         state = {
             'adherence_rate': 0.5,
             'recent_reminders': 0.3,
-            'time_to_next_dose': 0.2
+            'fatigue_level': 0.1,
+            'hour_of_day': 0.5,
+            'day_of_week': 0.5,
+            'time_to_next_dose': 0.2,
+            'medication_count': 0.2
         }
-        
+
         result = agent.act(state)
-        
+
         assert 'recommendation' in result
         assert isinstance(result['recommendation'], str)
         assert len(result['recommendation']) > 0

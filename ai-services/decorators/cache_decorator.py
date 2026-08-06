@@ -26,35 +26,37 @@ class CacheDecorator:
         async def wrapper(*args, **kwargs):
             # Generate cache key
             cache_key = self._generate_cache_key(func.__name__, args, kwargs)
-            
+
             try:
                 # Try to get from cache
                 cached_result = await get_cache(cache_key)
                 if cached_result is not None:
-                    logger.debug("Cache hit", 
+                    logger.debug("Cache hit",
                                 function=func.__name__,
                                 cache_key=cache_key)
                     return json.loads(cached_result) if isinstance(cached_result, str) else cached_result
-                
-                # Cache miss, execute function
-                logger.debug("Cache miss", 
-                            function=func.__name__,
-                            cache_key=cache_key)
-                
-                result = await func(*args, **kwargs)
-                
-                # Store in cache
-                await set_cache(cache_key, result, ttl=self.ttl)
-                
-                return result
-                
             except Exception as e:
-                logger.error("Cache decorator error", 
+                logger.error("Cache read error",
                             function=func.__name__,
                             error=str(e))
-                # If caching fails, still execute the function
-                return await func(*args, **kwargs)
-        
+
+            # Cache miss (or read failure), execute function exactly once
+            logger.debug("Cache miss",
+                        function=func.__name__,
+                        cache_key=cache_key)
+
+            result = await func(*args, **kwargs)
+
+            try:
+                # Store in cache
+                await set_cache(cache_key, result, ttl=self.ttl)
+            except Exception as e:
+                logger.error("Cache write error",
+                            function=func.__name__,
+                            error=str(e))
+
+            return result
+
         return wrapper
     
     def _generate_cache_key(self, func_name: str, args: tuple, kwargs: dict) -> str:

@@ -4,6 +4,7 @@ Retry Decorator Implementation
 
 import asyncio
 import random
+import time
 from functools import wraps
 from typing import Any, Optional, Callable, List, Type
 import structlog
@@ -38,13 +39,69 @@ class RetryDecorator:
         
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return self._retry_execution(func, args, kwargs, is_async=False)
-        
+            return self._retry_execution_sync(func, args, kwargs)
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
+    def _retry_execution_sync(self, func: Callable, args: tuple, kwargs: dict):
+        """Execute a sync function with retry logic (no event loop required)"""
+        last_exception = None
+        current_delay = self.delay
+
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                result = func(*args, **kwargs)
+
+                if attempt > 1:
+                    logger.info("Function succeeded after retries",
+                               function=func.__name__,
+                               attempts=attempt)
+
+                return result
+
+            except self.exceptions as e:
+                last_exception = e
+
+                logger.warning("Function attempt failed",
+                              function=func.__name__,
+                              attempt=attempt,
+                              max_attempts=self.max_attempts,
+                              error=str(e),
+                              error_type=type(e).__name__)
+
+                if attempt == self.max_attempts:
+                    logger.error("Function failed after all retries",
+                                function=func.__name__,
+                                attempts=attempt,
+                                error=str(e))
+                    break
+
+                if attempt < self.max_attempts:
+                    self._wait_before_retry_sync(current_delay, attempt)
+                    current_delay = min(
+                        current_delay * self.backoff_multiplier,
+                        self.max_delay
+                    )
+
+        raise last_exception
+
+    def _wait_before_retry_sync(self, delay: float, attempt: int):
+        """Wait before retry with optional jitter (sync version)"""
+        if self.jitter:
+            jitter = random.uniform(0.1, 0.3) * delay
+            actual_delay = delay + jitter
+        else:
+            actual_delay = delay
+
+        logger.debug("Waiting before retry",
+                     delay=actual_delay,
+                     attempt=attempt)
+
+        time.sleep(actual_delay)
+
     async def _retry_execution(self, func: Callable, args: tuple, kwargs: dict, is_async: bool = True):
         """Execute function with retry logic"""
         last_exception = None
@@ -356,18 +413,19 @@ from dataclasses import dataclass as _dataclass
 class RetryConfig:
     max_attempts: int = 3
     delay: float = 1.0
-    backoff_multiplier: float = 2.0
+    backoff_factor: float = 2.0
     max_delay: float = 60.0
     exceptions: tuple = (Exception,)
     jitter: bool = True
+    enabled: bool = True
 
 
 def retry_decorator(config: 'RetryConfig | None' = None, **kwargs):
     if config is not None:
         return with_retry(
-            max_attempts=config.max_attempts,
+            max_attempts=config.max_attempts if config.enabled else 1,
             delay=config.delay,
-            backoff_multiplier=config.backoff_multiplier,
+            backoff_multiplier=config.backoff_factor,
             max_delay=config.max_delay,
             exceptions=config.exceptions,
             jitter=config.jitter,

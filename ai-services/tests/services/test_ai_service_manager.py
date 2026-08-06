@@ -168,9 +168,9 @@ class TestAIServiceManager:
         """Test repository initialization"""
         ai_service_manager.services = mock_services
         
-        with patch('services.ai_service_manager.MedicalHistoryRepository') as mock_hist_repo:
-            with patch('services.ai_service_manager.AIResultRepository') as mock_ai_repo:
-                with patch('services.ai_service_manager.PatientRepository') as mock_patient_repo:
+        with patch('repositories.MedicalHistoryRepository') as mock_hist_repo:
+            with patch('repositories.AIResultRepository') as mock_ai_repo:
+                with patch('repositories.PatientRepository') as mock_patient_repo:
                     await ai_service_manager._initialize_repositories()
                     
                     assert 'medical_history' in ai_service_manager.repositories
@@ -508,7 +508,6 @@ class TestAIServiceManager:
         # Create a service that raises error
         mock_service = MagicMock()
         mock_service.__class__.__name__ = "TestService"
-        type(mock_service).__name__ = property(lambda self: "TestService")
         ai_service_manager.services = {'test_service': mock_service}
         ai_service_manager.strategies = mock_strategies
         ai_service_manager.repositories = mock_repositories
@@ -615,14 +614,9 @@ class TestAIServiceManager:
         
         # Should not raise exception even if there are errors
         await ai_service_manager.shutdown()
-        
+
         assert ai_service_manager._initialized is False
-        
-        results = await ai_service_manager.analyze_symptoms_batch(batch_requests)
-        
-        assert len(results) == 2
-        assert all("patient_id" in result for result in results)
-    
+
     @pytest.mark.asyncio
     async def test_analyze_symptoms_batch_empty(self, ai_service_manager):
         """Test batch analysis with empty list"""

@@ -160,21 +160,23 @@ class TestOpenAICircuitBreakerDecorator:
     @pytest.mark.asyncio
     async def test_openai_circuit_breaker_with_kwargs(self, mock_openai_circuit_breaker):
         """Test OpenAI circuit breaker with custom kwargs"""
-        with patch('decorators.circuit_breaker_decorator.OpenAICircuitBreaker', return_value=mock_openai_circuit_breaker):
+        with patch('decorators.circuit_breaker_decorator.OpenAICircuitBreaker', return_value=mock_openai_circuit_breaker) as mock_openai_circuit_breaker_class:
             decorator = OpenAICircuitBreakerDecorator(
                 failure_threshold=10,
                 recovery_timeout=120
             )
-            
+
             @decorator
             async def test_func():
                 return "result"
-            
+
             await test_func()
-            
-            # Verify kwargs were passed
-            call_args = mock_openai_circuit_breaker.__init__.call_args if hasattr(mock_openai_circuit_breaker, '__init__') else None
-            # The decorator should create circuit breaker with kwargs
+
+            # Verify kwargs were passed to the circuit breaker constructor
+            mock_openai_circuit_breaker_class.assert_called_once_with(
+                failure_threshold=10,
+                recovery_timeout=120
+            )
     
     def test_with_openai_circuit_breaker_decorator_function(self):
         """Test with_openai_circuit_breaker decorator function"""

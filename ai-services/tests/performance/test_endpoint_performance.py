@@ -6,6 +6,7 @@ Tests de performance para endpoints de AI Services
 import pytest
 import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 

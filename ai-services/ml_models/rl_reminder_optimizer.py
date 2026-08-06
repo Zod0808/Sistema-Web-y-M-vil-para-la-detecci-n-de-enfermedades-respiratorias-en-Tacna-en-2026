@@ -77,7 +77,8 @@ class ReminderEnvironment:
             return None
         
         current_hour = self.current_time.hour
-        scheduled_hours = sorted([int(h) for h in self.medication_schedule])
+        # medication_schedule entries are "HH:MM" strings; only the hour is needed here.
+        scheduled_hours = sorted([int(str(h).split(':')[0]) for h in self.medication_schedule])
         
         for hour in scheduled_hours:
             if hour > current_hour:

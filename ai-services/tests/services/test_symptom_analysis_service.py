@@ -22,6 +22,11 @@ class TestSymptomAnalysisService:
             "urgency_level": "moderate",
             "symptoms": ["tos", "fiebre"]
         }
+        mock.analyze_symptoms_batch.side_effect = (
+            lambda batch_requests, strategy_preference=None: [
+                {"disease": "Bronquitis", "confidence": 0.85} for _ in batch_requests
+            ]
+        )
         return mock
     
     @pytest.fixture
@@ -279,14 +284,17 @@ class TestSymptomAnalysisService:
     @pytest.mark.asyncio
     async def test_generate_detailed_recommendations_error(self, symptom_service):
         """Test generating recommendations with error"""
+        bad_analysis_result = MagicMock()
+        bad_analysis_result.get.side_effect = Exception("boom")
         with patch('services.symptom_analysis_service.logger') as mock_logger:
             recommendations = await symptom_service._generate_detailed_recommendations(
-                {},
+                bad_analysis_result,
                 [],
                 None
             )
-            
+
             assert "error" in recommendations
+            mock_logger.error.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_assess_health_risks_high(self, symptom_service):
@@ -394,7 +402,7 @@ class TestSymptomAnalysisService:
         follow_up = await symptom_service._create_follow_up_plan(analysis_result, "patient_123")
         
         assert follow_up["urgency"] == "critical"
-        assert follow_up["type"] == "urgent"
+        assert follow_up["type"] == "emergency"
         assert "immediate" in follow_up["timeline"].lower() or "inmediat" in follow_up["timeline"].lower()
     
     @pytest.mark.asyncio
@@ -501,7 +509,7 @@ class TestSymptomAnalysisService:
         result = await symptom_service._assess_health_risks(analysis_result, context)
         
         assert isinstance(result, dict)
-        assert "risk_level" in result or "factors" in result
+        assert "overall_risk_level" in result or "risk_factors" in result
     
     @pytest.mark.asyncio
     async def test_create_follow_up_plan(self, symptom_service, sample_symptoms):

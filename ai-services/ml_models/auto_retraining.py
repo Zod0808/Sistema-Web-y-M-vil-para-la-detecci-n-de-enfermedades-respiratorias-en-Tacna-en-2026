@@ -266,9 +266,46 @@ class AutoRetrainingSystem:
                     logger.info(f"Backed up {model_file} to {backup_path}")
                 except Exception as e:
                     logger.error(f"Error backing up {model_file}: {e}")
-        
+
         return backups
-    
+
+    def restore_model(self, backups: Dict[str, str] = None) -> Dict[str, bool]:
+        """
+        Restore model files from backup (rollback after a failed retraining)
+
+        Args:
+            backups: Dict mapping model filenames to backup paths, as returned
+                by backup_current_models(). If not provided, restores each
+                known model file from its most recent backup.
+
+        Returns:
+            Dict mapping model filenames to whether the restore succeeded
+        """
+        restored = {}
+
+        if backups is None:
+            backups = {}
+            model_files = [
+                'xgboost_model.pkl',
+                'base_random_forest.pkl',
+                'neural_network_model.pkl'
+            ]
+            for model_file in model_files:
+                candidates = sorted(self.backup_path.glob(f"{model_file}.backup_*"))
+                if candidates:
+                    backups[model_file] = str(candidates[-1])
+
+        for model_file, backup_path in backups.items():
+            try:
+                shutil.copy2(backup_path, self.models_path / model_file)
+                restored[model_file] = True
+                logger.info(f"Restored {model_file} from {backup_path}")
+            except Exception as e:
+                restored[model_file] = False
+                logger.error(f"Error restoring {model_file}: {e}")
+
+        return restored
+
     def retrain_xgboost(self, 
                        dataset_path: str,
                        output_path: str = None) -> Dict[str, Any]:

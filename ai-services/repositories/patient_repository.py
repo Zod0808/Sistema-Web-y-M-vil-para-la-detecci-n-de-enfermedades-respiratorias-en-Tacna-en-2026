@@ -99,10 +99,10 @@ class PatientRepository(BaseRepository):
             }
             
             if history_count > 0:
-                update_data["$inc"] = {"total_histories": history_count}
-            
+                update_data.setdefault("$inc", {})["total_histories"] = history_count
+
             if ai_analysis_count > 0:
-                update_data["$inc"] = {"total_ai_analyses": ai_analysis_count}
+                update_data.setdefault("$inc", {})["total_ai_analyses"] = ai_analysis_count
             
             # Remove $inc from $set if it exists
             if "$inc" in update_data:

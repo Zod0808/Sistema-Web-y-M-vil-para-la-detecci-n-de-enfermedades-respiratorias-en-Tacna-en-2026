@@ -81,7 +81,7 @@ def _redact_sensitive_data(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Redacta información sensible del evento antes de enviarlo a Sentry
     """
-    sensitive_fields = ['password', 'token', 'secret', 'api_key', 'jwt', 'authorization']
+    sensitive_fields = ['password', 'token', 'secret', 'api_key', 'api-key', 'jwt', 'authorization', 'cookie']
     
     def redact_dict(obj: Any) -> Any:
         if not isinstance(obj, dict):
@@ -100,18 +100,7 @@ def _redact_sensitive_data(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                 redacted[key] = value
         return redacted
     
-    # Redactar request data
-    if 'request' in event and 'data' in event['request']:
-        event['request']['data'] = redact_dict(event['request']['data'])
-    
-    # Redactar headers
-    if 'request' in event and 'headers' in event['request']:
-        headers = event['request']['headers']
-        for header in ['authorization', 'cookie', 'x-api-key']:
-            if header in headers:
-                headers[header] = '[REDACTED]'
-    
-    return event
+    return redact_dict(event)
 
 
 def set_sentry_user(user_id: str, email: Optional[str] = None, role: Optional[str] = None):

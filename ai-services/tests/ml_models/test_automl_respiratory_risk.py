@@ -345,8 +345,13 @@ class TestRespiratoryRiskAutoML:
         """Test complete AutoML pipeline"""
         X, y, feature_names = synthetic_data
         
-        # 1. Select model
-        select_result = automl.select_model(X=X, y=y)
+        # 1. Select model. Restrict candidates to tree-based models since
+        # the hyperparameter grid used in auto_tune below (n_estimators,
+        # max_depth) only applies to those, not logistic_regression/neural_net.
+        select_result = automl.select_model(
+            candidates=["xgboost", "random_forest", "gradient_boosting"],
+            X=X, y=y
+        )
         assert select_result['status'] == 'ok'
         
         # 2. Feature selection

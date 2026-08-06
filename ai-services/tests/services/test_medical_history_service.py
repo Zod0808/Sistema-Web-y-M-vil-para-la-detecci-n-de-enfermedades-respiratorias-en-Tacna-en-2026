@@ -243,15 +243,20 @@ class TestMedicalHistoryService:
             mock_care.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_process_medical_history_batch(self, medical_history_service):
-        """Test batch medical history processing"""
+    async def test_process_medical_history_batch_returns_list(self, medical_history_service):
+        """Test batch medical history processing returns a list of results"""
         batch_requests = [
             {"text": "Patient 1 history", "patient_id": "p1"},
             {"text": "Patient 2 history", "patient_id": "p2"}
         ]
-        
+
+        medical_history_service.service_manager.process_medical_history_batch.return_value = [
+            {"symptoms": [], "patient_id": "p1"},
+            {"symptoms": [], "patient_id": "p2"}
+        ]
+
         result = await medical_history_service.process_medical_history_batch(batch_requests)
-        
+
         assert isinstance(result, list)
         assert len(result) == 2
     

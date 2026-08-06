@@ -116,6 +116,7 @@ class PatientFriendlyExplainer:
         alternatives = self._build_alternatives_explanation(top_predictions)
         
         return {
+            'disease': disease,
             'main_explanation': main_explanation,
             'key_factors': key_factors,
             'reasoning': reasoning,
@@ -284,15 +285,13 @@ class PatientFriendlyExplainer:
         return cleaned.strip() or feature_name
     
     def _get_confidence_level(self, confidence_percent: int) -> str:
-        """Obtiene nivel de confianza en texto"""
+        """Obtiene nivel de confianza (enum canónico: low/medium/high)"""
         if confidence_percent >= 80:
-            return "Muy Alta"
-        elif confidence_percent >= 60:
-            return "Alta"
+            return "high"
         elif confidence_percent >= 40:
-            return "Moderada"
+            return "medium"
         else:
-            return "Baja"
+            return "low"
     
     def _build_summary(self, disease: str, confidence: int, urgency: str) -> str:
         """Construye resumen corto"""

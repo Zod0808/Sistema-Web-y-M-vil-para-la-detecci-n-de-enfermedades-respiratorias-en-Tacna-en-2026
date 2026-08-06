@@ -17,6 +17,8 @@ from api.routes.medical_history import (
     MedicalHistoryOutput,
     MedicalHistorySearch
 )
+from core.database import get_database
+from core.cache import get_cache
 
 
 class TestMedicalHistoryEndpoints:
@@ -62,25 +64,28 @@ class TestMedicalHistoryEndpoints:
             "confidence": 0.85
         })
         
-        with patch('api.routes.medical_history.get_database', return_value=mock_db), \
-             patch('api.routes.medical_history.get_cache', return_value=mock_cache), \
-             patch('api.routes.medical_history.get_cache_value', return_value=None), \
-             patch('api.routes.medical_history.set_cache', new_callable=AsyncMock), \
-             patch('api.routes.medical_history.model_manager', mock_model_manager):
-            
-            response = client.post("/medical-history/process", json=sample_medical_history_input)
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["patient_id"] == "test_patient_123"
-            assert "processed_at" in data
-            assert "entities" in data
-            assert "symptoms" in data
-            assert "diagnosis_suggestions" in data
-            assert "risk_factors" in data
-            assert "recommendations" in data
-            assert "confidence_score" in data
-            assert "processing_time_ms" in data
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: mock_cache
+        try:
+            with patch('api.routes.medical_history.get_cache_value', return_value=None), \
+                 patch('api.routes.medical_history.set_cache', new_callable=AsyncMock), \
+                 patch('api.routes.medical_history.model_manager', mock_model_manager):
+
+                response = client.post("/medical-history/process", json=sample_medical_history_input)
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["patient_id"] == "test_patient_123"
+                assert "processed_at" in data
+                assert "entities" in data
+                assert "symptoms" in data
+                assert "diagnosis_suggestions" in data
+                assert "risk_factors" in data
+                assert "recommendations" in data
+                assert "confidence_score" in data
+                assert "processing_time_ms" in data
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_process_medical_history_cached(self, client, sample_medical_history_input):
@@ -100,15 +105,18 @@ class TestMedicalHistoryEndpoints:
         mock_db = MagicMock()
         mock_cache = None
         
-        with patch('api.routes.medical_history.get_database', return_value=mock_db), \
-             patch('api.routes.medical_history.get_cache', return_value=mock_cache), \
-             patch('api.routes.medical_history.get_cache_value', return_value=cached_result):
-            
-            response = client.post("/medical-history/process", json=sample_medical_history_input)
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["patient_id"] == "test_patient_123"
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: mock_cache
+        try:
+            with patch('api.routes.medical_history.get_cache_value', return_value=cached_result):
+
+                response = client.post("/medical-history/process", json=sample_medical_history_input)
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["patient_id"] == "test_patient_123"
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_process_medical_history_model_error(self, client, sample_medical_history_input):
@@ -121,15 +129,18 @@ class TestMedicalHistoryEndpoints:
             "error": "Model processing failed"
         })
         
-        with patch('api.routes.medical_history.get_database', return_value=mock_db), \
-             patch('api.routes.medical_history.get_cache', return_value=mock_cache), \
-             patch('api.routes.medical_history.get_cache_value', return_value=None), \
-             patch('api.routes.medical_history.model_manager', mock_model_manager):
-            
-            response = client.post("/medical-history/process", json=sample_medical_history_input)
-            
-            assert response.status_code == 500
-            assert "Model processing failed" in response.json()["detail"]
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: mock_cache
+        try:
+            with patch('api.routes.medical_history.get_cache_value', return_value=None), \
+                 patch('api.routes.medical_history.model_manager', mock_model_manager):
+
+                response = client.post("/medical-history/process", json=sample_medical_history_input)
+
+                assert response.status_code == 500
+                assert "Model processing failed" in response.json()["detail"]
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_process_medical_history_error_handling(self, client, sample_medical_history_input):
@@ -140,15 +151,18 @@ class TestMedicalHistoryEndpoints:
         mock_model_manager = MagicMock()
         mock_model_manager.process_medical_text = AsyncMock(side_effect=Exception("Processing error"))
         
-        with patch('api.routes.medical_history.get_database', return_value=mock_db), \
-             patch('api.routes.medical_history.get_cache', return_value=mock_cache), \
-             patch('api.routes.medical_history.get_cache_value', return_value=None), \
-             patch('api.routes.medical_history.model_manager', mock_model_manager):
-            
-            response = client.post("/medical-history/process", json=sample_medical_history_input)
-            
-            assert response.status_code == 500
-            assert "Internal server error" in response.json()["detail"]
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        client.app.dependency_overrides[get_cache] = lambda: mock_cache
+        try:
+            with patch('api.routes.medical_history.get_cache_value', return_value=None), \
+                 patch('api.routes.medical_history.model_manager', mock_model_manager):
+
+                response = client.post("/medical-history/process", json=sample_medical_history_input)
+
+                assert response.status_code == 500
+                assert "Internal server error" in response.json()["detail"]
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_process_medical_history_validation_error(self, client):
@@ -157,17 +171,22 @@ class TestMedicalHistoryEndpoints:
             "patient_id": "",  # Invalid: empty
             "text": ""  # Invalid: empty
         }
-        
-        response = client.post("/medical-history/process", json=invalid_input)
-        
-        # Should return validation error
-        assert response.status_code in [400, 422]
+
+        client.app.dependency_overrides[get_database] = lambda: MagicMock()
+        client.app.dependency_overrides[get_cache] = lambda: None
+        try:
+            response = client.post("/medical-history/process", json=invalid_input)
+
+            # Should return validation error
+            assert response.status_code in [400, 422]
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_get_medical_histories_success(self, client):
         """Test getting medical histories for a patient"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         
         history_docs = [
             {
@@ -189,44 +208,50 @@ class TestMedicalHistoryEndpoints:
         ]
         
         mock_cursor = AsyncMock()
-        async def async_iter():
+        async def async_iter(self):
             for doc in history_docs:
                 yield doc
         mock_cursor.__aiter__ = async_iter
         
         mock_collection.find.return_value.sort.return_value.limit.return_value = mock_cursor
         mock_db.ai_results = mock_collection
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.get("/medical-history/test_patient_123?limit=50")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert isinstance(data, list)
             if len(data) > 0:
                 assert data[0]["patient_id"] == "test_patient_123"
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_get_medical_histories_error_handling(self, client):
         """Test getting medical histories error handling"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         mock_collection.find.side_effect = Exception("Database error")
         mock_db.ai_results = mock_collection
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.get("/medical-history/test_patient_123")
-            
+
             assert response.status_code == 500
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_search_medical_histories_by_patient(self, client):
         """Test searching medical histories by patient"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         
         mock_cursor = AsyncMock()
-        async def async_iter():
+        async def async_iter(self):
             return
             yield
         mock_cursor.__aiter__ = async_iter
@@ -238,22 +263,25 @@ class TestMedicalHistoryEndpoints:
             "patient_id": "test_patient_123",
             "limit": 50
         }
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.post("/medical-history/search", json=search_params)
-            
+
             assert response.status_code == 200
             data = response.json()
             assert isinstance(data, list)
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_search_medical_histories_by_date_range(self, client):
         """Test searching medical histories by date range"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         
         mock_cursor = AsyncMock()
-        async def async_iter():
+        async def async_iter(self):
             return
             yield
         mock_cursor.__aiter__ = async_iter
@@ -266,20 +294,23 @@ class TestMedicalHistoryEndpoints:
             "date_to": datetime.utcnow().isoformat(),
             "limit": 50
         }
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.post("/medical-history/search", json=search_params)
-            
+
             assert response.status_code == 200
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_search_medical_histories_by_diagnosis(self, client):
         """Test searching medical histories by diagnosis"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         
         mock_cursor = AsyncMock()
-        async def async_iter():
+        async def async_iter(self):
             return
             yield
         mock_cursor.__aiter__ = async_iter
@@ -291,26 +322,32 @@ class TestMedicalHistoryEndpoints:
             "diagnosis": "asma",
             "limit": 50
         }
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.post("/medical-history/search", json=search_params)
-            
+
             assert response.status_code == 200
+        finally:
+            client.app.dependency_overrides.clear()
     
     @pytest.mark.asyncio
     async def test_search_medical_histories_error_handling(self, client):
         """Test searching medical histories error handling"""
         mock_db = MagicMock()
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         mock_collection.find.side_effect = Exception("Database error")
         mock_db.ai_results = mock_collection
         
         search_params = {"limit": 50}
-        
-        with patch('api.routes.medical_history.get_database', return_value=mock_db):
+
+        client.app.dependency_overrides[get_database] = lambda: mock_db
+        try:
             response = client.post("/medical-history/search", json=search_params)
-            
+
             assert response.status_code == 500
+        finally:
+            client.app.dependency_overrides.clear()
 
 
 class TestMedicalHistoryHelperFunctions:

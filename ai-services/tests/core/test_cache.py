@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
-from core.cache import init_cache, get_cache_client, set_cache, get_cache, delete_cache, clear_cache_pattern
+from core.cache import init_cache, get_cache_client, set_cache, get_cache, delete_cache, clear_cache_pattern, close_cache
 
 
 class TestCache:
@@ -196,12 +196,12 @@ class TestCache:
             mock_redis.setex.assert_called_once()
             # Verify JSON serialization
             call_args = mock_redis.setex.call_args
-            assert isinstance(call_args[0][1], str)  # Value should be JSON string
+            assert isinstance(call_args[0][2], str)  # Value should be JSON string
     
     @pytest.mark.asyncio
     async def test_set_cache_error_handling(self, mock_redis):
         """Test set_cache error handling"""
-        mock_redis.setex = AsyncMock(side_effect=Exception("Redis error"))
+        mock_redis.set = AsyncMock(side_effect=Exception("Redis error"))
         
         with patch('core.cache.cache_client', mock_redis), \
              patch('core.cache.logger') as mock_logger:

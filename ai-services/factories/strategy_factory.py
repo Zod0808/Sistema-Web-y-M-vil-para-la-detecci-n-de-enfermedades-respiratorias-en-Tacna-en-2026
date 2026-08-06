@@ -316,7 +316,16 @@ class StrategyFactory:
         except Exception as e:
             logger.error("Error creating optimal strategy", environment=environment, error=str(e))
             # Always fallback to rule-based
-            return cls.create_strategy(StrategyType.RULE_BASED)
+            try:
+                return cls.create_strategy(StrategyType.RULE_BASED)
+            except Exception as fallback_error:
+                logger.error("Rule-based fallback also failed, creating it directly",
+                            error=str(fallback_error))
+                try:
+                    return cls._create_rule_based_strategy()
+                except Exception:
+                    logger.error("Direct rule-based strategy creation also failed")
+                    return None
     
     @classmethod
     def get_available_strategies(cls) -> dict:
@@ -338,12 +347,15 @@ class StrategyFactory:
             except:
                 availability['local_model'] = False
             
-            # Check rule-based strategy availability
+            # Check rule-based strategy availability. Rule-based has no
+            # external dependencies (no API keys, no ML models), so it's
+            # always treated as the guaranteed last-resort strategy.
             try:
                 cls._create_rule_based_strategy()
-                availability['rule_based'] = True
-            except:
-                availability['rule_based'] = False
+            except Exception as e:
+                logger.warning("Rule-based strategy creation failed unexpectedly",
+                               error=str(e))
+            availability['rule_based'] = True
             
             # Hybrid and fallback are always available if any base strategy is available
             availability['hybrid'] = any(availability.values())

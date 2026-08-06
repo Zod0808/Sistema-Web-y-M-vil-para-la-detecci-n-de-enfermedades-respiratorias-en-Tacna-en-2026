@@ -59,13 +59,16 @@ class TestAudioAnalyzerEndpoints:
             "audio_format": "wav",
             "analysis_type": "cough_detection"
         }
-        
-        response = client.post("/api/v1/audio/cough", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.analyze_base64 = AsyncMock(return_value=sample_cough_analysis_result)
+        with patch('api.routes.audio_analyzer.get_cough_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/cough", json=request_data)
+
         # Route may not be registered, so accept 404 or 200
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -112,13 +115,16 @@ class TestAudioAnalyzerEndpoints:
             "audio_base64": sample_audio_base64,
             "audio_format": "wav"
         }
-        
-        response = client.post("/api/v1/audio/cough", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.analyze_base64 = AsyncMock(side_effect=Exception("Cough analysis error"))
+        with patch('api.routes.audio_analyzer.get_cough_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/cough", json=request_data)
+
         # Route may not be registered, so accept 404 or 500
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 500
         assert "error" in response.json()["detail"].lower()
     
@@ -129,13 +135,16 @@ class TestAudioAnalyzerEndpoints:
             "audio_format": "wav",
             "analysis_type": "transcription"
         }
-        
-        response = client.post("/api/v1/audio/transcribe", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.transcribe_base64 = AsyncMock(return_value=sample_transcription_result)
+        with patch('api.routes.audio_analyzer.get_transcription_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/transcribe", json=request_data)
+
         # Route may not be registered, so accept 404 or 200
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -167,51 +176,62 @@ class TestAudioAnalyzerEndpoints:
             "audio_base64": sample_audio_base64,
             "audio_format": "wav"
         }
-        
-        response = client.post("/api/v1/audio/transcribe", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.transcribe_base64 = AsyncMock(
+            side_effect=ImportError("Whisper not installed. Install with: pip install openai-whisper")
+        )
+        with patch('api.routes.audio_analyzer.get_transcription_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/transcribe", json=request_data)
+
         # Route may not be registered, so accept 404 or 503
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 503
         assert "Whisper" in response.json()["detail"] or "transcripción" in response.json()["detail"]
-    
+
     def test_transcribe_audio_service_error(self, client, sample_audio_base64):
         """Test transcription with service error"""
         request_data = {
             "audio_base64": sample_audio_base64,
             "audio_format": "wav"
         }
-        
-        response = client.post("/api/v1/audio/transcribe", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.transcribe_base64 = AsyncMock(side_effect=Exception("Transcription error"))
+        with patch('api.routes.audio_analyzer.get_transcription_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/transcribe", json=request_data)
+
         # Route may not be registered, so accept 404 or 500
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 500
         assert "error" in response.json()["detail"].lower()
     
     def test_transcribe_audio_different_formats(self, client, sample_audio_base64, sample_transcription_result):
         """Test transcription with different audio formats"""
-        # Check if route is available before looping
-        test_request = {
-            "audio_base64": sample_audio_base64,
-            "audio_format": "wav"
-        }
-        test_response = client.post("/api/v1/audio/transcribe", json=test_request)
-        if test_response.status_code == 404:
-            pytest.skip("Audio analyzer routes not registered, skipping test")
-        
-        formats = ["wav", "mp3", "m4a", "ogg"]
-        for audio_format in formats:
-            request_data = {
+        mock_service = MagicMock()
+        mock_service.transcribe_base64 = AsyncMock(return_value=sample_transcription_result)
+        with patch('api.routes.audio_analyzer.get_transcription_service', return_value=mock_service):
+            # Check if route is available before looping
+            test_request = {
                 "audio_base64": sample_audio_base64,
-                "audio_format": audio_format
+                "audio_format": "wav"
             }
-            response = client.post("/api/v1/audio/transcribe", json=request_data)
-            assert response.status_code == 200
+            test_response = client.post("/api/v1/audio/transcribe", json=test_request)
+            if test_response.status_code == 404:
+                pytest.skip("Audio analyzer routes not registered, skipping test")
+
+            formats = ["wav", "mp3", "m4a", "ogg"]
+            for audio_format in formats:
+                request_data = {
+                    "audio_base64": sample_audio_base64,
+                    "audio_format": audio_format
+                }
+                response = client.post("/api/v1/audio/transcribe", json=request_data)
+                assert response.status_code == 200
     
     def test_analyze_cough_different_formats(self, client, sample_audio_base64, sample_cough_analysis_result):
         """Test cough analysis with different audio formats"""
@@ -269,13 +289,16 @@ class TestAudioAnalyzerEndpoints:
             "audio_base64": sample_audio_base64,
             "audio_format": "wav"
         }
-        
-        response = client.post("/api/v1/audio/transcribe", json=request_data)
-        
+
+        mock_service = MagicMock()
+        mock_service.transcribe_base64 = AsyncMock(return_value=sample_transcription_result)
+        with patch('api.routes.audio_analyzer.get_transcription_service', return_value=mock_service):
+            response = client.post("/api/v1/audio/transcribe", json=request_data)
+
         # Route may not be registered, so accept 404 or 200
         if response.status_code == 404:
             pytest.skip("Audio analyzer routes not registered, skipping test")
-        
+
         assert response.status_code == 200
         data = response.json()
         

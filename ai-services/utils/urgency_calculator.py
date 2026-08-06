@@ -30,32 +30,30 @@ def calculate_urgency_level(
         return 'low'
     
     # Calcular score base de severidad
-    base_score = 0.0
     if severity_scores:
-        base_score = sum(severity_scores) / len(severity_scores) if severity_scores else 0.0
+        base_score = sum(severity_scores) / len(severity_scores)
     else:
-        # Si no hay scores, usar número de síntomas como proxy
-        base_score = min(len(symptoms) * 0.2, 1.0)
-    
-    # Ajustar por factores de riesgo
-    risk_multiplier = 1.0
-    if risk_factors:
-        risk_multiplier += len(risk_factors) * 0.2
-    
-    # Ajustar por edad
-    if patient_age:
-        if patient_age < 5 or patient_age > 65:
-            risk_multiplier += 0.3
-    
+        # Sin scores explícitos, usar el número de síntomas como proxy débil,
+        # limitado para que muchos síntomas por sí solos no disparen 'critical'
+        base_score = min(len(symptoms) * 0.15, 0.6)
+
+    # Ajustar por factores de riesgo (contribución aditiva por factor)
+    risk_bonus = len(risk_factors) * 0.1 if risk_factors else 0.0
+
+    # Ajustar por edad (bonus fijo para edades de mayor riesgo)
+    age_bonus = 0.0
+    if patient_age is not None and (patient_age < 5 or patient_age > 65):
+        age_bonus = 0.2
+
     # Calcular score final
-    final_score = base_score * risk_multiplier
-    
+    final_score = base_score + risk_bonus + age_bonus
+
     # Determinar nivel de urgencia
     if final_score >= 0.9:
         return 'critical'
     elif final_score >= 0.7:
         return 'high'
-    elif final_score >= 0.4:
+    elif final_score > 0.4:
         return 'medium'
     else:
         return 'low'

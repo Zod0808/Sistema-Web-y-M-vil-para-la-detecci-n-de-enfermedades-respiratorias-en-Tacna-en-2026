@@ -342,8 +342,14 @@ class TestCircuitBreakerIntegration:
         assert result == "success after retries"
     
     @pytest.mark.asyncio
-    async def test_circuit_breaker_metrics_tracking(self, circuit_breaker):
+    async def test_circuit_breaker_metrics_tracking(self):
         """Test circuit breaker metrics tracking"""
+        circuit_breaker = CircuitBreaker(
+            failure_threshold=3,
+            recovery_timeout=60,
+            expected_exception=Exception
+        )
+
         # Track successful calls
         async def successful_operation():
             return "success"

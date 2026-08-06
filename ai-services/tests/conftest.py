@@ -18,15 +18,22 @@ os.environ["LOG_LEVEL"] = "DEBUG"
 os.environ["CACHE_ENABLED"] = "false"
 os.environ["CIRCUIT_BREAKER_ENABLED"] = "false"
 os.environ["AI_RATE_LIMIT_ENABLED"] = "0"  # Deshabilitar rate limiting en tests
+os.environ.setdefault("OPENAI_API_KEY", "test-key-for-testing")
 
 # Guard: transformers calls importlib.util.find_spec("librosa") to check for the
 # optional audio dependency, which raises ValueError: "librosa.__spec__ is not set"
 # when librosa was uninstalled but a stale reference remains in sys.modules. Register
-# a stub with a proper ModuleSpec so find_spec returns cleanly.
+# a stub with a proper ModuleSpec so find_spec returns cleanly, and also give it the
+# functional mock attributes used by audio processing code (must be set here, not in
+# a later "if librosa not in sys.modules" block, since that block would never run once
+# this stub is registered).
 import importlib.machinery as _machinery
 import types as _types
-_librosa_stub = _types.ModuleType('librosa')
+_librosa_stub = MagicMock(name="librosa_mock")
 _librosa_stub.__spec__ = _machinery.ModuleSpec('librosa', None)
+_librosa_stub.load.return_value = (None, 22050)
+_librosa_stub.feature = MagicMock()
+_librosa_stub.feature.mfcc.return_value = MagicMock()
 sys.modules['librosa'] = _librosa_stub
 
 # Mock torch BEFORE any imports to avoid DLL issues in Windows
@@ -75,10 +82,12 @@ if "openai" not in sys.modules:
     openai_mock.AsyncConfiguration = MagicMock()
     
     # Add common OpenAI exceptions
-    openai_mock.RateLimitError = type("RateLimitError", (Exception,), {})
-    openai_mock.APIError = type("APIError", (Exception,), {})
-    openai_mock.APIConnectionError = type("APIConnectionError", (Exception,), {})
-    openai_mock.APITimeoutError = type("APITimeoutError", (Exception,), {})
+    openai_mock.OpenAIError = type("OpenAIError", (Exception,), {})
+    openai_mock.RateLimitError = type("RateLimitError", (openai_mock.OpenAIError,), {})
+    openai_mock.APIError = type("APIError", (openai_mock.OpenAIError,), {})
+    openai_mock.APIConnectionError = type("APIConnectionError", (openai_mock.OpenAIError,), {})
+    openai_mock.APITimeoutError = type("APITimeoutError", (openai_mock.OpenAIError,), {})
+    openai_mock.AuthenticationError = type("AuthenticationError", (openai_mock.OpenAIError,), {})
     
     # Create a proper spec for the module
     try:
@@ -97,14 +106,7 @@ if "whisper" not in sys.modules:
     whisper_mock.load_model.return_value = MagicMock()
     sys.modules["whisper"] = whisper_mock
 
-# Mock librosa and soundfile for audio processing
-if "librosa" not in sys.modules:
-    librosa_mock = MagicMock(name="librosa_mock")
-    librosa_mock.load.return_value = (None, 22050)
-    librosa_mock.feature = MagicMock()
-    librosa_mock.feature.mfcc.return_value = MagicMock()
-    sys.modules["librosa"] = librosa_mock
-
+# Mock soundfile for audio processing (librosa is stubbed earlier in this file)
 if "soundfile" not in sys.modules:
     soundfile_mock = MagicMock(name="soundfile_mock")
     sys.modules["soundfile"] = soundfile_mock
@@ -244,22 +246,17 @@ def sample_symptoms():
 
 @pytest.fixture
 def mock_openai_response():
-    """Mock OpenAI API response"""
-    return {
-        "choices": [
-            {
-                "message": {
-                    "content": json.dumps({
-                        "symptoms": ["tos seca", "dificultad respiratoria"],
-                        "urgency_level": "moderate",
-                        "severity_score": 0.7,
-                        "recommendations": ["Consulta médica", "Reposo"],
-                        "confidence_score": 0.85
-                    })
-                }
-            }
-        ]
-    }
+    """Mock OpenAI API response, mirroring the real SDK's attribute-based access"""
+    response = MagicMock()
+    response.choices = [MagicMock()]
+    response.choices[0].message.content = json.dumps({
+        "symptoms": ["tos seca", "dificultad respiratoria"],
+        "urgency_level": "moderate",
+        "severity_score": 0.7,
+        "recommendations": ["Consulta médica", "Reposo"],
+        "confidence_score": 0.85
+    })
+    return response
 
 
 @pytest.fixture

@@ -1,69 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-
-from ml_models.nlp_advanced import MedicalNLPProcessor
-
-router = APIRouter(prefix="/v1/nlp/advanced", tags=["Advanced NLP"])
-
-
-class TextPayload(BaseModel):
-    text: str = Field(..., description="Texto médico a procesar")
-    language: Optional[str] = Field("es", description="Idioma del texto (es/en)")
-
-
-class TranslatePayload(BaseModel):
-    term: str = Field(..., description="Término médico a traducir")
-    source_language: Optional[str] = Field("es")
-    target_language: Optional[str] = Field("en")
-
-
-@router.post("/process", summary="Procesamiento general de texto médico")
-async def nlp_process(payload: TextPayload) -> Dict[str, Any]:
-    try:
-        nlp = MedicalNLPProcessor(language=payload.language)
-        return {"status": "success", "result": nlp.process_text(payload.text)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/ner", summary="Extracción de entidades médicas (NER)")
-async def nlp_ner(payload: TextPayload) -> Dict[str, Any]:
-    try:
-        nlp = MedicalNLPProcessor(language=payload.language)
-        return {"status": "success", "result": nlp.extract_entities(payload.text)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/summarize", summary="Resumen automático de historias médicas")
-async def nlp_summarize(payload: TextPayload) -> Dict[str, Any]:
-    try:
-        nlp = MedicalNLPProcessor(language=payload.language)
-        return {"status": "success", "result": nlp.summarize(payload.text)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/translate", summary="Traducción de términos médicos (simple)")
-async def nlp_translate(payload: TranslatePayload) -> Dict[str, Any]:
-    try:
-        nlp = MedicalNLPProcessor(language=payload.source_language or "es")
-        return {"status": "success", "result": nlp.translate_term(payload.term, target_language=payload.target_language or "en")}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/sentiment", summary="Análisis de sentimiento en notas médicas")
-async def nlp_sentiment(payload: TextPayload) -> Dict[str, Any]:
-    try:
-        nlp = MedicalNLPProcessor(language=payload.language)
-        return {"status": "success", "result": nlp.analyze_sentiment(payload.text)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Dict, Any, Optional
 
 from ml_models.medical_nlp import MedicalNLPProcessor
@@ -77,8 +13,16 @@ class TextBody(BaseModel):
 
 
 class TermsBody(BaseModel):
-    terms: List[str] = Field(..., min_items=1, description="Lista de términos médicos")
+    term: Optional[str] = Field(None, description="Término médico individual a traducir")
+    terms: Optional[List[str]] = Field(None, min_items=1, description="Lista de términos médicos")
+    source_language: Optional[str] = Field("es", description="Idioma origen")
     target_language: Optional[str] = Field("en", description="Idioma destino")
+
+    @model_validator(mode="after")
+    def check_term_or_terms(self):
+        if not self.term and not self.terms:
+            raise ValueError("Debe especificar 'term' o 'terms'")
+        return self
 
 
 class SummarizeBody(BaseModel):
@@ -117,7 +61,8 @@ async def nlp_summarize(req: SummarizeBody) -> Dict[str, Any]:
 async def nlp_translate(req: TermsBody) -> Dict[str, Any]:
     try:
         nlp = MedicalNLPProcessor()
-        return {"status": "success", "result": nlp.translate_terms(req.terms, target_language=req.target_language or "en")}
+        terms = req.terms or [req.term]
+        return {"status": "success", "result": nlp.translate_terms(terms, target_language=req.target_language or "en")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -70,7 +70,7 @@ class TestAdvancedNLPSmoke:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data.get("status") == "success"
-        assert "translated" in data["result"]
+        assert "translations" in data["result"]
 
     def test_nlp_sentiment_analysis(self):
         """Test de análisis de sentimiento en texto médico"""
@@ -82,7 +82,7 @@ class TestAdvancedNLPSmoke:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data.get("status") == "success"
-        assert "sentiment" in data["result"]
+        assert "label" in data["result"]
         assert "score" in data["result"]
 
 
@@ -171,7 +171,7 @@ class TestAutoMLSmoke:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data.get("status") == "ok"
-        assert "model_id" in data or "training_status" in data
+        assert "improved" in data and "model_artifact" in data
 
 
 class TestReinforcementLearningSmoke:

@@ -3,7 +3,7 @@ Tests for factories/strategy_factory.py
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock, Mock, AsyncMock
 from factories.strategy_factory import StrategyFactory, StrategyType
 
 
@@ -30,7 +30,7 @@ class TestStrategyFactory:
         """Test factory initialization"""
         assert StrategyFactory._strategies == {}
     
-    @patch('factories.strategy_factory.OpenAIStrategy')
+    @patch('strategies.openai_strategy.OpenAIStrategy')
     @patch('factories.strategy_factory.settings')
     def test_create_strategy_openai(self, mock_settings, mock_strategy_class):
         """Test creating OpenAI strategy"""
@@ -52,7 +52,7 @@ class TestStrategyFactory:
         with pytest.raises(ValueError, match="OpenAI API key not configured"):
             StrategyFactory.create_strategy(StrategyType.OPENAI)
     
-    @patch('factories.strategy_factory.LocalModelStrategy')
+    @patch('strategies.local_model_strategy.LocalModelStrategy')
     def test_create_strategy_local_model(self, mock_strategy_class):
         """Test creating local model strategy"""
         mock_instance = MagicMock()
@@ -63,7 +63,7 @@ class TestStrategyFactory:
         assert strategy == mock_instance
         mock_strategy_class.assert_called_once()
     
-    @patch('factories.strategy_factory.RuleBasedStrategy')
+    @patch('strategies.rule_based_strategy.RuleBasedStrategy')
     def test_create_strategy_rule_based(self, mock_strategy_class):
         """Test creating rule-based strategy"""
         mock_instance = MagicMock()
@@ -205,7 +205,7 @@ class TestStrategyFactory:
         with pytest.raises(ValueError, match="Unknown strategy type"):
             StrategyFactory.create_strategy(unknown_type)
     
-    @patch('factories.strategy_factory.OpenAIStrategy')
+    @patch('strategies.openai_strategy.OpenAIStrategy')
     @patch('factories.strategy_factory.settings')
     def test_create_strategy_singleton_behavior(self, mock_settings, mock_strategy_class):
         """Test that factory returns same instance (singleton)"""
@@ -223,7 +223,7 @@ class TestStrategyFactory:
     
     def test_get_strategy_existing(self):
         """Test getting existing strategy"""
-        with patch('factories.strategy_factory.RuleBasedStrategy') as mock_strategy_class:
+        with patch('strategies.rule_based_strategy.RuleBasedStrategy') as mock_strategy_class:
             mock_instance = MagicMock()
             mock_strategy_class.return_value = mock_instance
             
@@ -240,7 +240,7 @@ class TestStrategyFactory:
     
     def test_clear_strategies(self):
         """Test clearing all strategies"""
-        with patch('factories.strategy_factory.RuleBasedStrategy') as mock_strategy_class:
+        with patch('strategies.rule_based_strategy.RuleBasedStrategy') as mock_strategy_class:
             mock_strategy_class.return_value = MagicMock()
             
             StrategyFactory.create_strategy(StrategyType.RULE_BASED)
@@ -369,7 +369,7 @@ class TestStrategyFactory:
         # Should fallback to rule-based
         assert availability['rule_based'] is True
     
-    @patch('factories.strategy_factory.RuleBasedStrategy')
+    @patch('strategies.rule_based_strategy.RuleBasedStrategy')
     def test_create_strategy_error_handling(self, mock_strategy_class):
         """Test error handling when creating strategy"""
         mock_strategy_class.side_effect = Exception("Import error")

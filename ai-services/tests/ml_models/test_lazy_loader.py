@@ -86,59 +86,62 @@ class TestLazyModelLoader:
     @pytest.fixture
     def loader(self, temp_cache_dir):
         """Create loader instance"""
-        return LazyModelLoader(cache_dir=temp_cache_dir)
-    
+        return LazyModelLoader(downloader=ModelDownloader(cache_dir=temp_cache_dir))
+
     @pytest.mark.asyncio
-    async def test_load_model_from_path(self, loader):
-        """Test loading model from local path"""
-        with patch('ml_models.lazy_loader.torch') as mock_torch:
-            mock_torch.load.return_value = MagicMock()
-            
-            result = await loader.load_model("local_model", model_path="/path/to/model")
-            
-            # Should handle loading
-            assert result is not None or result is None
-    
+    async def test_load_model_lazy_without_url(self, loader):
+        """Test loading model lazily without a download URL"""
+        mock_model = MagicMock()
+        loader_func = MagicMock(return_value=mock_model)
+
+        result = await loader.load_model_lazy("local_model", "test_type", loader_func)
+
+        assert result is mock_model
+        loader_func.assert_called_once()
+        assert "test_type:local_model" in loader.get_loaded_models()
+
     @pytest.mark.asyncio
-    async def test_load_model_from_url(self, loader):
-        """Test loading model from URL"""
+    async def test_load_model_lazy_with_url(self, loader):
+        """Test loading model lazily with a download URL"""
         with patch.object(loader.downloader, 'download_model', new_callable=AsyncMock) as mock_download:
             mock_download.return_value = Path("/downloaded/model")
-            
-            with patch('ml_models.lazy_loader.torch') as mock_torch:
-                mock_torch.load.return_value = MagicMock()
-                
-                result = await loader.load_model("remote_model", model_url="http://example.com/model")
-                
-                # Should handle loading
-                assert result is not None or result is None
-    
+            mock_model = MagicMock()
+            loader_func = MagicMock(return_value=mock_model)
+
+            result = await loader.load_model_lazy(
+                "remote_model", "test_type", loader_func, model_url="http://example.com/model"
+            )
+
+            assert result is mock_model
+            mock_download.assert_called_once_with("http://example.com/model", "remote_model")
+
     @pytest.mark.asyncio
-    async def test_preload_model(self, loader):
-        """Test preloading model in background"""
-        with patch.object(loader, 'load_model', new_callable=AsyncMock) as mock_load:
-            mock_load.return_value = MagicMock()
-            
-            loader.preload_model("model1", model_url="http://example.com/model")
-            
-            # Should start preloading
-            await asyncio.sleep(0.1)
-            assert True  # Preload started
-    
-    @pytest.mark.asyncio
-    async def test_get_model_status(self, loader):
-        """Test getting model status"""
-        status = loader.get_model_status("model1")
-        
-        assert isinstance(status, dict)
-        assert 'loaded' in status
-        assert 'loading' in status
-    
-    def test_list_available_models(self, loader):
-        """Test listing available models"""
-        models = loader.list_available_models()
-        
+    async def test_preload_models(self, loader):
+        """Test preloading models in background"""
+        mock_model = MagicMock()
+        loader_func = MagicMock(return_value=mock_model)
+
+        await loader.preload_models([
+            {'model_name': 'model1', 'model_type': 'test_type', 'loader_func': loader_func}
+        ])
+
+        assert "test_type:model1" in loader.get_loaded_models()
+
+    def test_get_loaded_models_empty(self, loader):
+        """Test listing loaded models when none loaded"""
+        models = loader.get_loaded_models()
+
         assert isinstance(models, list)
+        assert models == []
+
+    @pytest.mark.asyncio
+    async def test_unload_model(self, loader):
+        """Test unloading a previously loaded model"""
+        loader_func = MagicMock(return_value=MagicMock())
+        await loader.load_model_lazy("model1", "test_type", loader_func)
+
+        assert loader.unload_model("model1", "test_type") is True
+        assert loader.get_loaded_models() == []
 
 
 class TestGetLazyLoader:
@@ -151,9 +154,14 @@ class TestGetLazyLoader:
         
         assert loader1 is loader2
     
-    def test_get_lazy_loader_custom_params(self):
-        """Test get_lazy_loader with custom parameters"""
-        loader = get_lazy_loader(cache_dir="/custom/path")
-        
-        assert loader.cache_dir is not None
+    def test_get_lazy_loader_custom_params(self, monkeypatch, tmp_path):
+        """Test get_lazy_loader respects the ML_MODEL_DOWNLOAD_DIR env var"""
+        import ml_models.lazy_loader as lazy_loader_module
+        monkeypatch.setattr(lazy_loader_module, '_global_lazy_loader', None)
+        custom_dir = tmp_path / "custom_models"
+        monkeypatch.setenv("ML_MODEL_DOWNLOAD_DIR", str(custom_dir))
+
+        loader = get_lazy_loader()
+
+        assert loader.downloader.cache_dir == custom_dir
 

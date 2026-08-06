@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from ml_models.trend_predictor import DiseaseTrendPredictor
@@ -33,7 +34,7 @@ def test_anomaly_detector_flags_extreme_values():
 
     rolling_series = pd.Series([10, 11, 9, 50, 11, 10, 9, 11])
     rolling_flags = detector.rolling_detect(rolling_series, window=4)
-    assert rolling_flags.iloc[3] is False or rolling_flags.iloc[3] is True  # boolean output
+    assert isinstance(rolling_flags.iloc[3], (bool, np.bool_))  # boolean output
 
     clusterer = PatientRiskClusterer(n_clusters=2)
     feature_df = pd.DataFrame(

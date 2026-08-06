@@ -45,12 +45,12 @@ class TestSentryIntegration:
             'NODE_ENV': 'development'
         }):
             with patch('utils.sentry_integration._sentry_initialized', False):
-                with patch('utils.sentry_integration.sentry_sdk') as mock_sentry:
-                    mock_sentry.init = MagicMock()
-                    with patch('builtins.__import__', return_value=mock_sentry):
-                        result = init_sentry()
-                        # Should attempt to initialize
-                        assert result in [True, False]  # May fail if sentry_sdk not installed
+                mock_sentry = MagicMock()
+                mock_sentry.init = MagicMock()
+                with patch('builtins.__import__', return_value=mock_sentry):
+                    result = init_sentry()
+                    # Should attempt to initialize
+                    assert result in [True, False]  # May fail if sentry_sdk not installed
     
     def test_init_sentry_import_error(self):
         """Test init_sentry when sentry_sdk is not installed"""
@@ -70,11 +70,11 @@ class TestSentryIntegration:
             'SENTRY_DSN': 'https://test@sentry.io/test'
         }):
             with patch('utils.sentry_integration._sentry_initialized', False):
-                with patch('utils.sentry_integration.sentry_sdk') as mock_sentry:
-                    mock_sentry.init = MagicMock(side_effect=Exception("Init error"))
-                    with patch('builtins.__import__', return_value=mock_sentry):
-                        result = init_sentry()
-                        assert result is False
+                mock_sentry = MagicMock()
+                mock_sentry.init = MagicMock(side_effect=Exception("Init error"))
+                with patch('builtins.__import__', return_value=mock_sentry):
+                    result = init_sentry()
+                    assert result is False
     
     def test_init_sentry_production_environment(self):
         """Test init_sentry with production environment"""
@@ -84,12 +84,12 @@ class TestSentryIntegration:
             'NODE_ENV': 'production'
         }):
             with patch('utils.sentry_integration._sentry_initialized', False):
-                with patch('utils.sentry_integration.sentry_sdk') as mock_sentry:
-                    mock_sentry.init = MagicMock()
-                    with patch('builtins.__import__', return_value=mock_sentry):
-                        result = init_sentry()
-                        # Should attempt to initialize with production settings
-                        assert result in [True, False]
+                mock_sentry = MagicMock()
+                mock_sentry.init = MagicMock()
+                with patch('builtins.__import__', return_value=mock_sentry):
+                    result = init_sentry()
+                    # Should attempt to initialize with production settings
+                    assert result in [True, False]
     
     def test_redact_sensitive_data_password(self):
         """Test redacting password field"""

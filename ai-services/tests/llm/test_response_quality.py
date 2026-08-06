@@ -52,7 +52,7 @@ GOLDEN_DATASET = [
         "scenario": "Síntomas leves de resfriado",
         "input": "Tengo un poco de congestión nasal y estornudos leves desde esta mañana",
         "expected_urgency_in": ["low", "medium"],
-        "expected_symptoms_contain": ["congestion nasal"],
+        "expected_symptoms_contain": ["congestión nasal"],
         "expected_needs_attention": False,
     },
     {

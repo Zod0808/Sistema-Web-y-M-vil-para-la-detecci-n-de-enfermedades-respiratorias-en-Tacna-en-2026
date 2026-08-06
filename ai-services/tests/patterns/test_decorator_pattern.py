@@ -501,7 +501,7 @@ class TestMetricsDecorator:
             await failing_function("test")
         
         # Verify error metrics were collected
-        metrics_collector.increment_counter.assert_called_with("function_calls", {"function": "failing_function"})
+        metrics_collector.increment_counter.assert_any_call("function_calls", {"function": "failing_function"})
         metrics_collector.increment_counter.assert_called_with("function_errors", {"function": "failing_function", "error_type": "ValueError"})
     
     @pytest.mark.asyncio
