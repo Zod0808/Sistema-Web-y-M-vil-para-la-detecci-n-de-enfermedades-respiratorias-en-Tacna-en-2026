@@ -20,7 +20,7 @@ describe('App lifecycle integration', () => {
     process.env.MONGODB_SOCKET_TIMEOUT_MS = '30000';
 
     const connectMock = jest.fn().mockResolvedValue(undefined);
-    const connectionState = { readyState: 0 };
+    const connectionState = { readyState: 0, once: jest.fn(), on: jest.fn() };
     const initializeRedisMock = jest.fn().mockResolvedValue(undefined);
     const loggerMock = {
       info: jest.fn(),
@@ -89,7 +89,7 @@ describe('App lifecycle integration', () => {
       jest.doMock('mongoose', () => {
         const mocked = {
           ...actualMongoose,
-          connection: { readyState: 1 },
+          connection: { readyState: 1, once: jest.fn(), on: jest.fn() },
           connect: connectMock
         };
         return {
@@ -140,7 +140,7 @@ describe('App lifecycle integration', () => {
       jest.doMock('mongoose', () => {
         const mocked = {
           ...actualMongoose,
-          connection: { readyState: 1 },
+          connection: { readyState: 1, once: jest.fn(), on: jest.fn() },
           connect: jest.fn()
         };
         return {

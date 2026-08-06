@@ -1,6 +1,5 @@
 import request from 'supertest';
 import type { Express } from 'express';
-import mongoose from 'mongoose';
 
 interface LoadOptions {
   serverEnv?: string;
@@ -20,7 +19,8 @@ interface LoadedApp {
   loggerError: jest.Mock;
   loggerWarn: jest.Mock;
   morganMock: jest.Mock;
-  mongooseConnectSpy: jest.SpyInstance;
+  mongooseConnectSpy: jest.Mock;
+  mongooseConnectionState: { readyState: number };
 }
 
 const PROCESS_EVENTS = ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'] as const;
@@ -111,35 +111,47 @@ const loadApp = async (options: LoadOptions = {}): Promise<LoadedApp> => {
     default: morganMock
   }));
 
-  const originalReadyStateDescriptor = Object.getOwnPropertyDescriptor(
-    mongoose.connection,
-    'readyState'
+  // `jest.isolateModulesAsync` gives `src/index.ts` a fresh, sandboxed copy of
+  // every module it requires. `src/models/*.ts` need a *real*, fully
+  // functional `mongoose` (Schema, model registration, etc.), so we can't
+  // substitute a bare stub — but we also must not share the real globally
+  // connected singleton used by mongodb-memory-server (doing so let tests
+  // close/reopen the shared connection and hang other suites). Instead,
+  // `jest.requireActual` a fresh mongoose instance scoped to this sandbox
+  // (safe because `jest.resetModules()` above guarantees it's disconnected
+  // from Node's module cache) and patch `connect`/`connection.readyState` on
+  // that instance directly, so the doMock factory returns the very object
+  // already carrying our spy — guaranteeing identity with what `src/index.ts`
+  // calls.
+  const freshMongoose = jest.requireActual('mongoose');
+
+  const mongooseConnectSpy = jest.fn().mockImplementation(() =>
+    options.mongooseConnectReject
+      ? Promise.reject(new Error('Mongo connection failure'))
+      : Promise.resolve(undefined as any)
   );
+  freshMongoose.connect = mongooseConnectSpy;
 
-  Object.defineProperty(mongoose.connection, 'readyState', {
+  const mongooseConnectionState = { readyState: options.mongooseReadyState ?? 0 };
+  Object.defineProperty(freshMongoose.connection, 'readyState', {
     configurable: true,
-    get: () => options.mongooseReadyState ?? 0
+    get: () => mongooseConnectionState.readyState
   });
+  // When readyState is faked as already-connected (1), mongoose's
+  // NativeCollection eagerly opens each model's collection via
+  // `this.conn.db.collection(name)` as soon as it's compiled (e.g. when
+  // `src/models/User.ts` runs `mongoose.model(...)` during route imports).
+  // Since this sandboxed connection never actually connects, `.db` would be
+  // undefined and crash that eager open — provide a harmless stub.
+  freshMongoose.connection.db = { collection: (name: string) => ({ collectionName: name }) };
 
-  const mongooseConnectSpy = jest
-    .spyOn(mongoose, 'connect')
-    .mockImplementation(() =>
-      options.mongooseConnectReject
-        ? Promise.reject(new Error('Mongo connection failure'))
-        : Promise.resolve(undefined as any)
-    );
+  jest.doMock('mongoose', () => freshMongoose);
 
   let importedModule: any;
   await jest.isolateModulesAsync(async () => {
     importedModule = await import('../../src/index');
   });
   await new Promise<void>((resolve) => setImmediate(resolve));
-
-  if (originalReadyStateDescriptor) {
-    Object.defineProperty(mongoose.connection, 'readyState', originalReadyStateDescriptor);
-  } else {
-    delete (mongoose.connection as any).readyState;
-  }
 
   return {
     appModule: importedModule.default,
@@ -151,7 +163,8 @@ const loadApp = async (options: LoadOptions = {}): Promise<LoadedApp> => {
     loggerError: loggerError,
     loggerWarn,
     morganMock,
-    mongooseConnectSpy
+    mongooseConnectSpy,
+    mongooseConnectionState
   };
 };
 
@@ -181,12 +194,14 @@ describe('App initialization coverage', () => {
     process.env.NODE_ENV = 'test';
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as any);
 
-    const { loggerError, appModule, mongooseConnectSpy } = await loadApp({ serverEnv: 'test' });
+    const { loggerError, appModule, mongooseConnectSpy, mongooseConnectionState } = await loadApp({
+      serverEnv: 'test',
+      mongooseReadyState: 0
+    });
     const mongoError = new Error('Mongo mocked failure');
-    const mongoUri = globalThis.__MONGO_URI || process.env.MONGODB_URI!;
 
     try {
-      await mongoose.connection.close();
+      mongooseConnectionState.readyState = 0;
       mongooseConnectSpy.mockRejectedValueOnce(mongoError);
       process.env.NODE_ENV = 'development';
 
@@ -197,12 +212,8 @@ describe('App initialization coverage', () => {
       expect(loggerError).toHaveBeenCalledWith('❌ Error conectando a MongoDB:', mongoError);
       expect(exitSpy).toHaveBeenCalledWith(1);
     } finally {
-      mongooseConnectSpy.mockReset();
       exitSpy.mockRestore();
       process.env.NODE_ENV = originalEnv;
-      if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(mongoUri);
-      }
     }
   });
 
@@ -220,10 +231,14 @@ describe('App initialization coverage', () => {
 
   it('listen() utiliza la configuración declarada para iniciar el servidor', async () => {
     const loaded = await loadApp();
-    const { appModule, expressApp, loggerInfo, config } = loaded;
+    const { appModule, loggerInfo, config } = loaded;
 
+    // `appModule.listen()` (App.listen()) is a zero-arg wrapper that reads
+    // config internally and delegates to the private `httpServer.listen`.
+    // Spy on that inner call (rather than the zero-arg wrapper itself) so the
+    // real port/host resolution and logging still execute.
     const listenSpy = jest
-      .spyOn(expressApp, 'listen')
+      .spyOn((appModule as any).httpServer, 'listen')
       .mockImplementation((_port: number, _host: string, callback?: () => void) => {
         callback?.();
         return { close: jest.fn() } as any;

@@ -186,7 +186,23 @@ beforeAll(async () => {
     // But we need to switch to test database
     // For now, just use the existing connection
   }
-});
+
+  // Mongoose builds indexes (text/geo/unique) in the background after
+  // connecting/model compilation, with no guarantee they finish before the
+  // first query. Without this, queries/writes that depend on those indexes
+  // can intermittently fail or silently succeed when they shouldn't — e.g.
+  // "text index required for $text query" on MedicalHistory, or a duplicate
+  // `unique` key not being rejected yet on User/MLExperiment/ChatConversation.
+  // Scoped to only the models that declare text/geo/unique indexes (rather
+  // than all ~15 models) to avoid paying the full-suite index-build cost in
+  // every test file's beforeAll.
+  const modelsNeedingIndexes = ['MedicalHistory', 'User', 'MLExperiment', 'ChatConversation'];
+  await Promise.all(
+    modelsNeedingIndexes
+      .filter((name) => mongoose.connection.models[name])
+      .map((name) => mongoose.connection.models[name].init())
+  );
+}, 30000);
 
 // Global test teardown
 afterAll(async () => {

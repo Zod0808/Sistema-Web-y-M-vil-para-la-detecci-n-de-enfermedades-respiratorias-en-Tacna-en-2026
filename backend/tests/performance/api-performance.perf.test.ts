@@ -247,24 +247,24 @@ describe('Performance — Alerts Endpoints', () => {
     assertSLA(stats, SLA.read, 'GET /alerts');
   });
 
-  it('POST /api/v1/alerts cumple SLA de escritura (mean<350ms, p95<600ms)', async () => {
+  it('POST /api/v1/alerts/critical-symptom cumple SLA de escritura (mean<350ms, p95<600ms)', async () => {
     const durations = await measureN(ITERATIONS, async () => {
       const res = await request(app)
-        .post('/api/v1/alerts')
+        .post('/api/v1/alerts/critical-symptom')
         .set('Authorization', `Bearer ${doctorToken}`)
         .send({
+          userId: patientId,
           patientId,
-          type: 'critical_symptom',
+          patientName: 'Perf Patient',
+          symptomName: 'disnea severa',
           severity: 'high',
-          message: `Alerta perf ${randomUUID()}`,
-          symptoms: ['disnea severa'],
         });
       expect([200, 201, 400, 403, 500]).toContain(res.status);
       expect(res.status).not.toBe(401);
     });
 
     const stats = computeStats(durations);
-    assertSLA(stats, SLA.write, 'POST /alerts');
+    assertSLA(stats, SLA.write, 'POST /alerts/critical-symptom');
   });
 });
 

@@ -61,11 +61,13 @@ export const authenticate = async (req: AuthenticatedRequest, _res: Response, ne
     };
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return next(new AppError('Token inválido', 401));
-    }
+    // TokenExpiredError extends JsonWebTokenError, so it must be checked first
+    // or it will always be caught by the broader JsonWebTokenError branch below.
     if (error instanceof jwt.TokenExpiredError) {
       return next(new AppError('Token expirado', 401));
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new AppError('Token inválido', 401));
     }
     next(error);
   }
@@ -78,7 +80,9 @@ export const authorize = (...roles: string[]) => {
       return next(new AppError('No autenticado', 401));
     }
 
-    if (!roles.includes(req.user.role)) {
+    // 'admin' outranks every other role in the app's hierarchy (see rbac.ts'
+    // requireRole), so it implicitly satisfies any role requirement here too.
+    if (req.user.role !== 'admin' && !roles.includes(req.user.role)) {
       return next(new AppError(`Acceso denegado. Se requieren roles: ${roles.join(', ')}`, 403));
     }
 

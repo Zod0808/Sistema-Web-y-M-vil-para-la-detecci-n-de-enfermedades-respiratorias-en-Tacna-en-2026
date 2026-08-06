@@ -1,4 +1,4 @@
-import { telemedicineService } from '@/lib/services/telemedicineService'
+import { telemedicineService, TelemedicineCall } from '@/lib/services/telemedicineService'
 import { apiClient } from '@/lib/api/client'
 
 jest.mock('@/lib/api/client', () => ({
@@ -29,7 +29,7 @@ beforeEach(() => {
   resetService()
 })
 
-const mockCall = (overrides: Partial<any> = {}) => ({
+const mockCall = (overrides: Partial<TelemedicineCall> = {}): TelemedicineCall => ({
   id: 'call-1',
   appointmentId: 'appt-1',
   patientId: 'p-1',

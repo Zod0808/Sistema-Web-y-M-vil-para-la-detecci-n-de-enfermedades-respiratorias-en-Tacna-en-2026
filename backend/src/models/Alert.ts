@@ -191,6 +191,27 @@ AlertSchema.index({ category: 1, status: 1 });
 AlertSchema.index({ createdAt: -1 });
 AlertSchema.index({ tags: 1 });
 
+// `type`/`severity` are legacy top-level input fields (pre-dating
+// category/priority). They aren't persisted paths, so under Mongoose's
+// default strict mode `new Alert({ type, severity, ... })` would silently
+// drop them before the pre-validate hook below ever saw them. Declaring them
+// as virtuals makes the constructor route them through these setters instead
+// of discarding them.
+AlertSchema.virtual('type')
+  .get(function (this: any) {
+    return this._legacyType;
+  })
+  .set(function (this: any, value: string) {
+    this._legacyType = value;
+  });
+AlertSchema.virtual('severity')
+  .get(function (this: any) {
+    return this._legacySeverity;
+  })
+  .set(function (this: any, value: string) {
+    this._legacySeverity = value;
+  });
+
 AlertSchema.pre<AlertDocument>('validate', function fillLegacyFields(next) {
   const self = this as any;
   if (!self.userId && self.patientId) {
@@ -200,7 +221,7 @@ AlertSchema.pre<AlertDocument>('validate', function fillLegacyFields(next) {
     self.title = String(self.message).slice(0, 140);
   }
   if (!self.category) {
-    const legacyType = self.type;
+    const legacyType = self._legacyType;
     if (typeof legacyType === 'string' && ALERT_CATEGORIES.includes(legacyType as AlertCategory)) {
       self.category = legacyType;
     } else if (legacyType === 'medication') {
@@ -209,15 +230,18 @@ AlertSchema.pre<AlertDocument>('validate', function fillLegacyFields(next) {
       self.category = 'critical_symptom';
     }
   }
-  if (self.severity && !self.priority) {
+  // `priority` always carries its schema default by the time this hook runs,
+  // so `!self.priority` can never detect "not explicitly set" here; an
+  // explicit legacy `severity` always takes precedence over that default.
+  if (self._legacySeverity) {
     const severityToPriority: Record<string, AlertPriority> = {
       low: 'low',
       medium: 'medium',
       high: 'high',
       critical: 'critical',
-      invalid: self.severity,
+      invalid: self._legacySeverity,
     };
-    self.priority = severityToPriority[self.severity] ?? self.severity;
+    self.priority = severityToPriority[self._legacySeverity] ?? self._legacySeverity;
   }
   next();
 });

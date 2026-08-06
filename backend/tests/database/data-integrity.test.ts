@@ -58,15 +58,18 @@ describe('MongoDB Data Integrity Tests', () => {
         symptoms: [{ name: 'Cough', severity: 'mild', duration: '3 days' }]
       });
 
-      // Verificar que la referencia es válida
-      const savedHistory = await MedicalHistory.findById(history._id)
-        .populate('patientId', 'name email')
-        .populate('doctorId', 'name email');
+      // patientId/doctorId are stored as plain String ids (not Mongoose refs),
+      // so integrity is verified by resolving them against User manually
+      // rather than via .populate().
+      const savedHistory = await MedicalHistory.findById(history._id);
 
       expect(savedHistory?.patientId).toBeDefined();
-      expect((savedHistory?.patientId as any)?.name).toBe('Patient User');
+      const referencedPatient = await User.findById(savedHistory?.patientId);
+      expect(referencedPatient?.name).toBe('Patient User');
+
       expect(savedHistory?.doctorId).toBeDefined();
-      expect((savedHistory?.doctorId as any)?.name).toBe('Doctor User');
+      const referencedDoctor = await User.findById(savedHistory?.doctorId);
+      expect(referencedDoctor?.name).toBe('Doctor User');
     });
 
     it('should reject invalid patientId reference', async () => {

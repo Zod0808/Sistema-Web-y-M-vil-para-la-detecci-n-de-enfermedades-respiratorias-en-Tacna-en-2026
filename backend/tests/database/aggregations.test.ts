@@ -108,10 +108,13 @@ describe('MongoDB Aggregations Tests', () => {
             count: { $sum: 1 }
           }
         },
-        { $sort: { count: -1 } }
+        { $sort: { count: -1, _id: 1 } }
       ]);
 
       expect(result).toHaveLength(3);
+      // 'Common Cold' y 'Flu' empatan con count=2; el orden entre ellos
+      // depende del $sort secundario por _id (alfabético), que garantiza
+      // determinismo sin depender del orden de inserción de Mongo.
       expect(result[0]._id).toBe('Common Cold');
       expect(result[0].count).toBe(2);
     });
@@ -191,10 +194,14 @@ describe('MongoDB Aggregations Tests', () => {
     it('should join with User collection', async () => {
       const result = await MedicalHistory.aggregate([
         {
+          // patientId is stored as a String on MedicalHistory but User._id is
+          // an ObjectId, so $lookup needs an explicit cast to match documents.
           $lookup: {
             from: 'users',
-            localField: 'patientId',
-            foreignField: '_id',
+            let: { patientId: '$patientId' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$_id', { $toObjectId: '$$patientId' }] } } }
+            ],
             as: 'patient'
           }
         },
@@ -314,7 +321,7 @@ describe('MongoDB Aggregations Tests', () => {
           patientId: patientIds[1],
           doctorId,
           date: new Date('2024-02-01'),
-          type: 'follow-up',
+          type: 'follow_up',
           status: 'completed'
         },
         {

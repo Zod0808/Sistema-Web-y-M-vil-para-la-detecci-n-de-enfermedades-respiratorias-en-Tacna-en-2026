@@ -49,8 +49,18 @@ describe('Prescription model', () => {
       await expect(PrescriptionModel.create(buildPrescriptionData({ doctorId: undefined }))).rejects.toThrow();
     });
 
-    it('falla sin createdBy', async () => {
-      await expect(PrescriptionModel.create(buildPrescriptionData({ createdBy: undefined }))).rejects.toThrow();
+    // createdBy falls back to doctorId (see Prescription.ts pre-validate hook),
+    // so both must be absent for the "required" validator to actually trigger.
+    it('falla sin createdBy ni doctorId', async () => {
+      await expect(
+        PrescriptionModel.create(buildPrescriptionData({ createdBy: undefined, doctorId: undefined }))
+      ).rejects.toThrow();
+    });
+
+    it('asigna createdBy desde doctorId cuando falta createdBy', async () => {
+      const data = buildPrescriptionData({ createdBy: undefined });
+      const prescription = await PrescriptionModel.create(data);
+      expect(prescription.createdBy).toBe(data.doctorId);
     });
 
     it('falla sin medications', async () => {

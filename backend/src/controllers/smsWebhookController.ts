@@ -98,9 +98,14 @@ export const handleAWSSNSWebhook = async (req: Request, res: Response): Promise<
     }
 
     if (messageType === 'Notification') {
-      // Procesar notificación de estado
-      const notification = JSON.parse(req.body.Message);
-      const { messageId, status, errorMessage, price } = notification;
+      // Procesar notificación de estado. El payload de AWS SNS para eventos de
+      // entrega de SMS anida los datos: { notification: { messageId, spendUsd },
+      // delivery: { providerResponse, ... }, status }.
+      const parsed = JSON.parse(req.body.Message);
+      const messageId = parsed.notification?.messageId;
+      const status = parsed.status;
+      const errorMessage = parsed.delivery?.providerResponse;
+      const spendUsd = parsed.notification?.spendUsd;
 
       if (!messageId) {
         res.status(400).json({
@@ -111,13 +116,13 @@ export const handleAWSSNSWebhook = async (req: Request, res: Response): Promise<
       }
 
       let smsStatus: 'delivered' | 'failed' | 'undelivered' = 'delivered';
-      if (status === 'FAILURE' || errorMessage) {
+      if (status === 'FAILURE') {
         smsStatus = 'failed';
       } else if (status === 'SUCCESS') {
         smsStatus = 'delivered';
       }
 
-      const cost = price ? parseFloat(price) : undefined;
+      const cost = spendUsd ? parseFloat(spendUsd) : undefined;
 
       await smsMetricsService.updateMessageStatus(messageId, smsStatus, cost);
 
@@ -125,6 +130,7 @@ export const handleAWSSNSWebhook = async (req: Request, res: Response): Promise<
         messageId,
         status,
         cost,
+        providerResponse: errorMessage,
       });
 
       res.status(200).json({ success: true });

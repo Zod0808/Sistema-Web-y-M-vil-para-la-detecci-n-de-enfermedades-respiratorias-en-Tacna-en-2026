@@ -80,20 +80,14 @@ class ConsentService {
    * Crear un nuevo consentimiento informado
    */
   async createConsent(payload: CreateConsentPayload): Promise<InformedConsentDocument> {
-    // Validar que el doctor existe. Admin puede actuar como proxy. En test
-    // env el usuario puede no estar creado en BD; aceptamos ambos casos.
+    // Validar que el doctor existe. Admin puede actuar como proxy.
     const doctor = await UserModel.findById(payload.doctorId);
-    if (doctor) {
-      if (doctor.role !== 'doctor' && doctor.role !== 'admin') {
-        throw new AppError('El doctor no existe o no es válido', 400);
-      }
-    } else if (process.env.NODE_ENV !== 'test') {
+    if (!doctor || (doctor.role !== 'doctor' && doctor.role !== 'admin')) {
       throw new AppError('El doctor no existe o no es válido', 400);
     }
 
-    // Validar paciente sólo si estamos fuera de test env.
     const patient = await UserModel.findById(payload.patientId);
-    if (!patient && process.env.NODE_ENV !== 'test') {
+    if (!patient) {
       throw new AppError('El paciente no existe', 400);
     }
 

@@ -325,10 +325,7 @@ class App {
   }
 
   private async initializeDatabase(): Promise<void> {
-    // Inicializar monitoreo de MongoDB (slow queries, índices)
-    initMongoDBMonitoring();
-
-    // Skip database connection in test environment
+    // Skip database connection and monitoring setup in test environment
     if (process.env.NODE_ENV === 'test') {
       // In test environment, connection is handled by test setup
       if (mongoose.connection.readyState === 1) {
@@ -336,6 +333,9 @@ class App {
       }
       return;
     }
+
+    // Inicializar monitoreo de MongoDB (slow queries, índices)
+    initMongoDBMonitoring();
 
     try {
       // Check if already connected
@@ -457,7 +457,13 @@ const expressApp = appInstance.app as typeof appInstance.app & {
   initializeDatabase: () => Promise<void>;
 };
 expressApp.app = expressApp;
-expressApp.listen = appInstance.listen.bind(appInstance);
+// `App.listen()` (0-arg, void) and Express's own `.listen(port, ...)` overloads
+// are incompatible types on the same property name; assign via `any` like
+// `initializeDatabase` below rather than widening the public type.
+(expressApp as any).listen = appInstance.listen.bind(appInstance);
 // initializeDatabase is a private method on the App class; expose it here for test coverage.
 expressApp.initializeDatabase = (appInstance as any).initializeDatabase.bind(appInstance);
+// httpServer is a private field on the App class; expose the raw instance so
+// tests can spy on its `.listen` without binding a real port.
+(expressApp as any).httpServer = (appInstance as any).httpServer;
 export default expressApp;

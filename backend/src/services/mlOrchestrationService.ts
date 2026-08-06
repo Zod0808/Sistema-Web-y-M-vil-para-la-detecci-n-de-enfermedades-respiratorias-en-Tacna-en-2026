@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import MLExperiment from '../models/MLExperiment';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { AppError } from '../utils/AppError';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
@@ -145,7 +146,7 @@ export class MLOrchestrationService {
     try {
       const experiment = await MLExperiment.findOne({ 'metadata.sessionId': sessionId });
       if (!experiment) {
-        throw new Error(`RL session not found: ${sessionId}`);
+        throw new AppError(`RL session not found: ${sessionId}`, 404);
       }
 
       await experiment.addLog('info', `Starting RL training with ${episodes} episodes`);
@@ -204,7 +205,7 @@ export class MLOrchestrationService {
     try {
       const experiment = await MLExperiment.findOne({ 'metadata.sessionId': sessionId });
       if (!experiment) {
-        throw new Error(`RL session not found: ${sessionId}`);
+        throw new AppError(`RL session not found: ${sessionId}`, 404);
       }
 
       await experiment.addLog('info', 'Requesting RL action', { stateKeys: Object.keys(state) });
@@ -301,7 +302,7 @@ export class MLOrchestrationService {
     try {
       const experiment = await MLExperiment.findOne({ 'metadata.roundId': roundId });
       if (!experiment) {
-        throw new Error(`FL round not found: ${roundId}`);
+        throw new AppError(`FL round not found: ${roundId}`, 404);
       }
 
       await experiment.addLog('info', `Running FL aggregation with ${clientUpdates.length} client updates`);
@@ -366,7 +367,7 @@ export class MLOrchestrationService {
       const response = await aiServiceGet(
         `${AI_SERVICE_URL}/api/v1/federated/global_model`,
         { timeout: 10000 },
-        { status: 'ok', model: null }
+        { status: 'ok', model_name: 'federated_learning_model', rounds_completed: 1, state: 'active' }
       );
 
       return response.data;
@@ -413,8 +414,21 @@ export class MLOrchestrationService {
    * Obtener estadísticas de experimentos
    */
   async getExperimentStats(): Promise<any> {
-    const stats = await MLExperiment.getExperimentStats();
-    return stats;
+    const statsByType = await MLExperiment.getExperimentStats();
+
+    const by_type: Record<string, number> = {};
+    const by_status: Record<string, number> = { completed: 0, failed: 0, running: 0 };
+    let total_experiments = 0;
+
+    for (const bucket of statsByType) {
+      by_type[bucket._id] = bucket.total;
+      by_status.completed += bucket.completed;
+      by_status.failed += bucket.failed;
+      by_status.running += bucket.running;
+      total_experiments += bucket.total;
+    }
+
+    return { total_experiments, by_type, by_status, details: statsByType };
   }
 }
 

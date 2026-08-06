@@ -132,7 +132,7 @@ describe('Emergency Endpoints Integration', () => {
           location: { latitude: -12.0464, longitude: -77.0428 },
           vitalSigns: { oxygenSaturation: 85 },
         })
-        .expect(200);
+        .expect(201);
 
       expect(response.body.success).toBe(true);
     });

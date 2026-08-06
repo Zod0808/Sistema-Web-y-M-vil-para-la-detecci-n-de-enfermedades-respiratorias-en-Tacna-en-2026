@@ -177,6 +177,7 @@ export interface Appointment {
   scheduledAt: Date;
   durationMinutes: number;
   status: AppointmentStatus;
+  type?: 'consultation' | 'follow_up' | 'emergency' | 'diagnostic' | 'treatment' | 'telemedicine';
   reason?: string;
   notes?: string;
   location?: {

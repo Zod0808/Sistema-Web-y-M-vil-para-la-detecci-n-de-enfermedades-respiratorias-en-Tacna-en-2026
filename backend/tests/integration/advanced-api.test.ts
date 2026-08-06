@@ -165,7 +165,8 @@ describe('Advanced API Integration Tests', () => {
           patientName: `Patient ${i}`,
           age: 30 + i,
           diagnosis: `Diagnosis ${i}`,
-          symptoms: [{ name: 'tos', severity: 'moderate', duration: '1 week' }]
+          symptoms: [{ name: 'tos', severity: 'moderate', duration: '1 week' }],
+          date: new Date()
         };
 
         promises.push(
@@ -310,7 +311,8 @@ describe('Advanced API Integration Tests', () => {
         patientName: 'Test Patient',
         age: 30,
         diagnosis: 'Test',
-        symptoms: []
+        symptoms: [],
+        date: new Date()
       };
 
       const createResponse = await request(app)
@@ -342,7 +344,8 @@ describe('Advanced API Integration Tests', () => {
           patientName: 'Test Patient',
           age: 30 + i,
           diagnosis: `Diagnosis ${i}`,
-          symptoms: []
+          symptoms: [],
+          date: new Date()
         });
       }
       await MedicalHistory.insertMany(histories);

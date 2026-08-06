@@ -195,7 +195,7 @@ describe('E2E Tests - Flujo de Derivaciones Médicas', () => {
 
       // Paso 3: Admin ve estadísticas de derivaciones
       const statsResponse = await request(app)
-        .get('/api/v1/referrals/stats')
+        .get('/api/v1/referrals/stats/summary')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect([200, 404]).toContain(statsResponse.status);

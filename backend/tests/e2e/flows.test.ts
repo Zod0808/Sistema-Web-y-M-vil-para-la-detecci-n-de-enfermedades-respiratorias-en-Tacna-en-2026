@@ -180,7 +180,8 @@ describe('E2E Tests - Flujos Completos', () => {
           { name: 'dificultad_respiratoria', severity: 'severe', duration: '3 days' },
           { name: 'fiebre', severity: 'moderate', duration: '2 days' }
         ],
-        description: 'Síntomas severos que requieren análisis'
+        description: 'Síntomas severos que requieren análisis',
+        date: new Date()
       };
 
       const historyResponse = await request(app)

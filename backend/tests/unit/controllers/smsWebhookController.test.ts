@@ -144,7 +144,10 @@ describe('smsWebhookController', () => {
     });
 
     it('procesa notificación de SNS con estado SUCCESS', async () => {
-      const notification = JSON.stringify({ messageId: 'sns-msg-1', status: 'SUCCESS' });
+      const notification = JSON.stringify({
+        notification: { messageId: 'sns-msg-1' },
+        status: 'SUCCESS',
+      });
       const req: any = {
         headers: { 'x-amz-sns-message-type': 'Notification' },
         body: { Message: notification },
@@ -156,7 +159,11 @@ describe('smsWebhookController', () => {
     });
 
     it('procesa notificación de SNS con estado FAILURE', async () => {
-      const notification = JSON.stringify({ messageId: 'sns-msg-2', status: 'FAILURE', errorMessage: 'err' });
+      const notification = JSON.stringify({
+        notification: { messageId: 'sns-msg-2' },
+        status: 'FAILURE',
+        delivery: { providerResponse: 'err' },
+      });
       const req: any = {
         headers: { 'x-amz-sns-message-type': 'Notification' },
         body: { Message: notification },
@@ -165,6 +172,21 @@ describe('smsWebhookController', () => {
       await handleAWSSNSWebhook(req, buildRes());
 
       expect(smsMetricsService.updateMessageStatus).toHaveBeenCalledWith('sns-msg-2', 'failed', undefined);
+    });
+
+    it('incluye costo cuando está disponible en la notificación', async () => {
+      const notification = JSON.stringify({
+        notification: { messageId: 'sns-msg-3', spendUsd: '0.0075' },
+        status: 'SUCCESS',
+      });
+      const req: any = {
+        headers: { 'x-amz-sns-message-type': 'Notification' },
+        body: { Message: notification },
+      };
+
+      await handleAWSSNSWebhook(req, buildRes());
+
+      expect(smsMetricsService.updateMessageStatus).toHaveBeenCalledWith('sns-msg-3', 'delivered', 0.0075);
     });
 
     it('retorna 400 cuando falta messageId en notificación', async () => {

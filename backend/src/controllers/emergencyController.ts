@@ -215,7 +215,7 @@ export const detectEmergency = asyncHandler(
       return;
     }
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
       message: 'Emergencia detectada y creada automáticamente',
       data: {

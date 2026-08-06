@@ -135,7 +135,7 @@ describe('E2E Tests - Flujo de Consentimiento Informado', () => {
 
       // Paso 5: Admin ve estadísticas de consentimientos
       const statsResponse = await request(app)
-        .get('/api/v1/informed-consents/stats')
+        .get('/api/v1/informed-consents/stats/summary')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect([200, 404]).toContain(statsResponse.status);

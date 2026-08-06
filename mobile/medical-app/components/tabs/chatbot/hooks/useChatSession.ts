@@ -105,7 +105,7 @@ export function useChatSession({ userId, isEmergencyMode, t, storage }: UseChatS
     }
 
     initializeChat()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [userId, isEmergencyMode])
 
   const handleSendMessage = async (content?: string) => {

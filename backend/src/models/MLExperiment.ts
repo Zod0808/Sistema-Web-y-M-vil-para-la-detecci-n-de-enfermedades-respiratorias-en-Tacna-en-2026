@@ -208,7 +208,6 @@ const MLExperimentSchema = new Schema<MLExperimentDocument>({
 });
 
 // Índices para optimizar consultas
-MLExperimentSchema.index({ experimentId: 1 });
 MLExperimentSchema.index({ experimentType: 1, status: 1 });
 MLExperimentSchema.index({ modelName: 1, createdAt: -1 });
 MLExperimentSchema.index({ 'metadata.userId': 1 });

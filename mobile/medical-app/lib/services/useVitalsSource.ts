@@ -101,7 +101,7 @@ export function useVitalsSource() {
       wearableWs.sendReading(reading)
     })
     return unsub
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [])
 
   // ── Iniciar modo en vivo ──────────────────────────────────────────────────

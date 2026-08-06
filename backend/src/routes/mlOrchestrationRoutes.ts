@@ -136,7 +136,7 @@ router.post(
     const { roundId } = req.params;
     const { clientUpdates } = req.body;
 
-    if (!clientUpdates || !Array.isArray(clientUpdates)) {
+    if (!clientUpdates || !Array.isArray(clientUpdates) || clientUpdates.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'clientUpdates array is required'

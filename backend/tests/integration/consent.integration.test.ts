@@ -4,10 +4,14 @@
  */
 
 import request from 'supertest';
-import mongoose from 'mongoose';
+import { randomUUID } from 'crypto';
 import app from '../../src/index';
 import { testUtils } from '../setup';
 import ConsentLog from '../../src/models/ConsentLog';
+import User from '../../src/models/User';
+
+const STRONG_PASSWORD = 'Password123!';
+const uniqueEmail = (prefix: string) => `${prefix}-${randomUUID()}@test.com`;
 
 describe('Consent Endpoints Integration', () => {
   let doctorToken: string;
@@ -19,12 +23,35 @@ describe('Consent Endpoints Integration', () => {
 
   beforeEach(async () => {
     await testUtils.cleanTestData();
-    doctorId = new mongoose.Types.ObjectId().toHexString();
-    adminId = new mongoose.Types.ObjectId().toHexString();
-    patientId = new mongoose.Types.ObjectId().toHexString();
 
+    const doctor = await User.create({
+      name: 'Consent Doctor',
+      email: uniqueEmail('consentdoc'),
+      password: STRONG_PASSWORD,
+      role: 'doctor',
+      isActive: true,
+    });
+    doctorId = doctor._id.toString();
     doctorToken = testUtils.generateTestToken({ userId: doctorId, role: 'doctor' });
+
+    const admin = await User.create({
+      name: 'Consent Admin',
+      email: uniqueEmail('consentadmin'),
+      password: STRONG_PASSWORD,
+      role: 'admin',
+      isActive: true,
+    });
+    adminId = admin._id.toString();
     adminToken = testUtils.generateTestToken({ userId: adminId, role: 'admin' });
+
+    const patient = await User.create({
+      name: 'Consent Patient',
+      email: uniqueEmail('consentpat'),
+      password: STRONG_PASSWORD,
+      role: 'patient',
+      isActive: true,
+    });
+    patientId = patient._id.toString();
     patientToken = testUtils.generateTestToken({ userId: patientId, role: 'patient' });
   });
 
@@ -117,7 +144,7 @@ describe('Consent Endpoints Integration', () => {
 
   describe('Informed Consent (POST /api/v1/informed-consent)', () => {
     const buildInformedConsentPayload = () => ({
-      patientId: new mongoose.Types.ObjectId().toHexString(),
+      patientId,
       patientName: 'Ana Torres',
       doctorId: adminId,
       doctorName: 'Dr. González',

@@ -84,7 +84,11 @@ export const getFileInfo = asyncHandler(async (req: AuthenticatedRequest, res: R
     const path = await import('path');
 
     const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    const fullPath = path.resolve(process.cwd(), filePath);
+    // Los paths de archivo se manejan en la app con slash inicial (p.ej.
+    // "/uploads/images/foo.webp"). path.resolve() trata un segundo argumento
+    // que empieza con "/" como absoluto e ignora cwd, así que hay que
+    // quitar las barras iniciales antes de resolver contra uploadsDir.
+    const fullPath = path.resolve(process.cwd(), filePath.replace(/^[/\\]+/, ''));
 
     // Prevenir path traversal: la ruta resuelta debe estar dentro de /uploads
     if (!fullPath.startsWith(uploadsDir + path.sep) && fullPath !== uploadsDir) {

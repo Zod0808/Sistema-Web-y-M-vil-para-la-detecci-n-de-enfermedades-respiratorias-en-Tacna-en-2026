@@ -47,7 +47,7 @@ export function ChatView({ t }: ChatViewProps) {
   // Cleanup voice resources on unmount
   useEffect(() => {
     return () => { voice.cleanup() }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   if (session.isInitializing) {

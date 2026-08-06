@@ -42,14 +42,30 @@ describe('Alert model', () => {
       expect(alert.priority).toBe('high');
     });
 
-    it('falla al crear sin userId', async () => {
-      const data = buildAlertData({ userId: undefined });
+    // userId falls back to patientId (see Alert.ts fillLegacyFields), so both
+    // must be absent for the "required" validator to actually trigger.
+    it('falla al crear sin userId ni patientId', async () => {
+      const data = buildAlertData({ userId: undefined, patientId: undefined });
       await expect(AlertModel.create(data)).rejects.toThrow();
     });
 
-    it('falla al crear sin title', async () => {
-      const data = buildAlertData({ title: undefined });
+    it('asigna userId desde patientId cuando falta userId', async () => {
+      const data = buildAlertData({ userId: undefined });
+      const alert = await AlertModel.create(data);
+      expect(alert.userId).toBe(data.patientId);
+    });
+
+    // title falls back to message, so both must be absent to trigger the
+    // "required" validator.
+    it('falla al crear sin title ni message', async () => {
+      const data = buildAlertData({ title: undefined, message: undefined });
       await expect(AlertModel.create(data)).rejects.toThrow();
+    });
+
+    it('asigna title desde message cuando falta title', async () => {
+      const data = buildAlertData({ title: undefined });
+      const alert = await AlertModel.create(data);
+      expect(alert.title).toBe(data.message.slice(0, 140));
     });
 
     it('falla al crear sin message', async () => {

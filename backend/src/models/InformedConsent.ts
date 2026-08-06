@@ -303,7 +303,6 @@ InformedConsentSchema.index({ patientId: 1, status: 1 });
 InformedConsentSchema.index({ doctorId: 1, status: 1 });
 InformedConsentSchema.index({ consentType: 1, status: 1 });
 InformedConsentSchema.index({ signedAt: -1 });
-InformedConsentSchema.index({ expiresAt: 1 });
 InformedConsentSchema.index({ createdAt: -1 });
 
 // Methods

@@ -60,9 +60,14 @@ docker-compose.override.yml
 # Testing
 coverage/
 .coverage
+.coverage.*
+coverage.xml
 .pytest_cache/
 .jest/
 *.test.js.snap
+test-results.json
+backend/emerg*.txt
+backend/*_out.txt
 
 # Backups
 backups/
@@ -178,6 +183,7 @@ venv/
 env/
 ENV/
 .venv/
+.venv_test/
 
 # TypeScript
 *.tsbuildinfo

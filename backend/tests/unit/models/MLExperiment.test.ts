@@ -155,7 +155,9 @@ describe('MLExperiment model', () => {
       const updated = await MLExperiment.findById(exp._id);
       expect(updated!.status).toBe('completed');
       expect(updated!.performance.endTime).toBeDefined();
-      expect(updated!.performance.durationMs).toBeGreaterThan(0);
+      // bajo carga (ej. suite completa en paralelo) create()+complete() pueden
+      // caer dentro del mismo milisegundo, dando durationMs = 0 legítimamente
+      expect(updated!.performance.durationMs).toBeGreaterThanOrEqual(0);
       expect(updated!.results?.success).toBe(true);
     });
 

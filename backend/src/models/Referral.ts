@@ -191,7 +191,6 @@ ReferralSchema.index({ referringDoctorId: 1, status: 1 });
 ReferralSchema.index({ referredToDoctorId: 1, status: 1 });
 ReferralSchema.index({ referralType: 1, status: 1 });
 ReferralSchema.index({ priority: 1, status: 1 });
-ReferralSchema.index({ requestedDate: 1 });
 ReferralSchema.index({ createdAt: -1 });
 
 // Methods

@@ -11,6 +11,7 @@ const buildHistoryData = (overrides: Partial<Record<string, any>> = {}) => ({
   patientName: 'Ana Pérez',
   age: 35,
   diagnosis: 'Asma bronquial',
+  date: new Date(),
   symptoms: [
     { name: 'Disnea', severity: 'moderate', duration: '3 días' },
     { name: 'Tos seca', severity: 'mild', duration: '5 días' },

@@ -225,7 +225,7 @@ export function useGeolocation() {
         DEFAULT_OPTIONS,
       )
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [])
 
   const stopWatching = useCallback(async () => {

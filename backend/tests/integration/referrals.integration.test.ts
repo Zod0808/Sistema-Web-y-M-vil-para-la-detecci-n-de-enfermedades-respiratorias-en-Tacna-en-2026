@@ -8,6 +8,10 @@ import mongoose from 'mongoose';
 import app from '../../src/index';
 import { testUtils } from '../setup';
 import Referral from '../../src/models/Referral';
+import User from '../../src/models/User';
+
+const STRONG_PASSWORD = 'Password123!';
+const uniqueEmail = (prefix: string) => `${prefix}-${new mongoose.Types.ObjectId().toHexString()}@test.com`;
 
 describe('Referral Endpoints Integration', () => {
   let doctorToken: string;
@@ -19,9 +23,32 @@ describe('Referral Endpoints Integration', () => {
 
   beforeEach(async () => {
     await testUtils.cleanTestData();
-    doctorId = new mongoose.Types.ObjectId().toHexString();
-    adminId = new mongoose.Types.ObjectId().toHexString();
-    patientId = new mongoose.Types.ObjectId().toHexString();
+
+    const admin = await User.create({
+      name: 'Admin Referidos',
+      email: uniqueEmail('admin-ref'),
+      password: STRONG_PASSWORD,
+      role: 'admin',
+      isActive: true,
+    });
+    const doctor = await User.create({
+      name: 'Dr. Referidos',
+      email: uniqueEmail('dr-ref'),
+      password: STRONG_PASSWORD,
+      role: 'doctor',
+      isActive: true,
+    });
+    const patient = await User.create({
+      name: 'Paciente Referidos',
+      email: uniqueEmail('patient-ref'),
+      password: STRONG_PASSWORD,
+      role: 'patient',
+      isActive: true,
+    });
+
+    doctorId = doctor._id.toString();
+    adminId = admin._id.toString();
+    patientId = patient._id.toString();
 
     doctorToken = testUtils.generateTestToken({ userId: doctorId, role: 'doctor' });
     adminToken = testUtils.generateTestToken({ userId: adminId, role: 'admin' });
