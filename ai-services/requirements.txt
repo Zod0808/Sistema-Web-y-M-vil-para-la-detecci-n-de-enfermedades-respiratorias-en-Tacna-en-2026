@@ -41,7 +41,7 @@ structlog==23.2.0
 sentry-sdk[fastapi]==1.38.0
 
 # Audio processing (pre-trained models, no dataset needed)
-librosa==0.10.1
+librosa==0.11.0
 soundfile==0.12.1
 openai-whisper==20231117
 ffmpeg-python==0.2.0
