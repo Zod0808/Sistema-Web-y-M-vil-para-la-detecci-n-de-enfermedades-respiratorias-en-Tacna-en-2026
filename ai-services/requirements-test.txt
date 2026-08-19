@@ -14,7 +14,7 @@ mongomock==4.1.2
 fakeredis==2.20.1
 
 # Test data generation
-factory-boy==3.3.0
+factory-boy==3.3.3
 faker==20.1.0
 
 # Coverage reporting
