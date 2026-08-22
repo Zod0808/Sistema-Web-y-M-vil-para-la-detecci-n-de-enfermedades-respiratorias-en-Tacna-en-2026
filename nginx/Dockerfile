@@ -1,4 +1,4 @@
-FROM nginx:1.25-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
+FROM nginx:1.30-alpine@sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
