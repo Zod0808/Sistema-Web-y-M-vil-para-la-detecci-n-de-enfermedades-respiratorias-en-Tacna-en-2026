@@ -258,6 +258,8 @@ erDiagram
     SYMPTOM_REPORTS ||--|| AI_ANALYSES : "has"
     MEDICAL_HISTORY ||--o{ SYMPTOM_ITEMS : "contains"
     CHAT_CONVERSATIONS ||--o{ CHAT_MESSAGES : "contains"
+    USERS ||--o{ ALERTS : "receives/triggers"
+    USERS ||--o{ AUTOMATIC_REPORTS : "generates (admin)"
     
     USERS {
         ObjectId _id PK
@@ -360,6 +362,46 @@ erDiagram
         object geographical
         object trends
         date createdAt
+    }
+
+    ALERTS {
+        ObjectId _id PK
+        string userId FK
+        string patientId FK
+        string doctorId FK
+        string title
+        string message
+        string category "critical_symptom, medication_reminder, follow_up, doctor_notification, system, emergency, consent, laboratory, referral"
+        array channels "in_app, push, email, sms"
+        string priority "low, medium, high, critical"
+        string status "pending, scheduled, sent, delivered, failed, acknowledged, expired"
+        object trigger "source, referenceId, metadata"
+        object metadata
+        array tags
+        date scheduledAt
+        date dispatchedAt
+        date acknowledgedAt
+        date expiresAt
+        number retries
+        number priorityWeight
+        date createdAt
+        date updatedAt
+    }
+
+    AUTOMATIC_REPORTS {
+        ObjectId _id PK
+        string reportType "daily, weekly, monthly"
+        object period "startDate, endDate"
+        string status "pending, generating, completed, failed, exported"
+        object metrics "totales, promedios, topDiagnoses, distribucion"
+        array anomalies "metric, value, expectedRange, severity"
+        string filePath
+        date exportedAt
+        string exportFormat "pdf, csv, json"
+        string generatedBy
+        date generatedAt
+        date createdAt
+        date updatedAt
     }
 ```
 
