@@ -12,8 +12,35 @@ from datetime import datetime
 import structlog
 import numpy as np
 
+from services.medical_validation_rules import MedicalValidationRules
+
 logger = structlog.get_logger()
 router = APIRouter()
+_medical_validator = MedicalValidationRules()
+
+
+def _apply_medical_validation(response: "SymptomMLOutput", symptoms_str: str, patient_age: int) -> "SymptomMLOutput":
+    """
+    Apply medical coherence rules (RF-005) to a prediction before returning it.
+
+    Adjusts confidence when the predicted disease is implausible given the
+    reported symptoms/age (e.g. missing required symptoms, age outside the
+    typical range), and surfaces the reasons as warnings.
+    """
+    validation = _medical_validator.validate_prediction(response.disease, symptoms_str, patient_age)
+
+    response.confidence = max(0.0, min(1.0, response.confidence + validation['confidence_adjustment']))
+    response.is_clinically_coherent = validation['is_valid']
+    response.coherence_warnings = validation['warnings']
+
+    if validation['warnings']:
+        logger.warning(
+            "Medical coherence validation raised warnings",
+            disease=response.disease,
+            warnings=validation['warnings']
+        )
+
+    return response
 
 
 class SymptomMLInput(BaseModel):
@@ -45,6 +72,8 @@ class SymptomMLOutput(BaseModel):
     age_group: Optional[str] = Field(None, description="Patient age group")
     risk_level: Optional[str] = Field(None, description="Overall risk level")
     personalized_recommendations: Optional[List[str]] = Field([], description="Personalized recommendations based on age/risk")
+    is_clinically_coherent: bool = Field(True, description="Whether the prediction passed medical coherence validation (RF-005)")
+    coherence_warnings: List[str] = Field([], description="Medical coherence warnings (e.g. missing required symptoms, age outside typical range)")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -122,7 +151,9 @@ async def analyze_symptoms_ml(input_data: SymptomMLInput, use_ensemble: bool = T
                             risk_level=ensemble_pred.get('risk_level'),
                             personalized_recommendations=ensemble_pred.get('personalized_recommendations', [])
                         )
-                        
+
+                        response = _apply_medical_validation(response, symptoms_str, input_data.patient_age)
+
                         # Log for monitoring
                         try:
                             import sys
@@ -171,13 +202,14 @@ async def analyze_symptoms_ml(input_data: SymptomMLInput, use_ensemble: bool = T
                 from services.enhanced_chatbot_service import EnhancedChatbotService
                 service = EnhancedChatbotService()
                 result = service._classify_by_patterns(symptoms_str, [], input_data.symptoms)
-                
-                return SymptomMLOutput(
+
+                pattern_response = SymptomMLOutput(
                     disease=result.get('disease_name', 'Infección respiratoria'),
                     confidence=result.get('confidence', 0.6),
                     urgency_level=result.get('urgency', 'medium'),
                     needs_medical_attention=result.get('urgency') in ['high', 'critical']
                 )
+                return _apply_medical_validation(pattern_response, symptoms_str, input_data.patient_age)
         
         # Get prediction with SHAP explanation
         prediction = explainer.explain_prediction(
@@ -245,7 +277,9 @@ async def analyze_symptoms_ml(input_data: SymptomMLInput, use_ensemble: bool = T
             ],
             needs_medical_attention=is_urgent or prediction['confidence'] > 0.8
         )
-        
+
+        response = _apply_medical_validation(response, symptoms_str, input_data.patient_age)
+
         logger.info("ML prediction completed",
                    disease=response.disease,
                    confidence=response.confidence)

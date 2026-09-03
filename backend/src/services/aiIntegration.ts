@@ -101,6 +101,8 @@ export interface MLPredictionResponse {
   age_group?: string;
   risk_level?: string;
   personalized_recommendations?: string[];
+  is_clinically_coherent?: boolean;
+  coherence_warnings?: string[];
   timestamp: string;
 }
 
@@ -141,6 +143,15 @@ class AIIntegrationService {
       return true;
     }
     return false; // HALF_OPEN → permit one probe
+  }
+
+  private async ensureConnected(): Promise<void> {
+    if (!this.isConnected) {
+      await this.checkHealth();
+      if (!this.isConnected) {
+        throw new AppError('AI Service no disponible', 503);
+      }
+    }
   }
 
   constructor() {
@@ -334,12 +345,7 @@ class AIIntegrationService {
     patient_id?: string;
   }): Promise<MLPredictionResponse> {
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
+      await this.ensureConnected();
 
       const response = await this.aiClient.post<MLPredictionResponse>(
         '/api/v1/ml-analyze',
@@ -387,12 +393,7 @@ class AIIntegrationService {
    */
   async getSymptomTrends(patientId: string, period: string = '30d'): Promise<any> {
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
+      await this.ensureConnected();
 
       const response = await this.aiClient.get(
         `/api/v1/symptom-analyzer/trends/${patientId}?period=${period}`
@@ -424,12 +425,7 @@ class AIIntegrationService {
    */
   async getGeneralRecommendations(): Promise<Record<string, string[]>> {
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
+      await this.ensureConnected();
 
       const response = await this.aiClient.get('/api/v1/symptom-analyzer/recommendations');
       return response.data;
@@ -451,12 +447,7 @@ class AIIntegrationService {
     limit?: number;
   }): Promise<AIAnalysisResponse[]> {
     try {
-      if (!this.isConnected) {
-        await this.checkHealth();
-        if (!this.isConnected) {
-          throw new AppError('AI Service no disponible', 503);
-        }
-      }
+      await this.ensureConnected();
 
       const response = await this.aiClient.post('/api/v1/medical-history/search', searchParams);
       return response.data;
