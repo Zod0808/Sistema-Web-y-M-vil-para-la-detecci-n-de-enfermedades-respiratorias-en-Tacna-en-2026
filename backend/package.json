@@ -90,7 +90,7 @@
     "pdfkit": "^0.14.0",
     "prom-client": "^15.1.0",
     "redis": "^4.6.10",
-    "sharp": "^0.33.0",
+    "sharp": "^0.35.3",
     "socket.io": "^4.7.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
