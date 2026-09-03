@@ -29,7 +29,7 @@ export interface Emergency {
 
 export interface CreateEmergencyRequest {
   patientId?: string
-  type: Emergency['type']
+  emergencyType: Emergency['type']
   severity?: Emergency['severity']
   description: string
   location?: Emergency['location']

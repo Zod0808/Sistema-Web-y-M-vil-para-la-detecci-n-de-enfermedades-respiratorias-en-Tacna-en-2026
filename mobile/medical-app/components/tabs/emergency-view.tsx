@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Phone, MapPin, Loader2, CheckCircle2, Clock, RefreshCw } from "lucide-react"
+import { AlertTriangle, Phone, MapPin, Loader2, CheckCircle2, Clock, RefreshCw, Navigation, Hospital } from "lucide-react"
 import { ModernButton } from "@/components/ui/ModernButton"
 import { ModernCard } from "@/components/ui/ModernCard"
 import type { Translation } from "@/lib/translations"
 import { useAppStore } from "@/store/useAppStore"
 import { emergencyService, type Emergency, type CreateEmergencyRequest } from "@/lib/api/services/emergencyService"
+import { healthCenterService, type HealthCenter } from "@/lib/api/services/healthCenterService"
+import { useGeolocation } from "@/hooks/useGeolocation"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -28,9 +30,17 @@ const STATUS_CONFIG: Record<Emergency['status'], { label: string; color: string 
   cancelled:  { label: 'Cancelada',  color: 'bg-gray-100 text-gray-600' },
 }
 
+const HEALTH_CENTER_TYPE_LABELS: Record<HealthCenter['type'], string> = {
+  hospital: 'Hospital',
+  centro_salud: 'Centro de Salud',
+  posta_medica: 'Posta Médica',
+  clinica: 'Clínica',
+}
+
 export function EmergencyView({ t: _t }: EmergencyViewProps) {
   const user = useAppStore(s => s.user)
-  const [step, setStep] = useState<'main' | 'form' | 'history'>('main')
+  const geolocation = useGeolocation()
+  const [step, setStep] = useState<'main' | 'form' | 'history' | 'centers'>('main')
   const [selectedType, setSelectedType] = useState<Emergency['type'] | null>(null)
   const [description, setDescription] = useState('')
   const [phone, setPhone] = useState('')
@@ -40,25 +50,43 @@ export function EmergencyView({ t: _t }: EmergencyViewProps) {
   const [submitted, setSubmitted] = useState<Emergency | null>(null)
   const [history, setHistory] = useState<Emergency[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [nearbyCenters, setNearbyCenters] = useState<HealthCenter[]>([])
+  const [isLoadingCenters, setIsLoadingCenters] = useState(false)
 
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocalización no disponible")
-      return
-    }
+  const getLocation = async () => {
     setIsGettingLocation(true)
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
-        toast.success("Ubicación obtenida")
-        setIsGettingLocation(false)
-      },
-      () => {
-        toast.error("No se pudo obtener la ubicación")
-        setIsGettingLocation(false)
-      },
-      { timeout: 10000 }
-    )
+    const coords = await geolocation.getCurrentLocation()
+    if (coords) {
+      setLocation({ latitude: coords.latitude, longitude: coords.longitude })
+      toast.success("Ubicación obtenida")
+    } else {
+      toast.error(geolocation.error || "No se pudo obtener la ubicación")
+    }
+    setIsGettingLocation(false)
+  }
+
+  const loadNearbyCenters = async () => {
+    setIsLoadingCenters(true)
+    try {
+      const coords = await geolocation.getCurrentLocation()
+      if (!coords) {
+        toast.error(geolocation.error || "No se pudo obtener la ubicación")
+        return
+      }
+      const centers = await healthCenterService.findNearby({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        maxDistanceKm: 15,
+      })
+      setNearbyCenters(centers)
+      if (centers.length === 0) {
+        toast.error("No se encontraron centros de salud cercanos")
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error al buscar centros de salud")
+    } finally {
+      setIsLoadingCenters(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -75,7 +103,7 @@ export function EmergencyView({ t: _t }: EmergencyViewProps) {
     try {
       const payload: CreateEmergencyRequest = {
         patientId: user?._id,
-        type: selectedType,
+        emergencyType: selectedType,
         severity: 'critical',
         description: description.trim(),
         contactPhone: phone.trim() || undefined,
@@ -209,6 +237,67 @@ export function EmergencyView({ t: _t }: EmergencyViewProps) {
     )
   }
 
+  // Step: nearby health centers
+  if (step === 'centers') {
+    return (
+      <div className="space-y-4 pb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ModernButton size="sm" variant="ghost" onClick={() => setStep('main')}>← Volver</ModernButton>
+            <h2 className="text-lg font-bold dark:text-white">Centros de Salud Cercanos</h2>
+          </div>
+          <ModernButton size="sm" variant="ghost" onClick={loadNearbyCenters} disabled={isLoadingCenters}>
+            <RefreshCw className={`w-4 h-4 ${isLoadingCenters ? 'animate-spin' : ''}`} />
+          </ModernButton>
+        </div>
+        {isLoadingCenters ? (
+          <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : nearbyCenters.length === 0 ? (
+          <ModernCard className="p-8 text-center">
+            <Hospital className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">Sin resultados. Presiona el ícono de recarga para buscar cerca de tu ubicación actual.</p>
+          </ModernCard>
+        ) : (
+          <div className="space-y-3">
+            {nearbyCenters.map(center => (
+              <ModernCard key={center.id} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold dark:text-white">{HEALTH_CENTER_TYPE_LABELS[center.type]}</span>
+                  <span className="text-xs font-medium text-primary">{center.distanceKm} km</span>
+                </div>
+                <p className="text-sm font-medium dark:text-white">{center.name}</p>
+                <p className="text-sm text-muted-foreground">{center.address}, {center.district}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {center.hasEmergencyServices && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Emergencias</span>
+                  )}
+                  {center.hasRespiratoryCare && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Atención respiratoria</span>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <ModernButton
+                    size="sm"
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={() => window.open(`https://maps.google.com/?q=${center.location.latitude},${center.location.longitude}`, '_blank')}
+                  >
+                    <Navigation className="w-4 h-4 mr-1" /> Cómo llegar
+                  </ModernButton>
+                  {center.phone && (
+                    <ModernButton size="sm" variant="ghost" className="flex-1" onClick={() => window.open(`tel:${center.phone}`)}>
+                      <Phone className="w-4 h-4 mr-1" /> Llamar
+                    </ModernButton>
+                  )}
+                </div>
+              </ModernCard>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // Step: history
   if (step === 'history') {
     return (
@@ -302,6 +391,11 @@ export function EmergencyView({ t: _t }: EmergencyViewProps) {
           <li>• Pérdida de consciencia</li>
         </ul>
       </ModernCard>
+
+      {/* Nearby health centers link */}
+      <ModernButton variant="ghost" className="w-full" onClick={() => { loadNearbyCenters(); setStep('centers') }}>
+        <MapPin className="w-4 h-4 mr-2" /> Centros de salud cercanos
+      </ModernButton>
 
       {/* History link */}
       <ModernButton variant="ghost" className="w-full" onClick={() => { loadHistory(); setStep('history') }}>

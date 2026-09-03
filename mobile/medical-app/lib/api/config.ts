@@ -146,6 +146,11 @@ export const API_ENDPOINTS = {
     active: buildEndpoint('/emergencies/active'),
   },
 
+  // Centros de salud
+  healthCenters: {
+    nearby: buildEndpoint('/health-centers/nearby'),
+  },
+
   // Laboratorio
   lab: {
     results: buildEndpoint('/lab/results'),

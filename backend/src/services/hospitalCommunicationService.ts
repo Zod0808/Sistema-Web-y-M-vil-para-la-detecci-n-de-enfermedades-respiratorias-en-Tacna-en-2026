@@ -327,6 +327,10 @@ export class HospitalCommunicationService {
       respiratory_crisis: ['emergency_medicine', 'pulmonology', 'critical_care'],
       accident: ['emergency_medicine', 'trauma', 'surgery'],
       other: ['emergency_medicine'],
+      respiratory_distress: ['emergency_medicine', 'pulmonology', 'critical_care'],
+      chest_pain: ['emergency_medicine', 'cardiology'],
+      unconscious: ['emergency_medicine', 'neurology', 'critical_care'],
+      severe_allergic: ['emergency_medicine', 'critical_care'],
     };
 
     return specialtiesMap[emergencyType] || ['emergency_medicine'];

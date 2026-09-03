@@ -196,7 +196,7 @@ beforeAll(async () => {
   // Scoped to only the models that declare text/geo/unique indexes (rather
   // than all ~15 models) to avoid paying the full-suite index-build cost in
   // every test file's beforeAll.
-  const modelsNeedingIndexes = ['MedicalHistory', 'User', 'MLExperiment', 'ChatConversation'];
+  const modelsNeedingIndexes = ['MedicalHistory', 'User', 'MLExperiment', 'ChatConversation', 'HealthCenter'];
   await Promise.all(
     modelsNeedingIndexes
       .filter((name) => mongoose.connection.models[name])

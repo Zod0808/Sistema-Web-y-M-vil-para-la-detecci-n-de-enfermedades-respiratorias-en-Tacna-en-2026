@@ -25,8 +25,19 @@ const router = Router();
 // Validaciones
 const emergencyValidation = [
   body('emergencyType')
-    .isIn(['medical', 'respiratory_crisis', 'accident', 'other'])
-    .withMessage('emergencyType debe ser: medical, respiratory_crisis, accident u other'),
+    .isIn([
+      'medical',
+      'respiratory_crisis',
+      'accident',
+      'other',
+      'respiratory_distress',
+      'chest_pain',
+      'unconscious',
+      'severe_allergic',
+    ])
+    .withMessage(
+      'emergencyType debe ser: medical, respiratory_crisis, accident, other, respiratory_distress, chest_pain, unconscious o severe_allergic'
+    ),
   body('severity')
     .isIn(['low', 'medium', 'high', 'critical'])
     .withMessage('severity debe ser: low, medium, high o critical'),

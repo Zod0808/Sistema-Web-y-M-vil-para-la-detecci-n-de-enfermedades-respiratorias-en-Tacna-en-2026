@@ -260,6 +260,8 @@ erDiagram
     CHAT_CONVERSATIONS ||--o{ CHAT_MESSAGES : "contains"
     USERS ||--o{ ALERTS : "receives/triggers"
     USERS ||--o{ AUTOMATIC_REPORTS : "generates (admin)"
+    USERS ||--o{ EDUCATIONAL_CONTENT_VIEWS : "consults"
+    EDUCATIONAL_CONTENT ||--o{ EDUCATIONAL_CONTENT_VIEWS : "is consulted via"
     
     USERS {
         ObjectId _id PK
@@ -400,6 +402,44 @@ erDiagram
         string exportFormat "pdf, csv, json"
         string generatedBy
         date generatedAt
+        date createdAt
+        date updatedAt
+    }
+
+    EDUCATIONAL_CONTENT {
+        ObjectId _id PK
+        string title
+        string summary
+        string content
+        string category "asma, epoc, covid19, influenza, neumonia, prevencion, general"
+        array targetConditions "vacío = contenido general"
+        object targetAgeRange "min, max"
+        array tags
+        string imageUrl
+        boolean isActive
+        number viewCount
+        date createdAt
+        date updatedAt
+    }
+
+    EDUCATIONAL_CONTENT_VIEWS {
+        ObjectId _id PK
+        string userId FK
+        ObjectId contentId FK
+        date consultedAt
+    }
+
+    HEALTH_CENTERS {
+        ObjectId _id PK
+        string name
+        string type "hospital, centro_salud, posta_medica, clinica"
+        string address
+        string district
+        string phone
+        boolean hasEmergencyServices
+        boolean hasRespiratoryCare
+        boolean isActive
+        object location "GeoJSON Point [lng, lat], índice 2dsphere"
         date createdAt
         date updatedAt
     }

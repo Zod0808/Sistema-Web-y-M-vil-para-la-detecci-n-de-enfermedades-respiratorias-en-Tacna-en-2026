@@ -33,6 +33,7 @@
     "seed": "ts-node src/scripts/seed.ts",
     "seed:demo": "ts-node --transpile-only src/scripts/seedDemoData.ts",
     "seed:alerts": "ts-node src/scripts/seedAlerts.ts",
+    "seed:health-centers": "ts-node src/scripts/seedHealthCenters.ts",
     "generate": "bash scripts/generate-code.sh",
     "generate:dtos": "ts-node src/generators/dto-generator.ts",
     "generate:repositories": "ts-node src/generators/repository-generator.ts",

@@ -45,6 +45,7 @@ import informedConsentRoutes from './routes/informedConsentRoutes';
 import chatConversationsRoutes from './routes/chatConversationsRoutes';
 import chatAudioRoutes from './routes/chatAudioRoutes';
 import chatImageRoutes from './routes/chatImageRoutes';
+import healthCenterRoutes from './routes/healthCenterRoutes';
 
 // Importar middleware
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -286,6 +287,7 @@ class App {
     this.app.use('/api/v1/informed-consents', informedConsentRoutes);
     // Legacy singular alias used by older integration tests and API consumers.
     this.app.use('/api/v1/informed-consent', informedConsentRoutes);
+    this.app.use('/api/v1/health-centers', healthCenterRoutes);
     // Chat routes (conversations, audio, image)
     this.app.use('/api/chat-conversations', chatConversationsRoutes);
     this.app.use('/api/v1/chat', chatAudioRoutes);

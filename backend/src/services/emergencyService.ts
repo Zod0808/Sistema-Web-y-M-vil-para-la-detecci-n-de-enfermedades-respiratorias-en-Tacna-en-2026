@@ -29,7 +29,15 @@ export interface EmergencyRequest {
   userId: string;
   patientId?: string;
   patientName?: string;
-  emergencyType: 'medical' | 'respiratory_crisis' | 'accident' | 'other';
+  emergencyType:
+    | 'medical'
+    | 'respiratory_crisis'
+    | 'accident'
+    | 'other'
+    | 'respiratory_distress'
+    | 'chest_pain'
+    | 'unconscious'
+    | 'severe_allergic';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   location: EmergencyLocation;
@@ -448,6 +456,10 @@ export class EmergencyService {
       respiratory_crisis: 'Crisis Respiratoria',
       accident: 'Accidente',
       other: 'Otra Emergencia',
+      respiratory_distress: 'Dificultad Respiratoria',
+      chest_pain: 'Dolor en el Pecho',
+      unconscious: 'Pérdida de Consciencia',
+      severe_allergic: 'Reacción Alérgica Grave',
     };
     return labels[type] || type;
   }
