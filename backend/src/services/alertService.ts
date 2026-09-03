@@ -296,11 +296,14 @@ class AlertService {
     return AlertModel.find(query).sort({ createdAt: -1 }).limit(200).exec();
   }
 
-  async getDashboardSummary(forceRefresh: boolean = false) {
+  async getDashboardSummary(
+    forceRefresh: boolean = false
+  ): Promise<Awaited<ReturnType<typeof AlertModel.getDashboardMetrics>>> {
+    type DashboardSummary = Awaited<ReturnType<typeof AlertModel.getDashboardMetrics>>;
     const cacheKey = `${CACHE_NAMESPACES.ALERT_SUMMARY}:global`;
 
     if (!forceRefresh) {
-      const cached = await getCachedValue(cacheKey);
+      const cached = await getCachedValue<DashboardSummary>(cacheKey);
       if (cached) {
         return cached;
       }
@@ -311,7 +314,9 @@ class AlertService {
     return summary;
   }
 
-  async processPendingAlerts(limit?: number) {
+  async processPendingAlerts(
+    limit?: number
+  ): ReturnType<typeof notificationService.processPendingAlerts> {
     return notificationService.processPendingAlerts(limit);
   }
 }

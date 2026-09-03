@@ -69,131 +69,51 @@ export class MedicalHistoryEntity {
   }
 
   public markAsSynced(): MedicalHistoryEntity {
-    return new MedicalHistoryEntity(
-      this.id,
-      this.patientId,
-      this.doctorId,
-      this.patientName,
-      this.age,
-      this.diagnosis,
-      this.symptoms,
-      this.description,
-      this.date,
-      this.location,
-      this.images,
-      this.audioNotes,
-      this.isOffline,
-      SyncStatus.SYNCED,
-      this.createdAt,
-      new Date()
-    );
+    return this.clone({ syncStatus: SyncStatus.SYNCED });
   }
 
   public markAsError(): MedicalHistoryEntity {
-    return new MedicalHistoryEntity(
-      this.id,
-      this.patientId,
-      this.doctorId,
-      this.patientName,
-      this.age,
-      this.diagnosis,
-      this.symptoms,
-      this.description,
-      this.date,
-      this.location,
-      this.images,
-      this.audioNotes,
-      this.isOffline,
-      SyncStatus.ERROR,
-      this.createdAt,
-      new Date()
-    );
+    return this.clone({ syncStatus: SyncStatus.ERROR });
   }
 
   public addSymptom(symptom: Symptom): MedicalHistoryEntity {
     if (this.symptoms.length >= 20) {
       throw new Error('No se pueden agregar más de 20 síntomas');
     }
-    
-    return new MedicalHistoryEntity(
-      this.id,
-      this.patientId,
-      this.doctorId,
-      this.patientName,
-      this.age,
-      this.diagnosis,
-      [...this.symptoms, symptom],
-      this.description,
-      this.date,
-      this.location,
-      this.images,
-      this.audioNotes,
-      this.isOffline,
-      this.syncStatus,
-      this.createdAt,
-      new Date()
-    );
+
+    return this.clone({ symptoms: [...this.symptoms, symptom] });
   }
 
   public updateDiagnosis(diagnosis: string): MedicalHistoryEntity {
-    return new MedicalHistoryEntity(
-      this.id,
-      this.patientId,
-      this.doctorId,
-      this.patientName,
-      this.age,
-      diagnosis,
-      this.symptoms,
-      this.description,
-      this.date,
-      this.location,
-      this.images,
-      this.audioNotes,
-      this.isOffline,
-      this.syncStatus,
-      this.createdAt,
-      new Date()
-    );
+    return this.clone({ diagnosis });
   }
 
   public addImage(imageUrl: string): MedicalHistoryEntity {
     const images = this.images || [];
-    return new MedicalHistoryEntity(
-      this.id,
-      this.patientId,
-      this.doctorId,
-      this.patientName,
-      this.age,
-      this.diagnosis,
-      this.symptoms,
-      this.description,
-      this.date,
-      this.location,
-      [...images, imageUrl],
-      this.audioNotes,
-      this.isOffline,
-      this.syncStatus,
-      this.createdAt,
-      new Date()
-    );
+    return this.clone({ images: [...images, imageUrl] });
   }
 
   public setLocation(location: Location): MedicalHistoryEntity {
+    return this.clone({ location });
+  }
+
+  // Crea una copia con los campos indicados sobrescritos; updatedAt siempre se refresca.
+  private clone(overrides: Partial<Omit<MedicalHistory, 'id' | 'createdAt'>>): MedicalHistoryEntity {
     return new MedicalHistoryEntity(
       this.id,
       this.patientId,
       this.doctorId,
-      this.patientName,
-      this.age,
-      this.diagnosis,
-      this.symptoms,
-      this.description,
-      this.date,
-      location,
-      this.images,
-      this.audioNotes,
-      this.isOffline,
-      this.syncStatus,
+      overrides.patientName ?? this.patientName,
+      overrides.age ?? this.age,
+      overrides.diagnosis ?? this.diagnosis,
+      overrides.symptoms ?? this.symptoms,
+      overrides.description ?? this.description,
+      overrides.date ?? this.date,
+      overrides.location ?? this.location,
+      overrides.images ?? this.images,
+      overrides.audioNotes ?? this.audioNotes,
+      overrides.isOffline ?? this.isOffline,
+      overrides.syncStatus ?? this.syncStatus,
       this.createdAt,
       new Date()
     );

@@ -9,6 +9,7 @@ import { auth, authorize } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/rbac';
 import { validate } from '../middleware/validation';
 import { asyncHandler } from '../utils/asyncHandler';
+import { parsePagination } from '../utils/pagination';
 import referralService from '../services/referralService';
 import { ApiResponse, AuthenticatedRequest } from '../types';
 import { AppError } from '../utils/AppError';
@@ -104,8 +105,7 @@ router.get(
       filters.endDate = new Date(req.query.endDate as string);
     }
 
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const { page, limit } = parsePagination(req.query);
 
     const result = await referralService.listReferrals({
       ...filters,

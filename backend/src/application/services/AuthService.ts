@@ -130,28 +130,17 @@ export class AuthService {
   }
 
   async getProfile(userId: string): Promise<UserEntity> {
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new Error('Usuario no encontrado');
-    }
-    return user;
+    return this.getUserOrThrow(userId);
   }
 
   async updateProfile(userId: string, name: string, avatar?: string): Promise<UserEntity> {
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new Error('Usuario no encontrado');
-    }
-
+    const user = await this.getUserOrThrow(userId);
     const updatedUser = user.updateProfile(name, avatar);
     return await this.userRepository.update(updatedUser);
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new Error('Usuario no encontrado');
-    }
+    const user = await this.getUserOrThrow(userId);
 
     // Verificar contraseña actual
     const isCurrentPasswordValid = await this.hashService.compare(currentPassword, user.password);
@@ -162,18 +151,22 @@ export class AuthService {
     // Encriptar nueva contraseña
     const hashedNewPassword = await this.hashService.hash(newPassword);
     const updatedUser = user.changePassword(hashedNewPassword);
-    
+
     await this.userRepository.update(updatedUser);
   }
 
   async deactivateAccount(userId: string): Promise<void> {
+    const user = await this.getUserOrThrow(userId);
+    const deactivatedUser = user.deactivate();
+    await this.userRepository.update(deactivatedUser);
+  }
+
+  private async getUserOrThrow(userId: string): Promise<UserEntity> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('Usuario no encontrado');
     }
-
-    const deactivatedUser = user.deactivate();
-    await this.userRepository.update(deactivatedUser);
+    return user;
   }
 
   private generateId(): string {
