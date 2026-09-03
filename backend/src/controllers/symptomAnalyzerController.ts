@@ -10,6 +10,9 @@ import { AppError } from '../utils/AppError';
 import { logger } from '../utils/logger';
 import aiIntegrationService, { SymptomAnalysisRequest } from '../services/aiIntegration';
 import MedicalHistory from '../models/MedicalHistory';
+import AIAnalysisModel from '../models/AIAnalysis';
+
+const VALID_URGENCY_LEVELS = ['low', 'medium', 'high', 'critical'];
 
 // Analyze symptoms with AI
 export const analyzeSymptoms = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -108,10 +111,53 @@ export const analyzeSymptomsML = asyncHandler(async (req: AuthenticatedRequest, 
       hasExplanation: !!mlResult.explanation
     });
 
+    // Persist prediction so it can be reviewed, approved, rejected or adjusted
+    // by a doctor (RF-007). Best-effort: persistence failures must not block the response.
+    let aiAnalysisId: string | undefined;
+    try {
+      const urgency = (VALID_URGENCY_LEVELS.includes(mlResult.urgency_level)
+        ? mlResult.urgency_level
+        : 'medium') as 'low' | 'medium' | 'high' | 'critical';
+
+      const possibleDiagnoses = [
+        {
+          condition: mlResult.disease,
+          probability: Math.round(mlResult.confidence * 100),
+          recommendations: mlResult.personalized_recommendations || []
+        },
+        ...(mlResult.top_3_predictions || [])
+          .filter(p => p.disease && p.disease !== mlResult.disease)
+          .map(p => ({
+            condition: p.disease,
+            probability: Math.round((parseFloat(p.confidence) || 0) * 100),
+            recommendations: [] as string[]
+          }))
+      ];
+
+      const created = await AIAnalysisModel.create({
+        patientId: patientId ? String(patientId) : undefined,
+        symptoms: symptoms.map((s: string) => ({
+          name: s.trim(),
+          severity: 'moderate',
+          duration: 'no especificada'
+        })),
+        possibleDiagnoses,
+        urgency,
+        confidence: Math.round(mlResult.confidence * 100),
+        timestamp: new Date()
+      });
+      aiAnalysisId = String(created._id);
+    } catch (persistError: any) {
+      logger.error('No se pudo persistir el análisis de IA para revisión médica', {
+        patientId,
+        error: persistError.message
+      });
+    }
+
     const response: ApiResponse = {
       success: true,
       message: 'Análisis ML de síntomas completado exitosamente',
-      data: mlResult
+      data: { ...mlResult, aiAnalysisId }
     };
 
     res.status(200).json(response);

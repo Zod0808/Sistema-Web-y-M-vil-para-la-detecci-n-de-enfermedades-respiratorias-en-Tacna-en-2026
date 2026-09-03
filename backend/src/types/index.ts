@@ -53,7 +53,8 @@ export interface Symptom {
 
 export interface AIAnalysis {
   _id: string;
-  medicalHistoryId: string;
+  patientId?: string;
+  medicalHistoryId?: string;
   symptoms: Symptom[];
   possibleDiagnoses: {
     condition: string;
@@ -62,6 +63,20 @@ export interface AIAnalysis {
   }[];
   urgency: 'low' | 'medium' | 'high' | 'critical';
   confidence: number;
+  review?: {
+    status: 'pending' | 'approved' | 'rejected' | 'adjusted';
+    doctorId: string;
+    doctorName: string;
+    comments?: string;
+    adjustedDiagnosis?: string;
+    adjustedUrgency?: 'low' | 'medium' | 'high' | 'critical';
+    signature: {
+      signatureData: string;
+      signatureMethod: 'digital' | 'typed' | 'click_to_sign';
+      signedAt: Date;
+    };
+    reviewedAt: Date;
+  };
   timestamp: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -76,7 +91,8 @@ export type AlertCategory =
   | 'emergency'
   | 'consent'
   | 'laboratory'
-  | 'referral';
+  | 'referral'
+  | 'ai_analysis';
 
 export type AlertChannel = 'in_app' | 'push' | 'email' | 'sms';
 
@@ -101,7 +117,8 @@ export type AlertTriggerSource =
   | 'emergency_service'
   | 'informed_consent'
   | 'laboratory'
-  | 'referral';
+  | 'referral'
+  | 'ai_analysis_review';
 
 export interface AlertTrigger {
   source: AlertTriggerSource;

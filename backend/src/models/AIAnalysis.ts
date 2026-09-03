@@ -1,9 +1,47 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 import { AIAnalysis as IAIAnalysis, Symptom } from '../types';
 import { applyFieldEncryption, getEncryptionKey, encryptString, decryptString } from '../utils/encryption';
 
-export interface AIAnalysisDocument extends Omit<IAIAnalysis, '_id'>, Document {
+export type AIReviewStatus = 'pending' | 'approved' | 'rejected' | 'adjusted';
+export type AIReviewSignatureMethod = 'digital' | 'typed' | 'click_to_sign';
+
+const AI_REVIEW_STATUSES: AIReviewStatus[] = ['pending', 'approved', 'rejected', 'adjusted'];
+const AI_REVIEW_SIGNATURE_METHODS: AIReviewSignatureMethod[] = ['digital', 'typed', 'click_to_sign'];
+
+export interface AIReviewSignature {
+  signatureData: string;
+  signatureMethod: AIReviewSignatureMethod;
+  signedAt: Date;
+}
+
+export interface AIAnalysisReview {
+  status: AIReviewStatus;
+  doctorId: string;
+  doctorName: string;
+  comments?: string;
+  adjustedDiagnosis?: string;
+  adjustedUrgency?: 'low' | 'medium' | 'high' | 'critical';
+  signature: AIReviewSignature;
+  reviewedAt: Date;
+}
+
+export interface AIAnalysisDocument extends Omit<IAIAnalysis, '_id' | 'medicalHistoryId'>, Document {
+  patientId?: string;
+  medicalHistoryId?: string;
+  review?: AIAnalysisReview;
   toJSON(): any;
+  approve(doctorId: string, doctorName: string, comments: string | undefined, signature: Omit<AIReviewSignature, 'signedAt'>): Promise<AIAnalysisDocument>;
+  reject(doctorId: string, doctorName: string, comments: string | undefined, signature: Omit<AIReviewSignature, 'signedAt'>): Promise<AIAnalysisDocument>;
+  adjust(
+    doctorId: string,
+    doctorName: string,
+    adjustment: { adjustedDiagnosis?: string; adjustedUrgency?: 'low' | 'medium' | 'high' | 'critical'; comments?: string },
+    signature: Omit<AIReviewSignature, 'signedAt'>
+  ): Promise<AIAnalysisDocument>;
+}
+
+export interface AIAnalysisModel extends Model<AIAnalysisDocument> {
+  findPendingReview(): Promise<AIAnalysisDocument[]>;
 }
 
 const SymptomSchema = new Schema<Symptom>({
@@ -54,11 +92,76 @@ const PossibleDiagnosisSchema = new Schema({
   }]
 }, { _id: true });
 
-const AIAnalysisSchema = new Schema<AIAnalysisDocument>({
+const AIReviewSignatureSchema = new Schema<AIReviewSignature>({
+  signatureData: {
+    type: String,
+    required: [true, 'La firma del médico es obligatoria']
+  },
+  signatureMethod: {
+    type: String,
+    enum: AI_REVIEW_SIGNATURE_METHODS,
+    required: [true, 'El método de firma es obligatorio']
+  },
+  signedAt: {
+    type: Date,
+    required: true,
+    default: Date.now
+  }
+}, { _id: false });
+
+const AIAnalysisReviewSchema = new Schema<AIAnalysisReview>({
+  status: {
+    type: String,
+    enum: AI_REVIEW_STATUSES,
+    default: 'pending'
+  },
+  doctorId: {
+    type: String,
+    required: [true, 'El ID del médico revisor es obligatorio'],
+    trim: true
+  },
+  doctorName: {
+    type: String,
+    required: [true, 'El nombre del médico revisor es obligatorio'],
+    trim: true
+  },
+  comments: {
+    type: String,
+    trim: true,
+    maxlength: [2000, 'Los comentarios no pueden exceder 2000 caracteres']
+  },
+  adjustedDiagnosis: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'El diagnóstico ajustado no puede exceder 200 caracteres']
+  },
+  adjustedUrgency: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical']
+  },
+  signature: {
+    type: AIReviewSignatureSchema,
+    required: [true, 'La firma electrónica del médico es obligatoria']
+  },
+  reviewedAt: {
+    type: Date,
+    required: true,
+    default: Date.now
+  }
+}, { _id: false });
+
+const AIAnalysisSchema = new Schema<AIAnalysisDocument, AIAnalysisModel>({
+  patientId: {
+    type: String,
+    trim: true,
+    index: true
+  },
   medicalHistoryId: {
     type: String,
-    required: [true, 'El ID de la historia médica es obligatorio'],
     trim: true
+  },
+  review: {
+    type: AIAnalysisReviewSchema
   },
   symptoms: {
     type: [SymptomSchema],
@@ -207,6 +310,10 @@ AIAnalysisSchema.index({ timestamp: -1, urgency: 1 }); // Por fecha y urgencia
 AIAnalysisSchema.index({ timestamp: -1, confidence: -1 }); // Por fecha y confianza (para análisis de riesgo)
 AIAnalysisSchema.index({ createdAt: -1, urgency: 1, confidence: -1 }); // Compuesto para dashboards de analytics
 
+// Índices para el flujo de revisión médica (RF-007: Panel del doctor)
+AIAnalysisSchema.index({ patientId: 1 });
+AIAnalysisSchema.index({ 'review.status': 1, createdAt: -1 });
+
 // Virtual para obtener la urgencia en español
 AIAnalysisSchema.virtual('urgencyText').get(function() {
   const urgencyMap = {
@@ -242,6 +349,73 @@ AIAnalysisSchema.methods.toJSON = function() {
   const analysisObject = this.toObject();
   delete analysisObject.__v;
   return analysisObject;
+};
+
+// Métodos de instancia para el flujo de revisión médica (RF-007: Panel del doctor)
+AIAnalysisSchema.methods.approve = async function(
+  doctorId: string,
+  doctorName: string,
+  comments: string | undefined,
+  signature: Omit<AIReviewSignature, 'signedAt'>
+) {
+  this.review = {
+    status: 'approved',
+    doctorId,
+    doctorName,
+    comments,
+    signature: { ...signature, signedAt: new Date() },
+    reviewedAt: new Date()
+  };
+  await this.save();
+  return this;
+};
+
+AIAnalysisSchema.methods.reject = async function(
+  doctorId: string,
+  doctorName: string,
+  comments: string | undefined,
+  signature: Omit<AIReviewSignature, 'signedAt'>
+) {
+  this.review = {
+    status: 'rejected',
+    doctorId,
+    doctorName,
+    comments,
+    signature: { ...signature, signedAt: new Date() },
+    reviewedAt: new Date()
+  };
+  await this.save();
+  return this;
+};
+
+AIAnalysisSchema.methods.adjust = async function(
+  doctorId: string,
+  doctorName: string,
+  adjustment: { adjustedDiagnosis?: string; adjustedUrgency?: 'low' | 'medium' | 'high' | 'critical'; comments?: string },
+  signature: Omit<AIReviewSignature, 'signedAt'>
+) {
+  this.review = {
+    status: 'adjusted',
+    doctorId,
+    doctorName,
+    comments: adjustment.comments,
+    adjustedDiagnosis: adjustment.adjustedDiagnosis,
+    adjustedUrgency: adjustment.adjustedUrgency,
+    signature: { ...signature, signedAt: new Date() },
+    reviewedAt: new Date()
+  };
+  await this.save();
+  return this;
+};
+
+// Método estático para buscar predicciones pendientes de revisión médica
+AIAnalysisSchema.statics.findPendingReview = function() {
+  return this.find({
+    $or: [
+      { review: { $exists: false } },
+      { 'review.status': 'pending' }
+    ]
+  }).sort({ urgency: -1, timestamp: -1 });
 };
 
 // Método estático para buscar por historia médica
@@ -387,4 +561,4 @@ AIAnalysisSchema.statics.getTopRecommendations = async function(limit: number = 
     .map(([id, count]) => ({ _id: id, count }));
 };
 
-export default mongoose.model<AIAnalysisDocument>('AIAnalysis', AIAnalysisSchema);
+export default mongoose.model<AIAnalysisDocument, AIAnalysisModel>('AIAnalysis', AIAnalysisSchema);
