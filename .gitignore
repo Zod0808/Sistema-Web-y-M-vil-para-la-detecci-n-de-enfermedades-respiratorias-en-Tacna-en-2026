@@ -51,6 +51,7 @@ docker-compose.override.yml
 
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
+.claude/.headroom_wrap_marker.json
 .cursor/
 *.swp
 *.swo
