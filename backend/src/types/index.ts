@@ -82,6 +82,36 @@ export interface AIAnalysis {
   updatedAt: Date;
 }
 
+export type EducationalContentCategory =
+  | 'asma'
+  | 'epoc'
+  | 'covid19'
+  | 'influenza'
+  | 'neumonia'
+  | 'prevencion'
+  | 'general';
+
+export interface EducationalContentAgeRange {
+  min?: number;
+  max?: number;
+}
+
+export interface EducationalContent {
+  _id: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: EducationalContentCategory;
+  targetConditions: string[];
+  targetAgeRange?: EducationalContentAgeRange;
+  tags?: string[];
+  imageUrl?: string;
+  isActive: boolean;
+  viewCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type AlertCategory =
   | 'critical_symptom'
   | 'medication_reminder'

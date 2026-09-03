@@ -14,6 +14,7 @@ const PATIENT_HEALTH_LINKS = [
   { to: '/prescriptions',   label: 'Mis Recetas',      icon: '💊' },
   { to: '/lab-results',     label: 'Resultados de Lab',icon: '🔬' },
   { to: '/consents',        label: 'Consentimientos',  icon: '📝' },
+  { to: '/educational-content', label: 'Educación',    icon: '📚' },
 ];
 
 // Dashboard + analítica para médico/admin
@@ -34,6 +35,7 @@ const STAFF_CLINICAL_LINKS = [
   { to: '/referrals',       label: 'Derivaciones',     icon: '🔗' },
   { to: '/emergency',       label: 'Emergencias',      icon: '🚨' },
   { to: '/consents',        label: 'Consentimientos',  icon: '📝' },
+  { to: '/educational-content', label: 'Educación',    icon: '📚' },
 ];
 
 /* ── Dropdown component ─────────────────────────────────────────────────────── */

@@ -20,6 +20,7 @@ const AppointmentsPage     = lazy(() => import('./pages/AppointmentsPage'));
 const AlertsPage           = lazy(() => import('./pages/AlertsPage'));
 const ConsentsPage         = lazy(() => import('./pages/ConsentsPage'));
 const ReferralsPage        = lazy(() => import('./pages/ReferralsPage'));
+const EducationalContentPage = lazy(() => import('./pages/EducationalContentPage'));
 const MedicalHistoryPage   = lazy(() => import('./pages/MedicalHistoryPage'));
 const PrescriptionsPage    = lazy(() => import('./pages/PrescriptionsPage'));
 const EmergencyPage        = lazy(() => import('./pages/EmergencyPage'));
@@ -60,6 +61,7 @@ function App() {
                     <Route path="/prescriptions"   element={<ProtectedRoute><PrescriptionsPage /></ProtectedRoute>} />
                     <Route path="/lab-results"     element={<ProtectedRoute><LabResultsPage /></ProtectedRoute>} />
                     <Route path="/consents"        element={<ProtectedRoute><ConsentsPage /></ProtectedRoute>} />
+                    <Route path="/educational-content" element={<ProtectedRoute><EducationalContentPage /></ProtectedRoute>} />
 
                     {/* ── Solo médico / admin ───────────────────────── */}
                     <Route path="/dashboard"  element={<ProtectedRoute roles={STAFF}><Dashboard /></ProtectedRoute>} />
