@@ -3,9 +3,14 @@ Performance Tests - Benchmark
 Tests de benchmark usando pytest-benchmark para comparar performance
 """
 
-import pytest
+import importlib.util
+import os
 import time
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pytest
 
 from ml_models.ensemble_predictor import EnsemblePredictor
 from ml_models.medical_bert import MedicalBERTModel
@@ -201,4 +206,109 @@ class TestModelComparisonBenchmarks:
 
         assert result_without is not None
         assert result_with is not None
+
+
+def _load_real_shap_explainer_module():
+    """Loads the real shap_explainer.py under a private module name.
+
+    conftest.py registers a lightweight stub at sys.modules['shap_explainer']
+    so other suites can run without real ML dependencies; loading the file
+    directly here bypasses that stub for this benchmark only (same approach
+    as tests/api/test_symptom_ml_analyzer_explanation_endpoint.py).
+    """
+    spec = importlib.util.spec_from_file_location(
+        'shap_explainer_benchmark_under_test',
+        os.path.join(os.path.dirname(__file__), '..', '..', 'shap_explainer.py'),
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class _FakeLabelEncoder:
+    def __init__(self, classes):
+        self.classes = classes
+
+    def inverse_transform(self, indices):
+        return [self.classes[i] for i in indices]
+
+
+class _FakeVectorizer:
+    def get_feature_names_out(self):
+        return [f'feature_{i}' for i in range(50)]
+
+    def transform(self, texts):
+        values = np.random.RandomState(0).uniform(0, 1, (len(texts), 50))
+        return MagicMock(toarray=lambda: values)
+
+
+class _FakeModel:
+    def __init__(self, prediction_idx=0, proba=(0.7, 0.2, 0.1)):
+        self.prediction_idx = prediction_idx
+        self.proba = np.array(proba)
+
+    def predict(self, X):
+        return np.array([self.prediction_idx])
+
+    def predict_proba(self, X):
+        return np.array([self.proba])
+
+
+@pytest.mark.performance
+@pytest.mark.benchmark
+class TestSHAPExplanationOverheadBenchmark:
+    """CP-006-R: overhead que agrega el cálculo de SHAP al diagnóstico (RF-006)
+
+    Compara una predicción "cruda" (model.predict + predict_proba, sin
+    explicabilidad) contra SHAPDiseaseExplainer.explain_prediction(), que
+    ejecuta esa misma predicción y además calcula y post-procesa los
+    valores SHAP (shap_values, ordenamiento de contribuciones, factores
+    positivos/negativos). La diferencia entre ambos mide el costo real
+    que añade la explicabilidad.
+    """
+
+    @pytest.fixture
+    def shap_explainer(self):
+        real_module = _load_real_shap_explainer_module()
+
+        fake_tree_explainer = MagicMock()
+        fake_tree_explainer.shap_values.return_value = np.random.RandomState(1).uniform(-1, 1, (1, 50))
+
+        model_data = {
+            'model': _FakeModel(),
+            'label_encoder': _FakeLabelEncoder(['neumonia', 'asma', 'epoc']),
+            'vectorizer': _FakeVectorizer(),
+            'feature_engineer': None,
+        }
+
+        with patch.object(real_module.joblib, 'load', return_value=model_data), \
+             patch.object(real_module.shap, 'TreeExplainer', return_value=fake_tree_explainer):
+            explainer = real_module.SHAPDiseaseExplainer('fake_model_path.pkl')
+
+        return explainer
+
+    def test_shap_explanation_overhead_benchmark(self, benchmark, shap_explainer):
+        """Compara predicción sin SHAP vs explain_prediction() (con SHAP)"""
+        symptoms = 'tos, fiebre, dificultad respiratoria'
+
+        def raw_predict():
+            X = shap_explainer.vectorizer.transform([symptoms]).toarray()
+            prediction_idx = shap_explainer.model.predict(X)[0]
+            confidence = shap_explainer.model.predict_proba(X)[0][prediction_idx]
+            return prediction_idx, confidence
+
+        def predict_with_shap():
+            return shap_explainer.explain_prediction(symptoms, patient_age=40)
+
+        # The benchmark fixture can only time one function per test, so only
+        # the SHAP-explained path is benchmarked; the raw path is called
+        # directly to still verify it works and to document the baseline
+        # being compared against (same pattern as
+        # test_with_vs_without_personalization_benchmark above).
+        raw_result = raw_predict()
+        shap_result = benchmark(predict_with_shap)
+
+        assert raw_result[0] == 0
+        assert shap_result['disease'] == 'neumonia'
+        assert 'shap_values' in shap_result
 

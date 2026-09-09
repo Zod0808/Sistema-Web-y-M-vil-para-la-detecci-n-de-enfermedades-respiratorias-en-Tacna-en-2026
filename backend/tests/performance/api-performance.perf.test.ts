@@ -18,10 +18,15 @@
  */
 
 import request from 'supertest';
+import mongoose from 'mongoose';
 import { randomUUID } from 'crypto';
 import appInstance from '../../src/index';
 import { testUtils } from '../setup';
 import User, { UserDocument } from '../../src/models/User';
+import AIAnalysisModel from '../../src/models/AIAnalysis';
+import EducationalContentModel from '../../src/models/EducationalContent';
+import HealthCenterModel from '../../src/models/HealthCenter';
+import aiIntegrationService from '../../src/services/aiIntegration';
 
 const app = appInstance.app;
 
@@ -483,6 +488,200 @@ describe('Performance — Consent Endpoints', () => {
 
     const stats = computeStats(durations);
     assertSLA(stats, SLA.read, 'GET /informed-consents');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ML-ANALYZE ENDPOINT (RF-005: overhead de la validación de coherencia médica)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Performance — ML Symptom Analyzer (coherencia médica) Endpoint', () => {
+  const ITERATIONS = 6;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('POST /api/v1/symptom-analyzer/ml-analyze cumple SLA (mean<350ms, p95<600ms)', async () => {
+    jest.spyOn(aiIntegrationService, 'analyzeSymptomsML').mockResolvedValue({
+      disease: 'Neumonía',
+      confidence: 0.82,
+      urgency_level: 'high',
+      needs_medical_attention: true,
+      is_clinically_coherent: true,
+      coherence_warnings: [],
+      top_3_predictions: [
+        { disease: 'Neumonía', confidence: '0.82' },
+        { disease: 'Bronquitis', confidence: '0.11' },
+      ],
+      explanation: {
+        method: 'shap',
+        models_used: ['xgboost'],
+        description: 'La tos y la dificultad respiratoria son los principales factores',
+        positive_factors: [{ feature_index: 0, shap_value: 0.35, feature_importance: 0.35 }],
+        negative_factors: [],
+        decision_factors: [{ feature_index: 0, shap_value: 0.35, feature_importance: 0.35 }],
+        explainability_score: 0.9,
+      },
+      personalized_recommendations: ['Reposo', 'Control médico en 48h'],
+      timestamp: new Date().toISOString(),
+    } as any);
+
+    const durations = await measureN(ITERATIONS, async () => {
+      const res = await request(app)
+        .post('/api/v1/symptom-analyzer/ml-analyze')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          symptoms: ['tos seca', 'fiebre', 'dificultad respiratoria'],
+          patient_age: 35,
+        });
+      expect([200, 400, 422]).toContain(res.status);
+      expect(res.status).not.toBe(401);
+    });
+
+    const stats = computeStats(durations);
+    assertSLA(stats, SLA.write, 'POST /symptom-analyzer/ml-analyze');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ANALYSIS REVIEW ENDPOINTS (RF-007: panel del doctor)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Performance — AI Analysis Review Endpoints', () => {
+  const buildAnalysisData = (overrides: Partial<Record<string, any>> = {}) => ({
+    medicalHistoryId: `history-${randomUUID()}`,
+    patientId: new mongoose.Types.ObjectId().toHexString(),
+    symptoms: [
+      { name: 'tos', severity: 'moderate', duration: '3 días', description: 'Tos persistente' },
+    ],
+    possibleDiagnoses: [
+      { condition: 'Neumonía leve', probability: 68, recommendations: ['Reposo', 'Control en 48h'] },
+    ],
+    urgency: 'high',
+    confidence: 74,
+    ...overrides,
+  });
+
+  it('GET /api/v1/ai-analysis/pending cumple SLA de lectura (mean<200ms, p95<400ms)', async () => {
+    const ITERATIONS = 8;
+    for (let i = 0; i < 5; i++) {
+      await AIAnalysisModel.create(buildAnalysisData());
+    }
+
+    const durations = await measureN(ITERATIONS, async () => {
+      const res = await request(app)
+        .get('/api/v1/ai-analysis/pending')
+        .set('Authorization', `Bearer ${doctorToken}`);
+      expect([200, 401, 403]).toContain(res.status);
+    });
+
+    const stats = computeStats(durations);
+    assertSLA(stats, SLA.read, 'GET /ai-analysis/pending');
+  });
+
+  it('POST /api/v1/ai-analysis/:id/review cumple SLA de escritura (mean<350ms, p95<600ms)', async () => {
+    const ITERATIONS = 6;
+    const analysisIds: string[] = [];
+    for (let i = 0; i < ITERATIONS; i++) {
+      const analysis = await AIAnalysisModel.create(buildAnalysisData());
+      analysisIds.push(analysis._id.toString());
+    }
+
+    const durations: number[] = [];
+    for (const id of analysisIds) {
+      const t0 = performance.now();
+      const res = await request(app)
+        .post(`/api/v1/ai-analysis/${id}/review`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          decision: 'approved',
+          comments: 'Diagnóstico confirmado - prueba de performance',
+          signature: { signatureData: 'firma-base64', signatureMethod: 'digital' },
+        });
+      durations.push(performance.now() - t0);
+      expect([200, 400, 401, 403]).toContain(res.status);
+    }
+
+    const stats = computeStats(durations);
+    assertSLA(stats, SLA.write, 'POST /ai-analysis/:id/review');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EDUCATIONAL CONTENT ENDPOINT (RF-011: contenido personalizado)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Performance — Educational Content Endpoint', () => {
+  const ITERATIONS = 8;
+
+  it('GET /api/v1/educational-content cumple SLA de lectura (mean<200ms, p95<400ms)', async () => {
+    await EducationalContentModel.create({
+      title: 'Prevención respiratoria general',
+      summary: 'Consejos generales de salud respiratoria',
+      content: 'Contenido educativo detallado sobre prevención respiratoria...',
+      category: 'general',
+      targetConditions: [],
+    });
+    await EducationalContentModel.create({
+      title: 'Manejo de neumonía',
+      summary: 'Cómo manejar la neumonía en casa',
+      content: 'Contenido educativo detallado sobre manejo de neumonía...',
+      category: 'neumonia',
+      targetConditions: ['neumonia'],
+    });
+
+    const durations = await measureN(ITERATIONS, async () => {
+      const res = await request(app)
+        .get('/api/v1/educational-content')
+        .set('Authorization', `Bearer ${patientToken}`);
+      expect([200, 401]).toContain(res.status);
+    });
+
+    const stats = computeStats(durations);
+    assertSLA(stats, SLA.read, 'GET /educational-content');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HEALTH CENTERS ENDPOINT (RF-012: geolocalización)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Performance — Health Centers Nearby Endpoint', () => {
+  const ITERATIONS = 8;
+
+  it('GET /api/v1/health-centers/nearby cumple SLA de búsqueda geoespacial (mean<250ms, p95<450ms)', async () => {
+    await HealthCenterModel.create([
+      {
+        name: 'Hospital Cercano Perf',
+        type: 'hospital',
+        address: 'Av. Bolognesi 1801',
+        district: 'Tacna',
+        hasEmergencyServices: true,
+        hasRespiratoryCare: true,
+        location: { type: 'Point', coordinates: [-70.2444, -18.0114] },
+      },
+      {
+        name: 'Posta Lejana Perf',
+        type: 'posta_medica',
+        address: 'Sector Alto',
+        district: 'Alto de la Alianza',
+        hasEmergencyServices: false,
+        hasRespiratoryCare: false,
+        location: { type: 'Point', coordinates: [-70.35, -18.10] },
+      },
+    ]);
+
+    const durations = await measureN(ITERATIONS, async () => {
+      const res = await request(app)
+        .get('/api/v1/health-centers/nearby')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .query({ latitude: -18.0114, longitude: -70.2444, maxDistanceKm: 50 });
+      expect([200, 401, 400]).toContain(res.status);
+    });
+
+    const stats = computeStats(durations);
+    assertSLA(stats, SLA.search, 'GET /health-centers/nearby');
   });
 });
 

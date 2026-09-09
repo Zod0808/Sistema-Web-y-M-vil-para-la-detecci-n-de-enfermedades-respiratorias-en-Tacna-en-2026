@@ -3,6 +3,9 @@ Performance Tests - Prediction Latency
 Tests de latencia de predicciones para diferentes modelos y escenarios
 """
 
+import sys
+
+import numpy as np
 import pytest
 import time
 import asyncio
@@ -14,6 +17,7 @@ from ml_models.ensemble_predictor import EnsemblePredictor
 from ml_models.medical_bert import MedicalBERTModel
 from ml_models.image_classifier import MedicalImageClassifier
 from ml_models.time_series_predictor import TimeSeriesPredictor
+from services.cough_analysis_service import CoughAnalysisService
 
 # Latency thresholds (en milisegundos)
 P50_THRESHOLD_MS = 200  # p50 debe ser < 200ms
@@ -250,4 +254,103 @@ class TestPredictionThroughput:
         
         # Time series debe ser muy rápido, al menos 100 pred/s
         assert throughput >= 100, f"Throughput {throughput:.2f} pred/s too low"
+
+
+@pytest.mark.performance
+class TestCoughAudioSpectralAnalysisLatency:
+    """CP-003-R: Latencia del análisis espectral de audio de tos (RF-003)
+
+    conftest.py registra un stub global de `librosa` (MagicMock) porque la
+    dependencia real no está instalada en este entorno de pruebas. Para medir
+    la latencia real de nuestro código (no la de librosa), este stub se
+    reconfigura para devolver arreglos numpy con la forma/tamaño que
+    produciría un audio real de tos (~2s a 22050Hz), de modo que las
+    reducciones reales (np.mean/np.std/np.max) y la lógica de clasificación
+    de `CoughAnalysisService` se ejecuten sobre datos representativos.
+    """
+
+    @pytest.fixture
+    def cough_service(self, monkeypatch):
+        """CoughAnalysisService con librosa stub devolviendo arreglos realistas"""
+        sr = 22050
+        duration_sec = 2.0
+        hop_length = 512
+        n_samples = int(duration_sec * sr)
+        n_frames = max(1, n_samples // hop_length)
+
+        rng = np.random.RandomState(42)
+        audio_signal = rng.uniform(-1.0, 1.0, n_samples).astype(np.float32)
+
+        librosa_stub = sys.modules['librosa']
+        monkeypatch.setattr(librosa_stub, 'load', MagicMock(return_value=(audio_signal, sr)))
+        monkeypatch.setattr(
+            librosa_stub.feature, 'zero_crossing_rate',
+            MagicMock(return_value=rng.uniform(0, 0.3, (1, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'spectral_centroid',
+            MagicMock(return_value=rng.uniform(500, 4000, (1, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'spectral_rolloff',
+            MagicMock(return_value=rng.uniform(1000, 6000, (1, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'spectral_bandwidth',
+            MagicMock(return_value=rng.uniform(500, 4000, (1, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'mfcc',
+            MagicMock(return_value=rng.uniform(-50, 50, (13, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'chroma_stft',
+            MagicMock(return_value=rng.uniform(0, 1, (12, n_frames)))
+        )
+        monkeypatch.setattr(
+            librosa_stub.feature, 'rms',
+            MagicMock(return_value=rng.uniform(0, 0.4, (1, n_frames)))
+        )
+
+        return CoughAnalysisService()
+
+    def test_audio_feature_extraction_latency_distribution(self, cough_service):
+        """Latencia de la extracción de features espectrales (zcr, centroid,
+        rolloff, bandwidth, mfcc, chroma, rms) para un audio de ~2s"""
+        latencies = []
+
+        for _ in range(50):
+            start_time = time.perf_counter()
+            features = cough_service._extract_audio_features('fake_cough.wav')
+            end_time = time.perf_counter()
+            latencies.append((end_time - start_time) * 1000)
+
+        p50 = calculate_percentile(latencies, 0.50)
+        p95 = calculate_percentile(latencies, 0.95)
+        p99 = calculate_percentile(latencies, 0.99)
+
+        assert features['duration'] == pytest.approx(2.0, abs=0.01)
+        assert p50 < P50_THRESHOLD_MS, f"p50 {p50:.2f}ms exceeds {P50_THRESHOLD_MS}ms"
+        assert p95 < P95_THRESHOLD_MS, f"p95 {p95:.2f}ms exceeds {P95_THRESHOLD_MS}ms"
+        assert p99 < P99_THRESHOLD_MS, f"p99 {p99:.2f}ms exceeds {P99_THRESHOLD_MS}ms"
+
+    def test_full_cough_analysis_pipeline_latency(self, cough_service):
+        """Latencia end-to-end: extracción espectral + clasificación de
+        características de tos (analyze()), sin modelo entrenado disponible"""
+        wav_bytes = b'RIFF' + b'\x00' * 4 + b'WAVEfmt ' + b'\x00' * 200
+        latencies = []
+        last_result: Dict[str, Any] = {}
+
+        for _ in range(30):
+            start_time = time.perf_counter()
+            last_result = asyncio.run(cough_service.analyze(wav_bytes, audio_format='wav'))
+            end_time = time.perf_counter()
+            latencies.append((end_time - start_time) * 1000)
+
+        p95 = calculate_percentile(latencies, 0.95)
+        p99 = calculate_percentile(latencies, 0.99)
+
+        assert last_result['detected'] is True
+        assert p95 < P95_THRESHOLD_MS, f"p95 {p95:.2f}ms exceeds {P95_THRESHOLD_MS}ms"
+        assert p99 < P99_THRESHOLD_MS, f"p99 {p99:.2f}ms exceeds {P99_THRESHOLD_MS}ms"
 
