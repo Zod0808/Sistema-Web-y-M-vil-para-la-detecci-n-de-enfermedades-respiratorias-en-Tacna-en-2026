@@ -11,6 +11,9 @@ import { testUtils } from '../setup';
 const app = appInstance.app;
 import User, { UserDocument } from '../../src/models/User';
 import MedicalHistory from '../../src/models/MedicalHistory';
+import EducationalContentModel from '../../src/models/EducationalContent';
+import HealthCenterModel from '../../src/models/HealthCenter';
+import aiIntegrationService from '../../src/services/aiIntegration';
 import mongoose from 'mongoose';
 
 const STRONG_PASSWORD = 'Password123!';
@@ -20,6 +23,10 @@ const uniqueEmail = (prefix: string) => `${prefix}-${randomUUID()}@test.com`;
 describe('E2E Tests - Flujos Completos', () => {
   beforeEach(async () => {
     await testUtils.cleanTestData();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('Flujo Completo: Registro → Login → Crear Historia Médica → Ver Dashboard', () => {
@@ -222,6 +229,168 @@ describe('E2E Tests - Flujos Completos', () => {
 
       expect(updateResponse.body.success).toBe(true);
       expect(updateResponse.body.data.diagnosis).toBe('Neumonía');
+    });
+  });
+
+  describe('Flujo Completo: Explicabilidad SHAP y Panel del Doctor (RF-006, RF-007)', () => {
+    it('el médico recibe el diagnóstico con explicación SHAP y lo revisa con firma electrónica', async () => {
+      // Paso 1: crear médico
+      const doctor = await User.create({
+        name: 'Dr. Explicabilidad',
+        email: uniqueEmail('doctor-shap'),
+        password: STRONG_PASSWORD,
+        role: 'doctor',
+        isActive: true
+      }) as UserDocument;
+
+      const doctorToken = testUtils.generateTestToken({
+        userId: doctor._id.toString(),
+        role: 'doctor'
+      });
+
+      // Paso 2: el modelo ML devuelve un diagnóstico junto con una explicación SHAP interpretable
+      jest.spyOn(aiIntegrationService, 'analyzeSymptomsML').mockResolvedValueOnce({
+        disease: 'Neumonía',
+        confidence: 0.82,
+        urgency_level: 'high',
+        needs_medical_attention: true,
+        is_clinically_coherent: true,
+        coherence_warnings: [],
+        top_3_predictions: [
+          { disease: 'Neumonía', confidence: '0.82' },
+          { disease: 'Bronquitis', confidence: '0.11' }
+        ],
+        explanation: {
+          method: 'shap',
+          models_used: ['xgboost'],
+          description: 'La tos y la dificultad respiratoria son los principales factores que explican la predicción',
+          positive_factors: [{ feature_index: 0, shap_value: 0.35, feature_importance: 0.35 }],
+          negative_factors: [],
+          decision_factors: [{ feature_index: 0, shap_value: 0.35, feature_importance: 0.35 }],
+          explainability_score: 0.9
+        },
+        personalized_recommendations: ['Reposo', 'Control médico en 48h'],
+        timestamp: new Date().toISOString()
+      });
+
+      // Paso 3: se solicita el análisis ML de síntomas
+      const analysisResponse = await request(app)
+        .post('/api/v1/symptom-analyzer/ml-analyze')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          symptoms: ['tos', 'dificultad_respiratoria', 'fiebre'],
+          patient_age: 40
+        })
+        .expect(200);
+
+      // El médico recibe, junto con el diagnóstico, la explicación interpretable de los factores
+      expect(analysisResponse.body.data.disease).toBe('Neumonía');
+      expect(analysisResponse.body.data.explanation).toBeDefined();
+      expect(analysisResponse.body.data.explanation.positive_factors.length).toBeGreaterThan(0);
+
+      const aiAnalysisId = analysisResponse.body.data.aiAnalysisId;
+      expect(aiAnalysisId).toBeDefined();
+
+      // Paso 4: el médico ve la predicción en su cola de análisis pendientes de revisión
+      const pendingResponse = await request(app)
+        .get('/api/v1/ai-analysis/pending')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(200);
+
+      const pendingIds = pendingResponse.body.data.map((analysis: any) => analysis._id);
+      expect(pendingIds).toContain(aiAnalysisId);
+
+      // Paso 5: el médico consulta el detalle antes de decidir
+      const detailResponse = await request(app)
+        .get(`/api/v1/ai-analysis/${aiAnalysisId}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(200);
+
+      expect(detailResponse.body.data.possibleDiagnoses[0].condition).toBe('Neumonía');
+
+      // Paso 6: el médico aprueba la predicción con firma electrónica
+      const reviewResponse = await request(app)
+        .post(`/api/v1/ai-analysis/${aiAnalysisId}/review`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          decision: 'approved',
+          comments: 'Explicación SHAP consistente con el cuadro clínico',
+          signature: { signatureData: 'firma-medico-base64', signatureMethod: 'digital' }
+        })
+        .expect(200);
+
+      expect(reviewResponse.body.data.review.status).toBe('approved');
+      expect(reviewResponse.body.data.review.doctorId).toBe(doctor._id.toString());
+    });
+  });
+
+  describe('Flujo Completo: Validación de Coherencia Médica ante Síntomas Contradictorios (RF-005)', () => {
+    it('expone la incoherencia clínica detectada por el modelo y exige revisión médica antes de descartar la predicción', async () => {
+      const doctor = await User.create({
+        name: 'Dr. Coherencia',
+        email: uniqueEmail('doctor-coherencia'),
+        password: STRONG_PASSWORD,
+        role: 'doctor',
+        isActive: true
+      }) as UserDocument;
+
+      const doctorToken = testUtils.generateTestToken({
+        userId: doctor._id.toString(),
+        role: 'doctor'
+      });
+
+      // El modelo detecta una combinación de síntomas graves con una urgencia clasificada como baja
+      jest.spyOn(aiIntegrationService, 'analyzeSymptomsML').mockResolvedValueOnce({
+        disease: 'Neumonía',
+        confidence: 0.55,
+        urgency_level: 'low',
+        needs_medical_attention: true,
+        is_clinically_coherent: false,
+        coherence_warnings: [
+          'Síntomas de alta severidad (dificultad respiratoria severa) reportados con una urgencia clasificada como baja'
+        ],
+        top_3_predictions: [{ disease: 'Neumonía', confidence: '0.55' }],
+        explanation: { method: 'shap', explainability_score: 0.4 },
+        personalized_recommendations: [],
+        timestamp: new Date().toISOString()
+      });
+
+      const analysisResponse = await request(app)
+        .post('/api/v1/symptom-analyzer/ml-analyze')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          symptoms: ['dificultad_respiratoria_severa', 'cianosis'],
+          patient_age: 68
+        })
+        .expect(200);
+
+      // El sistema no oculta la incoherencia: la expone explícitamente en la respuesta
+      expect(analysisResponse.body.data.is_clinically_coherent).toBe(false);
+      expect(analysisResponse.body.data.coherence_warnings.length).toBeGreaterThan(0);
+
+      const aiAnalysisId = analysisResponse.body.data.aiAnalysisId;
+
+      // A pesar de la incoherencia, la predicción queda disponible para revisión médica obligatoria:
+      // nunca se le entrega al paciente un diagnóstico contradictorio sin que un médico lo evalúe primero
+      const pendingResponse = await request(app)
+        .get('/api/v1/ai-analysis/pending')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(200);
+
+      expect(pendingResponse.body.data.map((analysis: any) => analysis._id)).toContain(aiAnalysisId);
+
+      // El médico, informado de la incoherencia, rechaza la predicción en lugar de aprobarla
+      const reviewResponse = await request(app)
+        .post(`/api/v1/ai-analysis/${aiAnalysisId}/review`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          decision: 'rejected',
+          comments: 'Predicción marcada como clínicamente incoherente por el sistema; se descarta',
+          signature: { signatureData: 'firma-medico-base64', signatureMethod: 'digital' }
+        })
+        .expect(200);
+
+      expect(reviewResponse.body.data.review.status).toBe('rejected');
     });
   });
 
@@ -933,6 +1102,150 @@ describe('E2E Tests - Flujos Completos', () => {
         .expect(200);
 
       expect(profile2After.body.success).toBe(true);
+    });
+  });
+
+  describe('Flujo Completo: Personalización de Contenido Educativo tras Diagnóstico (RF-011)', () => {
+    it('el paciente recibe contenido educativo relevante después de recibir un diagnóstico', async () => {
+      // Paso 1: registro del paciente
+      const registerData = {
+        name: 'Lucía Fernández',
+        email: uniqueEmail('flow-edu-patient'),
+        password: STRONG_PASSWORD,
+        role: 'patient'
+      };
+
+      const registerResponse = await request(app)
+        .post('/api/v1/auth/register')
+        .send(registerData)
+        .expect(201);
+
+      const patientToken = registerResponse.body.data.token;
+      const patientId = registerResponse.body.data.user._id;
+
+      // Paso 2: un médico diagnostica al paciente con asma
+      const doctor = await User.create({
+        name: 'Dr. Educativo',
+        email: uniqueEmail('doctor-edu'),
+        password: STRONG_PASSWORD,
+        role: 'doctor',
+        isActive: true
+      }) as UserDocument;
+
+      const doctorToken = testUtils.generateTestToken({
+        userId: doctor._id.toString(),
+        role: 'doctor'
+      });
+
+      await request(app)
+        .post('/api/v1/medical-histories')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          patientId,
+          patientName: registerData.name,
+          age: 29,
+          diagnosis: 'asma',
+          symptoms: [{ name: 'sibilancias', severity: 'moderate', duration: '1 semana' }],
+          description: 'Crisis asmática leve',
+          date: new Date().toISOString()
+        })
+        .expect(201);
+
+      // Paso 3: existe contenido educativo específico para asma, general y de otra condición
+      const asthmaContent = await EducationalContentModel.create({
+        title: 'Cómo reconocer una crisis asmática',
+        summary: 'Señales de alerta ante una crisis de asma',
+        content: 'Contenido educativo detallado sobre manejo de crisis asmáticas...',
+        category: 'asma',
+        targetConditions: ['asma']
+      });
+      const generalContent = await EducationalContentModel.create({
+        title: 'Hábitos saludables para las vías respiratorias',
+        summary: 'Consejos generales de prevención respiratoria',
+        content: 'Contenido educativo general...',
+        category: 'prevencion',
+        targetConditions: []
+      });
+      const unrelatedContent = await EducationalContentModel.create({
+        title: 'Manejo avanzado de EPOC',
+        summary: 'Contenido específico para pacientes con EPOC',
+        content: 'Contenido educativo de EPOC...',
+        category: 'epoc',
+        targetConditions: ['epoc']
+      });
+
+      // Paso 4: el paciente consulta el módulo educativo y recibe contenido personalizado
+      const listResponse = await request(app)
+        .get('/api/v1/educational-content')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .expect(200);
+
+      const ids = listResponse.body.data.map((item: any) => item._id);
+      expect(ids).toContain(asthmaContent._id.toString());
+      expect(ids).toContain(generalContent._id.toString());
+      expect(ids).not.toContain(unrelatedContent._id.toString());
+
+      // Paso 5: al consultar el detalle queda registrado el consumo del contenido
+      const detailResponse = await request(app)
+        .get(`/api/v1/educational-content/${asthmaContent._id}`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .expect(200);
+
+      expect(detailResponse.body.data.viewCount).toBe(1);
+    });
+  });
+
+  describe('Flujo Completo: Búsqueda Geoespacial de Centros de Salud (RF-012)', () => {
+    it('el paciente busca el centro de salud con atención respiratoria más cercano a su ubicación', async () => {
+      // Paso 1: registro del paciente
+      const registerData = {
+        name: 'Marco Salas',
+        email: uniqueEmail('flow-geo-patient'),
+        password: STRONG_PASSWORD,
+        role: 'patient'
+      };
+
+      const registerResponse = await request(app)
+        .post('/api/v1/auth/register')
+        .send(registerData)
+        .expect(201);
+
+      const patientToken = registerResponse.body.data.token;
+
+      // Paso 2: existen centros de salud registrados, algunos con atención respiratoria
+      await HealthCenterModel.create([
+        {
+          name: 'Hospital Hipólito Unanue',
+          type: 'hospital',
+          address: 'Av. Bolognesi 1801',
+          district: 'Tacna',
+          hasEmergencyServices: true,
+          hasRespiratoryCare: true,
+          location: { type: 'Point', coordinates: [-70.2444, -18.0114] }
+        },
+        {
+          name: 'Posta Médica Alto de la Alianza',
+          type: 'posta_medica',
+          address: 'Sector Alto',
+          district: 'Alto de la Alianza',
+          hasEmergencyServices: false,
+          hasRespiratoryCare: false,
+          location: { type: 'Point', coordinates: [-70.35, -18.10] }
+        }
+      ]);
+
+      // Paso 3: el paciente busca desde su ubicación actual el centro con atención respiratoria más cercano
+      const nearbyResponse = await request(app)
+        .get('/api/v1/health-centers/nearby')
+        .query({ latitude: -18.0114, longitude: -70.2444, maxDistanceKm: 10, respiratoryOnly: 'true' })
+        .set('Authorization', `Bearer ${patientToken}`)
+        .expect(200);
+
+      expect(nearbyResponse.body.success).toBe(true);
+      expect(nearbyResponse.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(nearbyResponse.body.data[0].name).toBe('Hospital Hipólito Unanue');
+      expect(nearbyResponse.body.data[0].hasRespiratoryCare).toBe(true);
+      expect(nearbyResponse.body.data[0]).toHaveProperty('distanceKm');
     });
   });
 
