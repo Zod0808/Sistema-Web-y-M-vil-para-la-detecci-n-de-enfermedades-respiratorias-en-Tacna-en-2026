@@ -106,6 +106,17 @@ EducationalContentSchema.statics.findRelevantFor = function findRelevantFor(
 ): Promise<EducationalContentDocument[]> {
   const normalizedConditions = conditions.map((condition) => condition.toLowerCase());
 
+  const conditionsMatch = {
+    $or: [
+      { targetConditions: { $size: 0 } },
+      { targetConditions: { $in: normalizedConditions } },
+    ],
+  };
+
+  // Kept separate from conditionsMatch (both used their own top-level `$or` key)
+  // and combined below via `$and`: merging two `$or` clauses into the same object
+  // literal makes the second silently overwrite the first, since both use the
+  // same key, which dropped the condition filter entirely whenever age was set.
   const ageMatch =
     typeof age === 'number'
       ? {
@@ -119,15 +130,11 @@ EducationalContentSchema.statics.findRelevantFor = function findRelevantFor(
             },
           ],
         }
-      : {};
+      : null;
 
   return this.find({
     isActive: true,
-    $or: [
-      { targetConditions: { $size: 0 } },
-      { targetConditions: { $in: normalizedConditions } },
-    ],
-    ...ageMatch,
+    $and: ageMatch ? [conditionsMatch, ageMatch] : [conditionsMatch],
   })
     .sort({ createdAt: -1 })
     .exec();
