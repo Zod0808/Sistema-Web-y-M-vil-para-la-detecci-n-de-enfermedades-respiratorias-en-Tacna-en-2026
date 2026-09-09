@@ -141,23 +141,34 @@ class TestMainApp:
         """Test rate limiting middleware when enabled"""
         # Temporarily enable rate limiting
         with patch.dict(os.environ, {"TESTING": "false", "AI_RATE_LIMIT_ENABLED": "1", "AI_RATE_LIMIT_CAPACITY": "2"}):
-            # Reload main module to get new rate limit settings
+            # Reload main module to get new rate limit settings.
+            # We must restore the original module object afterwards: other test
+            # files import `app`/`main` once at collection time and later use
+            # `patch('main.xxx')`, which resolves against whatever object is
+            # currently in sys.modules['main']. Leaving a swapped-out module
+            # there breaks those patches in unrelated files run later.
+            original_main_module = sys.modules.get('main')
             if 'main' in sys.modules:
                 del sys.modules['main']
-            
+
             try:
                 from main import app
                 client = TestClient(app)
-                
+
                 # First requests should succeed
                 response1 = client.get("/")
                 assert response1.status_code in [200, 404]
-                
+
                 response2 = client.get("/")
                 assert response2.status_code in [200, 404]
             except (ImportError, OSError):
                 # If main import fails, skip this test
                 pass
+            finally:
+                if original_main_module is not None:
+                    sys.modules['main'] = original_main_module
+                else:
+                    sys.modules.pop('main', None)
     
     def test_startup_event(self):
         """Test startup event execution"""

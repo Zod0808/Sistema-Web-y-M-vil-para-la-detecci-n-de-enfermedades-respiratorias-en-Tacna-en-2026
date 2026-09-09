@@ -19,94 +19,73 @@ def sample_symptoms():
 
 
 @pytest.fixture
-def all_symptoms():
-    """Vocabulario completo de síntomas usado por el clasificador Random Forest"""
-    return ['fiebre', 'tos', 'dificultad_respiratoria', 'dolor_pecho', 'fatiga']
+def small_training_df():
+    """Dataset sintético pequeño para entrenar RandomForest/XGBoost/NN en el propio test.
 
+    Los artefactos reales en models/*.pkl fueron entrenados con un pipeline
+    basado en CountVectorizer (ver SHAPDiseaseExplainer), incompatible con el
+    pipeline de feature engineering manual de estas clases standalone. Para
+    ejercitar de verdad predict()/train() de cada clase (en vez de skip),
+    entrenamos aquí un modelo pequeño y rápido con datos sintéticos.
+    """
+    from ml_models.synthetic_dataset_generator import SyntheticDatasetGenerator
 
-@pytest.fixture
-def sample_features():
-    """Features de ejemplo en formato numérico"""
-    return np.array([[38.5, 1, 1, 0, 1, 45, 1, 0, 1]])
+    generator = SyntheticDatasetGenerator()
+    return generator.generate_dataset(
+        samples_per_disease={
+            'asma bronquial': 20,
+            'neumonia leve': 20,
+            'bronquitis aguda': 20,
+            'rinitis': 20,
+        }
+    )
 
 
 class TestModelPredictions:
     """Tests para validar que los modelos hacen predicciones correctas"""
 
-    def test_random_forest_prediction_format(self, sample_symptoms, all_symptoms):
+    def test_random_forest_prediction_format(self, small_training_df):
         """Test que Random Forest retorna predicción en formato correcto"""
-        import os
-        model = RandomForestModel()
+        model = RandomForestModel(n_estimators=20, max_depth=5)
+        X, y = model.prepare_features(small_training_df)
+        model.train(X, y, test_size=0.3)
 
-        # Try to load model if file exists, otherwise use initialized model
-        model_path = 'models/base_random_forest.pkl'
-        if os.path.exists(model_path):
-            model.load_model(model_path)
-        elif os.path.exists(f'ai-services/{model_path}'):
-            model.load_model(f'ai-services/{model_path}')
-
-        if not getattr(model, 'is_trained', False):
-            pytest.skip("Model not available for testing")
-
-        try:
-            prediction = model.predict(sample_symptoms, all_symptoms)
-        except ValueError:
-            # The real trained artifact uses a vectorizer-based feature
-            # pipeline incompatible with this class's manual one-hot
-            # encoding over `all_symptoms` - not exercisable here.
-            pytest.skip("Loaded model artifact uses an incompatible feature encoding")
+        all_symptoms = sorted({
+            s.lower() for symptoms in small_training_df['symptoms'] for s in symptoms
+        })
+        prediction = model.predict(all_symptoms[:2], all_symptoms)
 
         assert prediction is not None
         assert isinstance(prediction, dict)
         assert 'disease' in prediction
         assert 'confidence' in prediction
 
-    def test_xgboost_prediction_format(self, sample_features):
+    def test_xgboost_prediction_format(self, small_training_df):
         """Test que XGBoost retorna predicción en formato correcto"""
-        import os
         model = XGBoostDiseaseClassifier()
+        X = model.create_advanced_features(small_training_df)
+        y = model.label_encoder.fit_transform(small_training_df['disease'])
+        model.train(X, y, test_size=0.3, optimize=False)
 
-        # Try to load model if file exists, otherwise use initialized model
-        model_path = 'models/xgboost_model.pkl'
-        try:
-            if os.path.exists(model_path):
-                model.load_model(model_path)
-            elif os.path.exists(f'ai-services/{model_path}'):
-                model.load_model(f'ai-services/{model_path}')
-        except KeyError:
-            # The real production artifact was saved by a different
-            # (SHAP-based) training pipeline and lacks the keys this
-            # classifier's own load_model expects.
-            pass
+        prediction = model.predict(X[:1])
 
-        # Model should be able to predict even if not loaded from file
-        if getattr(model, 'is_trained', False):
-            prediction = model.predict(sample_features)
-            assert prediction is not None
-            assert isinstance(prediction, (dict, list, np.ndarray))
-        else:
-            pytest.skip("Model not available for testing")
+        assert prediction is not None
+        assert isinstance(prediction, (dict, list, np.ndarray))
 
-    def test_neural_network_prediction_format(self, sample_symptoms):
+    def test_neural_network_prediction_format(self, small_training_df):
         """Test que Neural Network retorna predicción en formato correcto"""
-        import os
         model = NeuralNetworkModel()
+        tasks_data = model.prepare_multi_task_data(small_training_df)
+        model.train(tasks_data, test_size=0.3)
 
-        # Try to load model if file exists, otherwise use initialized model
-        model_path = 'models/neural_network_model.pkl'
-        if os.path.exists(model_path):
-            model.load_model(model_path)
-        elif os.path.exists(f'ai-services/{model_path}'):
-            model.load_model(f'ai-services/{model_path}')
+        all_symptoms = sorted({
+            s.lower() for symptoms in small_training_df['symptoms'] for s in symptoms
+        })
+        prediction = model.predict_all_tasks(all_symptoms[:2])
 
-        # Model should be able to predict even if not loaded/trained from file
-        if getattr(model, 'is_trained', False):
-            prediction = model.predict_all_tasks(sample_symptoms)
-            assert prediction is not None
-            assert isinstance(prediction, (dict, list, np.ndarray))
-            assert len(prediction) > 0
-        else:
-            pytest.skip("Model not available for testing")
+        assert prediction is not None
+        assert isinstance(prediction, (dict, list, np.ndarray))
+        assert len(prediction) > 0
 
     def test_ensemble_prediction_format(self, sample_symptoms):
         """Test que Ensemble retorna predicción en formato correcto"""

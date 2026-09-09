@@ -61,7 +61,10 @@ class SyntheticDatasetGenerator:
         """Extract all unique symptoms from diseases database"""
         all_symptoms = set()
         for disease_info in self.diseases_db.values():
-            symptoms = disease_info.get('symptoms', [])
+            # RESPIRATORY_DISEASES_DATABASE (real dataset) uses Spanish keys
+            # ('sintomas'); the minimal fallback DB defined above uses English
+            # keys ('symptoms'). Support both so this works against either.
+            symptoms = disease_info.get('sintomas', disease_info.get('symptoms', []))
             if isinstance(symptoms, str):
                 # Split comma-separated symptoms
                 for s in symptoms.split(','):
@@ -87,28 +90,29 @@ class SyntheticDatasetGenerator:
             raise ValueError(f"Disease {disease_name} not found in database")
         
         disease_info = self.diseases_db[disease_name]
-        symptoms = disease_info.get('symptoms', [])
-        
+        # See _extract_all_symptoms() for why both key spellings are checked.
+        symptoms = disease_info.get('sintomas', disease_info.get('symptoms', []))
+
         # Convert symptoms to list if string
         if isinstance(symptoms, str):
             symptoms = [s.strip() for s in symptoms.split(',')]
-        
+
         # Select symptoms for this case (60-100% of total symptoms)
         num_symptoms_to_use = random.randint(
-            int(len(symptoms) * 0.6), 
+            int(len(symptoms) * 0.6),
             int(len(symptoms) * 1.0)
         )
         selected_symptoms = random.sample(symptoms, min(num_symptoms_to_use, len(symptoms)))
-        
+
         # Add variations: similar symptoms, intensity variations, etc.
         final_symptoms = self._add_symptom_variations(selected_symptoms, disease_info)
-        
+
         return {
             'disease': disease_name,
             'symptoms': final_symptoms,
-            'urgency': disease_info.get('urgency_level', 'medium'),
-            'severity': disease_info.get('severity_level', 'moderate'),
-            'category': disease_info.get('category', 'general'),
+            'urgency': disease_info.get('urgencia', disease_info.get('urgency_level', 'medium')),
+            'severity': disease_info.get('severidad', disease_info.get('severity_level', 'moderate')),
+            'category': disease_info.get('categoria', disease_info.get('category', 'general')),
             'patient_age': random.randint(1, 100),
             'symptom_count': len(final_symptoms)
         }
